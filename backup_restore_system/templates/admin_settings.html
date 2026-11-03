@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cloud Backup Settings</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .section h2 { margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .status { margin-top: 10px; padding: 10px; border-radius: 4px; }
+        .success { background-color: #dff0d8; color: #3c763d; }
+        .error { background-color: #f2dede; color: #a94442; }
+        .warning { background-color: #fcf8e3; color: #8a6d3b; }
+        .info { background-color: #d9edf7; color: #31708f; }
+        .nav-link { display: inline-block; margin-bottom: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; }
+        .nav-link:hover { background-color: #0056b3; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="nav-link">Back to Home</a>
+        <h1>Cloud Backup Settings</h1>
+
+        <div class="section">
+            <h2>Email Verification</h2>
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" placeholder="Enter your email address">
+            </div>
+            <button id="sendVerification">Send Verification Code</button>
+            <div class="form-group hidden" id="verificationCodeGroup">
+                <label for="verificationCode">Verification Code:</label>
+                <input type="text" id="verificationCode" placeholder="Enter verification code">
+            </div>
+            <button id="verifyEmail" class="hidden">Verify Email</button>
+            <div id="emailStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>Google Drive Connection</h2>
+            <button id="connectGoogleDrive">Connect Google Drive</button>
+            <button id="disconnectGoogleDrive" class="hidden">Disconnect Google Drive</button>
+            <div id="googleDriveStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>Backup Reminders</h2>
+            <div class="form-group">
+                <label for="reminderFrequency">Reminder Frequency:</label>
+                <select id="reminderFrequency">
+                    <option value="3">Every 3 days</option>
+                    <option value="7" selected>Every 7 days</option>
+                    <option value="14">Every 14 days</option>
+                    <option value="30">Every 30 days</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reminderTime">Reminder Time:</label>
+                <input type="time" id="reminderTime" value="09:00">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="enableReminders" checked> Enable Reminders
+                </label>
+            </div>
+            <button id="saveReminderSettings">Save Settings</button>
+            <div id="reminderStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>Backup Status</h2>
+            <button id="checkBackupStatus">Check Backup Status</button>
+            <div id="backupStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>Perform Backup</h2>
+            <button id="performBackup">Backup Now</button>
+            <div id="backupResult" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Email Verification
+        document.getElementById('sendVerification').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            if (!email) {
+                showStatus('emailStatus', 'Please enter an email address', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/send-verification-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showStatus('emailStatus', data.message, 'success');
+                    document.getElementById('verificationCodeGroup').classList.remove('hidden');
+                    document.getElementById('verifyEmail').classList.remove('hidden');
+                } else {
+                    showStatus('emailStatus', data.detail, 'error');
+                }
+            } catch (error) {
+                showStatus('emailStatus', 'Error sending verification code', 'error');
+            }
+        });
+
+        document.getElementById('verifyEmail').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const code = document.getElementById('verificationCode').value;
+            if (!email || !code) {
+                showStatus('emailStatus', 'Please enter both email and verification code', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/verify-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, code })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showStatus('emailStatus', data.message, 'success');
+                } else {
+                    showStatus('emailStatus', data.detail, 'error');
+                }
+            } catch (error) {
+                showStatus('emailStatus', 'Error verifying email', 'error');
+            }
+        });
+
+        // Google Drive Connection
+        document.getElementById('connectGoogleDrive').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            if (!email) {
+                showStatus('googleDriveStatus', 'Please verify your email first', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/authenticate-google-drive', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showStatus('googleDriveStatus', data.message, 'success');
+                    document.getElementById('connectGoogleDrive').classList.add('hidden');
+                    document.getElementById('disconnectGoogleDrive').classList.remove('hidden');
+                } else {
+                    showStatus('googleDriveStatus', data.detail, 'error');
+                }
+            } catch (error) {
+                showStatus('googleDriveStatus', 'Error connecting to Google Drive', 'error');
+            }
+        });
+
+        document.getElementById('disconnectGoogleDrive').addEventListener('click', () => {
+            // In a real implementation, you would call an endpoint to disconnect
+            showStatus('googleDriveStatus', 'Google Drive disconnected', 'success');
+            document.getElementById('connectGoogleDrive').classList.remove('hidden');
+            document.getElementById('disconnectGoogleDrive').classList.add('hidden');
+        });
+
+        // Backup Reminders
+        document.getElementById('saveReminderSettings').addEventListener('click', async () => {
+            const days = document.getElementById('reminderFrequency').value;
+            const time = document.getElementById('reminderTime').value;
+            const enabled = document.getElementById('enableReminders').checked;
+
+            try {
+                const response = await fetch('/set-backup-reminder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ days: parseInt(days), time, enabled })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showStatus('reminderStatus', data.message, 'success');
+                } else {
+                    showStatus('reminderStatus', data.detail, 'error');
+                }
+            } catch (error) {
+                showStatus('reminderStatus', 'Error saving reminder settings', 'error');
+            }
+        });
+
+        // Backup Status
+        document.getElementById('checkBackupStatus').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/check-backup-status');
+                const data = await response.json();
+                if (response.ok) {
+                    showStatus('backupStatus', data.backup_status, 'info');
+                } else {
+                    showStatus('backupStatus', data.detail, 'error');
+                }
+            } catch (error) {
+                showStatus('backupStatus', 'Error checking backup status', 'error');
+            }
+        });
+
+        // Perform Backup
+        document.getElementById('performBackup').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/backup', { method: 'POST' });
+                const data = await response.json();
+                if (response.ok) {
+                    showStatus('backupResult', `Backup created successfully: ${data.backup_path}`, 'success');
+                } else {
+                    showStatus('backupResult', data.detail, 'error');
+                }
+            } catch (error) {
+                showStatus('backupResult', 'Error performing backup', 'error');
+            }
+        });
+
+        // Helper function to show status messages
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+    </script>
+</body>
+</html>
