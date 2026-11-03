@@ -144,7 +144,7 @@ def test_connection_failure_does_not_print_driver_connection_details(installatio
         assert checker.main(["--json"], runtime_loader=state.runtime) == 2
     output = capsys.readouterr().out
     assert "secret connection" not in output
-    assert json.loads(output)["error_code"] == "database_inspection_failed"
+    assert json.loads(output)["error_code"] == "database_connection_failed"
 
 
 def test_loading_actual_runtime_resolves_source_head_without_opening_a_database(monkeypatch, tmp_path):

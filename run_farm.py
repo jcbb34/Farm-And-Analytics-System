@@ -83,7 +83,7 @@ def stop_process(process):
 def ensure_port_available(port, label):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         try:
-            probe.bind(("0.0.0.0", port))
+            probe.bind(("127.0.0.1", port))
         except OSError:
             raise RuntimeError(f"{label} port {port} is already in use. Stop the old farm server before starting this updated source.") from None
 
