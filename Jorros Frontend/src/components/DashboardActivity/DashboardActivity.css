@@ -1,0 +1,1940 @@
+.farm-activity-card {
+    grid-column: 1 / 2;
+    grid-row: 3;
+
+    min-height: 340px;
+}
+
+.upcoming-tasks-card {
+    grid-column: 2 / 4;
+    grid-row: 3;
+
+    min-height: 340px;
+}
+
+/* =========================================
+   PREVIEW CARDS
+========================================= */
+
+.activity-preview-list,
+.task-preview-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+
+    gap: 14px;
+}
+
+.activity-preview-item,
+.task-preview-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 18px;
+    padding: 14px;
+
+    border: 1px solid #f0f0f0;
+    border-radius: 10px;
+
+    background: #fafafa;
+}
+
+.activity-preview-info {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.activity-preview-info strong,
+.task-preview-item strong {
+    color: #333333;
+
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.activity-preview-info p,
+.task-preview-item p {
+    margin: 0;
+
+    color: #777777;
+
+    font-size: 0.82rem;
+}
+
+.activity-preview-date {
+    flex-shrink: 0;
+
+    text-align: right;
+}
+
+.activity-preview-date span {
+    display: block;
+
+    color: #444444;
+
+    font-size: 0.82rem;
+}
+
+.activity-preview-date small {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #888888;
+
+    font-size: 0.76rem;
+}
+
+.task-preview-content {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+}
+
+.task-preview-item > small {
+    flex-shrink: 0;
+
+    color: #888888;
+
+    font-size: 0.8rem;
+}
+
+.task-priority-dot {
+    width: 11px;
+    height: 11px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+}
+
+.task-priority-dot.low {
+    background: #22c55e;
+}
+
+.task-priority-dot.medium {
+    background: #facc15;
+}
+
+.task-priority-dot.high {
+    background: #ef4444;
+}
+
+.task-priority-dot.critical {
+    background: #991b1b;
+}
+
+.dashboard-card-footer {
+    display: flex;
+    justify-content: center;
+
+    padding-top: 16px;
+}
+
+.dashboard-card-footer button {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 5px;
+
+    padding: 5px 8px;
+
+    border: none;
+
+    background: transparent;
+    color: #138f2d;
+
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.dashboard-card-footer button:hover {
+    color: #0d6e21;
+}
+
+.dashboard-card-footer .material-symbols-outlined {
+    font-size: 19px;
+}
+
+/* =========================================
+   SHARED MODAL
+========================================= */
+
+.activity-modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 25px;
+
+    background: rgba(0, 0, 0, 0.55);
+
+    z-index: 10000;
+}
+
+.activity-list-modal,
+.task-list-modal,
+.add-activity-modal {
+    width: min(1400px, 98%);
+    max-height: 92vh;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    border-radius: 16px;
+
+    background: #ffffff;
+
+    box-shadow: 0 20px 55px rgba(0, 0, 0, 0.25);
+}
+
+.task-list-modal {
+    width: min(1000px, 95%);
+}
+
+.add-activity-modal {
+    width: min(920px, 95%);
+}
+
+.activity-modal-header,
+.add-activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 25px;
+    padding: 25px 35px;
+
+    border-bottom: 2px solid #16a34a;
+}
+
+.activity-modal-header h2,
+.add-activity-header h2 {
+    margin: 0;
+
+    color: #166534;
+
+    font-size: 2.25rem;
+}
+
+.activity-modal-header p,
+.add-activity-header p {
+    margin: 8px 0 0;
+
+    color: #666666;
+
+    font-size: 0.95rem;
+}
+
+.activity-modal-header > button,
+.add-activity-header > button {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+    color: #444444;
+
+    cursor: pointer;
+}
+
+.activity-modal-header > button:hover,
+.add-activity-header > button:hover {
+    background: #f3f4f6;
+}
+
+/* =========================================
+   ACTIVITY LIST MODAL
+========================================= */
+
+.activity-modal-body,
+.task-modal-body {
+    flex: 1;
+
+    padding: 25px 35px 35px;
+
+    overflow-y: auto;
+}
+
+.activity-filter-box {
+    display: grid;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+
+    background: #ffffff;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+}
+
+.activity-filter-box input,
+.activity-filter-box select {
+    width: 100%;
+    height: 46px;
+
+    padding: 0 14px;
+
+    border: 1px solid #dddddd;
+    border-radius: 9px;
+    outline: none;
+
+    background: #ffffff;
+    color: #333333;
+
+    font-family: inherit;
+    font-size: 0.88rem;
+}
+
+.activity-filter-box input:focus,
+.activity-filter-box select:focus {
+    border-color: #16a34a;
+
+    box-shadow:
+        0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+
+.activity-add-button {
+    height: 46px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+
+    border: none;
+    border-radius: 9px;
+
+    background: #179b2c;
+    color: #ffffff;
+
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.activity-add-button:hover {
+    background: #118224;
+}
+
+.activity-table-card {
+    overflow: hidden;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+
+    background: #ffffff;
+}
+
+.activity-table-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 20px 22px;
+
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.activity-table-heading h3 {
+    margin: 0;
+
+    color: #166534;
+
+    font-size: 1.05rem;
+}
+
+.activity-table-heading span {
+    color: #777777;
+
+    font-size: 0.85rem;
+}
+
+.activity-table-wrapper {
+    overflow-x: auto;
+}
+
+.activity-table {
+    width: 100%;
+    min-width: 1050px;
+
+    border-collapse: collapse;
+}
+
+.activity-table th {
+    padding: 14px 15px;
+
+    border-bottom: 1px solid #e5e7eb;
+
+    background: #fafafa;
+    color: #555555;
+
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.activity-table td {
+    padding: 16px 15px;
+
+    border-bottom: 1px solid #eeeeee;
+
+    color: #444444;
+
+    font-size: 0.84rem;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.activity-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.activity-table td:first-child {
+    color: #222222;
+
+    font-weight: 600;
+}
+
+.activity-table td small {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #888888;
+}
+
+.activity-category-badge,
+.activity-status-badge,
+.activity-priority-badge {
+    display: inline-flex;
+
+    padding: 6px 11px;
+
+    border-radius: 20px;
+
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.activity-category-badge.green {
+    background: #d9f8dc;
+    color: #207227;
+}
+
+.activity-category-badge.blue {
+    background: #dceeff;
+    color: #1768b5;
+}
+
+.activity-category-badge.red {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.activity-category-badge.orange {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.activity-status-badge.pending {
+    background: #fff7d6;
+    color: #a16207;
+}
+
+.activity-status-badge.in-progress {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.activity-status-badge.completed {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.activity-status-badge.cancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.activity-priority-badge.low {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.activity-priority-badge.medium {
+    background: #fef9c3;
+    color: #a16207;
+}
+
+.activity-priority-badge.high {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.activity-priority-badge.critical {
+    background: #7f1d1d;
+    color: #ffffff;
+}
+
+.activity-empty-table {
+    padding: 35px !important;
+
+    color: #888888 !important;
+    text-align: center !important;
+}
+
+/* =========================================
+   TASK MODAL
+========================================= */
+
+.task-modal-filters {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(170px, 1fr)
+        minmax(170px, auto);
+
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.task-modal-filters input,
+.task-modal-filters select {
+    height: 46px;
+
+    padding: 0 14px;
+
+    border: 1px solid #dddddd;
+    border-radius: 9px;
+    outline: none;
+
+    font-family: inherit;
+}
+
+.task-modal-filters > button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 6px;
+
+    border: none;
+    border-radius: 9px;
+
+    background: #179b2c;
+    color: #ffffff;
+
+    font-family: inherit;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.task-full-list {
+    display: flex;
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+.task-full-item {
+    display: grid;
+    grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        150px
+        110px
+        40px;
+
+    align-items: center;
+
+    gap: 14px;
+    padding: 15px 17px;
+
+    border: 1px solid #eeeeee;
+    border-radius: 10px;
+
+    background: #fafafa;
+}
+
+.task-full-info strong {
+    display: block;
+
+    color: #333333;
+
+    font-size: 0.9rem;
+}
+
+.task-full-info p {
+    margin: 4px 0 0;
+
+    color: #777777;
+
+    font-size: 0.8rem;
+}
+
+.task-full-date span,
+.task-full-date small {
+    display: block;
+}
+
+.task-full-date span {
+    color: #444444;
+
+    font-size: 0.82rem;
+}
+
+.task-full-date small {
+    margin-top: 3px;
+
+    color: #888888;
+
+    font-size: 0.76rem;
+}
+
+.task-status-label {
+    padding: 6px 10px;
+
+    border-radius: 20px;
+
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.task-status-label.pending {
+    background: #fff7d6;
+    color: #a16207;
+}
+
+.task-status-label.in-progress {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.task-status-label.completed {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.task-complete-button {
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #dcfce7;
+    color: #15803d;
+
+    cursor: pointer;
+}
+
+.task-complete-button:hover {
+    background: #bbf7d0;
+}
+
+.task-empty {
+    padding: 35px;
+
+    color: #888888;
+    text-align: center;
+}
+
+/* =========================================
+   ADD ACTIVITY FORM
+========================================= */
+
+.add-activity-form {
+    flex: 1;
+
+    padding: 25px 35px 35px;
+
+    overflow-y: auto;
+}
+
+.activity-form-card {
+    padding: 25px;
+    margin-bottom: 25px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+
+    background: #ffffff;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+}
+
+.activity-section-title {
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+    margin-bottom: 23px;
+}
+
+.activity-section-title > span {
+    width: 48px;
+    height: 48px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 11px;
+
+    background: #ecfdf5;
+    color: #166534;
+
+    font-size: 27px;
+}
+
+.activity-section-title h3 {
+    margin: 0;
+
+    color: #166534;
+
+    font-size: 1.25rem;
+}
+
+.activity-form-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 18px;
+}
+
+.activity-form-group {
+    display: flex;
+    flex-direction: column;
+
+    margin-bottom: 19px;
+}
+
+.activity-form-group label {
+    margin-bottom: 8px;
+
+    color: #333333;
+
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.activity-form-group label > span {
+    margin-left: 4px;
+
+    color: #ef4444;
+}
+
+.activity-form-group input,
+.activity-form-group select,
+.activity-form-group textarea {
+    width: 100%;
+
+    padding: 13px 14px;
+
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+    outline: none;
+
+    background: #ffffff;
+    color: #333333;
+
+    font-family: inherit;
+    font-size: 0.88rem;
+}
+
+.activity-form-group textarea {
+    resize: vertical;
+}
+
+.activity-form-group input:focus,
+.activity-form-group select:focus,
+.activity-form-group textarea:focus {
+    border-color: #16a34a;
+
+    box-shadow:
+        0 0 0 3px rgba(34, 197, 94, 0.14);
+}
+
+.activity-priority-options {
+    min-height: 47px;
+
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 20px;
+}
+
+.activity-priority-options label {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+    margin: 0;
+
+    cursor: pointer;
+}
+
+.activity-priority-options input {
+    display: none;
+}
+
+.activity-priority-circle {
+    width: 15px;
+    height: 15px;
+
+    border-radius: 50%;
+}
+
+.activity-priority-circle.low {
+    background: #22c55e;
+}
+
+.activity-priority-circle.medium {
+    background: #facc15;
+}
+
+.activity-priority-circle.high {
+    background: #ef4444;
+}
+
+.activity-priority-circle.critical {
+    background: #991b1b;
+}
+
+.activity-priority-options
+    input:checked
+    + .activity-priority-circle {
+    outline: 3px solid #166534;
+    outline-offset: 2px;
+}
+
+.add-activity-footer {
+    display: flex;
+    justify-content: flex-end;
+
+    gap: 14px;
+    padding-top: 22px;
+
+    border-top: 1px solid #e5e7eb;
+}
+
+.activity-cancel-button,
+.activity-save-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+    padding: 12px 25px;
+
+    border-radius: 9px;
+
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.activity-cancel-button {
+    border: 1px solid #d1d5db;
+
+    background: #ffffff;
+    color: #555555;
+}
+
+.activity-save-button {
+    border: none;
+
+    background: #15803d;
+    color: #ffffff;
+}
+
+.activity-save-button:hover {
+    background: #166534;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media screen and (max-width: 1000px) {
+    .farm-activity-card {
+        grid-column: 1 / 2;
+        grid-row: 5;
+    }
+
+    .upcoming-tasks-card {
+        grid-column: 2 / 3;
+        grid-row: 5;
+    }
+
+    .activity-filter-box {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media screen and (max-width: 760px) {
+    .farm-activity-card {
+        grid-column: 1;
+        grid-row: 6;
+    }
+
+    .upcoming-tasks-card {
+        grid-column: 1;
+        grid-row: 7;
+    }
+
+    .activity-form-grid,
+    .activity-filter-box {
+        grid-template-columns: 1fr;
+    }
+
+    .task-modal-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .task-full-item {
+        grid-template-columns:
+            auto minmax(0, 1fr) auto;
+    }
+
+    .task-full-date,
+    .task-status-label {
+        grid-column: 2 / 3;
+    }
+}
+
+@media screen and (max-width: 550px) {
+    .activity-modal-overlay {
+        padding: 12px;
+    }
+
+    .activity-modal-header,
+    .add-activity-header {
+        padding: 20px;
+    }
+
+    .activity-modal-header h2,
+    .add-activity-header h2 {
+        font-size: 1.7rem;
+    }
+
+    .activity-modal-body,
+    .task-modal-body,
+    .add-activity-form {
+        padding: 20px;
+    }
+
+    .activity-preview-item,
+    .task-preview-item {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .activity-preview-date {
+        text-align: left;
+    }
+
+    .add-activity-footer {
+        flex-direction: column-reverse;
+    }
+
+    .activity-cancel-button,
+    .activity-save-button {
+        width: 100%;
+    }
+}
+
+/* =========================================================
+   RECENT ACTIVITY + UPCOMING TASKS SPLIT
+========================================================= */
+
+.farm-activity-card .card-title h3,
+.upcoming-tasks-card .card-title h3 {
+    margin: 0;
+}
+
+.recent-activity-item {
+    border-left: 3px solid #d1d5db;
+}
+
+.recent-activity-main {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+}
+
+.recent-activity-icon {
+    width: 34px;
+    height: 34px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    flex: 0 0 34px;
+
+    border-radius: 50%;
+}
+
+.recent-activity-icon .material-symbols-outlined {
+    font-size: 19px;
+}
+
+.recent-activity-icon.in-progress {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.recent-activity-icon.completed {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.recent-activity-item:has(
+    .recent-activity-status.in-progress
+) {
+    border-left-color: #3b82f6;
+}
+
+.recent-activity-item:has(
+    .recent-activity-status.completed
+) {
+    border-left-color: #22c55e;
+}
+
+.recent-activity-status {
+    width: fit-content;
+
+    display: inline-flex;
+    align-items: center;
+
+    margin-top: 3px;
+    padding: 3px 8px;
+
+    border-radius: 999px;
+
+    font-size: 0.67rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.recent-activity-status.in-progress {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.recent-activity-status.completed {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.activity-preview-state,
+.task-preview-state {
+    min-height: 78px;
+
+    justify-content: flex-start;
+}
+
+.upcoming-tasks-card .task-preview-item {
+    border-left: 3px solid #facc15;
+}
+
+.task-preview-meta {
+    min-width: 105px;
+
+    display: flex;
+    align-items: flex-end;
+    flex-direction: column;
+
+    flex-shrink: 0;
+
+    gap: 5px;
+}
+
+.task-due-label {
+    color: #6b7280;
+
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.task-due-label.today,
+.task-due-label.tomorrow {
+    color: #166534;
+
+    font-weight: 700;
+}
+
+.task-due-label.overdue {
+    color: #dc2626;
+
+    font-weight: 700;
+}
+
+.task-priority-text {
+    padding: 3px 7px;
+
+    border-radius: 999px;
+
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.task-priority-text.low {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.task-priority-text.medium {
+    background: #fef9c3;
+    color: #a16207;
+}
+
+.task-priority-text.high {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.task-priority-text.critical {
+    background: #7f1d1d;
+    color: #ffffff;
+}
+
+.activity-table {
+    min-width: 1120px;
+}
+
+.activity-complete-button {
+    width: 32px;
+    height: 32px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 0;
+
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+
+    background: #ecfdf3;
+    color: #15803d;
+
+    cursor: pointer;
+}
+
+.activity-complete-button:hover {
+    background: #dcfce7;
+}
+
+.activity-complete-button
+    .material-symbols-outlined,
+.activity-completed-mark
+    .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.activity-completed-mark {
+    width: 32px;
+    height: 32px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    color: #22c55e;
+}
+
+.task-modal-filters {
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(170px, auto);
+}
+
+.task-full-item {
+    grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        150px
+        110px
+        95px;
+}
+
+.task-start-button {
+    min-height: 34px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 4px;
+    padding: 0 11px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #166534;
+    color: #ffffff;
+
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.task-start-button:hover {
+    background: #14532d;
+}
+
+.task-start-button .material-symbols-outlined {
+    font-size: 17px;
+}
+
+/* Dark mode */
+html[data-theme="dark"] .activity-preview-item,
+html[data-theme="dark"] .task-preview-item,
+html[data-theme="dark"] .task-full-item {
+    border-color: #2d4335;
+
+    background: #18281e;
+}
+
+html[data-theme="dark"] :is(
+    .activity-preview-info strong,
+    .task-preview-item strong,
+    .task-full-info strong,
+    .activity-preview-date span,
+    .task-full-date span
+) {
+    color: #f2f7f4;
+}
+
+html[data-theme="dark"] :is(
+    .activity-preview-info p,
+    .task-preview-item p,
+    .activity-preview-date small,
+    .task-full-info p,
+    .task-full-date small,
+    .task-due-label
+) {
+    color: #b7c5bc;
+}
+
+html[data-theme="dark"] .task-due-label.today,
+html[data-theme="dark"] .task-due-label.tomorrow {
+    color: #8ae7a1;
+}
+
+html[data-theme="dark"] .task-due-label.overdue {
+    color: #fca5a5;
+}
+
+html[data-theme="dark"] .recent-activity-icon.in-progress,
+html[data-theme="dark"] .recent-activity-status.in-progress {
+    background: #183658;
+    color: #93c5fd;
+}
+
+html[data-theme="dark"] .recent-activity-icon.completed,
+html[data-theme="dark"] .recent-activity-status.completed {
+    background: #173b24;
+    color: #86efac;
+}
+
+@media screen and (max-width: 760px) {
+    .task-preview-meta {
+        min-width: 0;
+
+        align-items: flex-start;
+    }
+
+    .task-full-item {
+        grid-template-columns:
+            auto minmax(0, 1fr);
+    }
+
+    .task-full-date,
+    .task-status-label,
+    .task-start-button {
+        grid-column: 2 / 3;
+    }
+
+    .task-start-button {
+        width: fit-content;
+    }
+}
+
+@media screen and (max-width: 550px) {
+    .recent-activity-main {
+        width: 100%;
+    }
+
+    .activity-preview-date {
+        padding-left: 46px;
+    }
+}
+
+
+/* =========================================================
+   CENTRAL TASK SOURCE POLISH
+========================================================= */
+
+.task-assigned-line {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #7b837e;
+
+    font-size: 0.67rem;
+    line-height: 1.35;
+}
+
+.activity-source-button {
+    width: 32px;
+    height: 32px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 0;
+
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+
+    background: #eff6ff;
+    color: #2563eb;
+
+    cursor: pointer;
+}
+
+.activity-source-button:hover {
+    background: #dbeafe;
+}
+
+.activity-source-button
+    .material-symbols-outlined {
+    font-size: 18px;
+}
+
+html[data-theme="dark"]
+    .task-assigned-line {
+    color: #9fb0a5;
+}
+
+html[data-theme="dark"]
+    .activity-source-button {
+    border-color: #31577a;
+
+    background: #183658;
+    color: #93c5fd;
+}
+
+html[data-theme="dark"]
+    .activity-source-button:hover {
+    background: #21476e;
+}
+
+
+/* =========================================================
+   DARK MODE VIEW ALL — GLASS TRANSPARENT MODAL
+   Recent Farm Activity + Upcoming Tasks
+   Light mode remains unchanged.
+========================================================= */
+
+/* Let the Dashboard remain visible behind the popup. */
+html[data-theme="dark"] body .activity-modal-overlay {
+    background: rgba(0, 0, 0, 0.18) !important;
+
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Actual modal shell = transparent dark glass. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal {
+    background: rgba(10, 31, 19, 0.76) !important;
+    background-color: rgba(10, 31, 19, 0.76) !important;
+
+    border: 1px solid rgba(94, 150, 111, 0.42) !important;
+
+    box-shadow:
+        0 22px 60px rgba(0, 0, 0, 0.38) !important;
+
+    backdrop-filter: blur(14px) saturate(115%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(115%) !important;
+
+    opacity: 1 !important;
+}
+
+/* Header and body do not add another solid layer. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-modal-header,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal
+.activity-modal-header,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-modal-body,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal
+.task-modal-body {
+    background: transparent !important;
+    background-color: transparent !important;
+
+    opacity: 1 !important;
+}
+
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-modal-header,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal
+.activity-modal-header {
+    border-bottom-color:
+        rgba(94, 150, 111, 0.35) !important;
+}
+
+/* Filter area uses a lighter glass panel. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-filter-box,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal
+.task-modal-filters {
+    background:
+        rgba(22, 47, 31, 0.62) !important;
+    background-color:
+        rgba(22, 47, 31, 0.62) !important;
+
+    border-color:
+        rgba(94, 150, 111, 0.34) !important;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.12) !important;
+
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* Recent Activity table card = glass. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-table-card {
+    background:
+        rgba(22, 47, 31, 0.58) !important;
+    background-color:
+        rgba(22, 47, 31, 0.58) !important;
+
+    border-color:
+        rgba(94, 150, 111, 0.34) !important;
+
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* Remove solid backgrounds forced by the global theme. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-table-wrapper,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-table,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-table
+tbody {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* Table rows remain readable but visibly translucent. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-table
+tbody
+tr,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-table
+tbody
+td {
+    background:
+        rgba(20, 44, 29, 0.54) !important;
+    background-color:
+        rgba(20, 44, 29, 0.54) !important;
+}
+
+/* Slight separation between rows. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-table
+tbody
+tr:hover
+td {
+    background:
+        rgba(29, 61, 40, 0.70) !important;
+}
+
+/* Table heading has a little more opacity for readability. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-table
+thead,
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+.activity-table
+th {
+    background:
+        rgba(7, 25, 15, 0.72) !important;
+    background-color:
+        rgba(7, 25, 15, 0.72) !important;
+}
+
+/* Upcoming Tasks rows = glass cards. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal
+.task-full-list {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal
+.task-full-item {
+    background:
+        rgba(22, 47, 31, 0.58) !important;
+    background-color:
+        rgba(22, 47, 31, 0.58) !important;
+
+    border-color:
+        rgba(94, 150, 111, 0.34) !important;
+
+    backdrop-filter: blur(7px) !important;
+    -webkit-backdrop-filter: blur(7px) !important;
+}
+
+/* Inputs are translucent too, but still readable. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+:is(input, select),
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal
+:is(input, select) {
+    background:
+        rgba(4, 20, 11, 0.66) !important;
+    background-color:
+        rgba(4, 20, 11, 0.66) !important;
+
+    border-color:
+        rgba(94, 150, 111, 0.38) !important;
+
+    color: #f2f7f4 !important;
+
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+}
+
+/* Keep all text readable over the glass background. */
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+:is(h2, h3, strong, th, td),
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal
+:is(h2, h3, strong) {
+    color: #f4f8f5 !important;
+}
+
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.activity-list-modal
+:is(p, small),
+html[data-theme="dark"]
+body
+.activity-modal-overlay
+.task-list-modal
+:is(p, small) {
+    color: #c0cec5 !important;
+}
+
+
+/* Inventory low-stock tasks are resolved from Inventory, not by a dashboard checkbox. */
+.task-source-button,
+.activity-source-button {
+    min-height: 32px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 5px;
+    padding: 0 10px;
+
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+
+    background: #ecfdf3;
+    color: #166534;
+
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+
+    cursor: pointer;
+}
+
+.task-source-button:hover,
+.activity-source-button:hover {
+    border-color: #86efac;
+    background: #dcfce7;
+    color: #14532d;
+}
+
+.task-source-button .material-symbols-outlined,
+.activity-source-button .material-symbols-outlined {
+    font-size: 17px;
+}
+
+.task-preview-meta .task-source-button {
+    margin-top: 2px;
+}
+
+.task-source-button-full {
+    min-height: 34px;
+    width: 100%;
+}
+
+html[data-theme="dark"] .task-source-button,
+html[data-theme="dark"] .activity-source-button {
+    border-color: #2f6a43;
+    background: #193524;
+    color: #bbf7d0;
+}
+
+html[data-theme="dark"] .task-source-button:hover,
+html[data-theme="dark"] .activity-source-button:hover {
+    background: #21462f;
+}
+
+
+/* Low-stock source actions use an icon-only Inventory shortcut. */
+.task-source-button-icon,
+.activity-source-button {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+    gap: 0;
+}
+
+.task-source-button-full {
+    width: 34px;
+}
+
+/* Feeding completion is blocked when its linked feed inventory is unavailable. */
+.activity-action-notice {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: start;
+    gap: 10px;
+
+    margin: 12px 0 16px;
+    padding: 12px 14px;
+
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+
+    background: #fffbeb;
+    color: #78350f;
+}
+
+.activity-action-notice-icon {
+    margin-top: 1px;
+    color: #d97706;
+    font-size: 20px;
+}
+
+.activity-action-notice-copy {
+    min-width: 0;
+}
+
+.activity-action-notice-copy strong {
+    display: block;
+    margin-bottom: 3px;
+    color: #92400e;
+    font-size: 0.82rem;
+}
+
+.activity-action-notice-copy p {
+    margin: 0;
+    color: #78350f;
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.activity-action-notice-source,
+.activity-action-notice-close {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 0;
+    border-radius: 8px;
+
+    cursor: pointer;
+}
+
+.activity-action-notice-source {
+    border: 1px solid #bbf7d0;
+    background: #ecfdf3;
+    color: #166534;
+}
+
+.activity-action-notice-source:hover {
+    background: #dcfce7;
+}
+
+.activity-action-notice-close {
+    border: 1px solid transparent;
+    background: transparent;
+    color: #92400e;
+}
+
+.activity-action-notice-close:hover {
+    background: #fef3c7;
+}
+
+.activity-action-notice-source .material-symbols-outlined,
+.activity-action-notice-close .material-symbols-outlined {
+    font-size: 18px;
+}
+
+html[data-theme="dark"] .activity-action-notice {
+    border-color: #7c5b20;
+    background: #33270f;
+    color: #fde68a;
+}
+
+html[data-theme="dark"] .activity-action-notice-icon,
+html[data-theme="dark"] .activity-action-notice-copy strong,
+html[data-theme="dark"] .activity-action-notice-copy p,
+html[data-theme="dark"] .activity-action-notice-close {
+    color: #fde68a;
+}
+
+html[data-theme="dark"] .activity-action-notice-source {
+    border-color: #2f6a43;
+    background: #193524;
+    color: #bbf7d0;
+}
+
+html[data-theme="dark"] .activity-action-notice-close:hover {
+    background: #4a3918;
+}
+
+@media (max-width: 720px) {
+    .activity-action-notice {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .activity-action-notice-source {
+        grid-column: 2 / 3;
+        justify-self: start;
+    }
+
+    .activity-action-notice-close {
+        grid-column: 3 / 4;
+        grid-row: 1 / 2;
+    }
+}
+
+/* Dashboard activity actions follow the backend task workflow. */
+.dashboard-activity-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dashboard-activity-actions.compact {
+    justify-content: center;
+    gap: 4px;
+}
+
+.activity-workflow-button {
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid #15803d;
+    border-radius: 8px;
+    background: #15803d;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.activity-workflow-button.secondary {
+    background: #ffffff;
+    color: #166534;
+}
+
+.activity-workflow-button:hover:not(:disabled) {
+    background: #166534;
+}
+
+.activity-workflow-button.secondary:hover:not(:disabled) {
+    background: #f0fdf4;
+}
+
+.activity-workflow-button:focus-visible {
+    outline: 3px solid rgba(22, 163, 74, 0.25);
+    outline-offset: 2px;
+}
+
+.activity-workflow-button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.dashboard-activity-actions.compact .activity-workflow-button {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+}
+
+.activity-action-unavailable {
+    color: #6b7280;
+}
+
+html[data-theme="dark"] .activity-workflow-button.secondary {
+    background: #111827;
+    color: #86efac;
+    border-color: #22c55e;
+}

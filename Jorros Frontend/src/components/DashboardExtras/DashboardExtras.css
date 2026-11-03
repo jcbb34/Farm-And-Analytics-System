@@ -1,0 +1,465 @@
+/* =========================================
+   GRID POSITIONS
+========================================= */
+
+.inventory-card {
+    grid-column: 1 / 2;
+    grid-row: 4;
+
+    min-height: 310px;
+}
+
+.recommendation-card {
+    grid-column: 2 / 4;
+    grid-row: 4;
+
+    min-height: 310px;
+}
+
+.farm-tips-banner {
+    grid-column: 1 / 4;
+    grid-row: 5;
+}
+
+/* =========================================
+   INVENTORY
+========================================= */
+
+.inventory-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+
+    gap: 16px;
+}
+
+.inventory-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 14px;
+    padding: 14px;
+
+    border: 1px solid #f0f0f0;
+    border-radius: 10px;
+
+    background: #fafafa;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.inventory-item:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.07);
+}
+
+.inventory-info {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 13px;
+}
+
+.inventory-icon {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 10px;
+
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.inventory-icon .material-symbols-outlined {
+    font-size: 24px;
+}
+
+.inventory-text {
+    min-width: 0;
+}
+
+.inventory-info strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #333333;
+
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.inventory-info p {
+    margin: 0;
+
+    color: #777777;
+
+    font-size: 0.82rem;
+}
+
+.inventory-status {
+    flex-shrink: 0;
+
+    padding: 6px 13px;
+
+    border-radius: 20px;
+
+    font-size: 0.74rem;
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+.inventory-status.normal {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.inventory-status.low {
+    background: #fff4d6;
+    color: #b87300;
+}
+
+.inventory-status.out-of-stock {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* =========================================
+   CROP RECOMMENDATION
+========================================= */
+
+.recommendation-body {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 28px;
+}
+
+.recommendation-icon {
+    width: 115px;
+    height: 115px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #f0fdf4;
+
+    font-size: 70px;
+}
+
+.recommendation-content {
+    min-width: 0;
+}
+
+.recommendation-content h2 {
+    margin: 0 0 10px;
+
+    color: #2e7d32;
+
+    font-size: 1.7rem;
+}
+
+.recommendation-content p {
+    max-width: 760px;
+
+    margin: 0 0 16px;
+
+    color: #666666;
+
+    font-size: 0.9rem;
+    line-height: 1.7;
+}
+
+.recommendation-content ul {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px 20px;
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.recommendation-content li {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    color: #444444;
+
+    font-size: 0.86rem;
+}
+
+.recommendation-content li
+    .material-symbols-outlined {
+    color: #22a43a;
+
+    font-size: 20px;
+}
+
+/* =========================================
+   WEATHER STRIP
+========================================= */
+
+.weather-strip {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 0;
+    padding: 18px 25px;
+
+    border-radius: 12px;
+
+    background: #ffffff;
+
+    box-shadow: var(--shadow);
+}
+
+.weather-item {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 15px;
+    padding: 5px 22px;
+}
+
+.weather-item:first-child {
+    padding-left: 0;
+}
+
+.weather-item:last-child {
+    padding-right: 0;
+}
+
+.weather-item:not(:last-child) {
+    border-right: 1px solid #e5e7eb;
+}
+
+.weather-icon {
+    width: 48px;
+    height: 48px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.weather-icon .material-symbols-outlined {
+    font-size: 29px;
+}
+
+.weather-item strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #333333;
+
+    font-size: 0.9rem;
+}
+
+.weather-item p {
+    margin: 0;
+
+    color: #777777;
+
+    font-size: 0.84rem;
+}
+
+/* =========================================
+   FARM TIPS
+========================================= */
+
+.farm-tips-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+    padding: 12px 16px;
+
+    border: 1px solid #c8e6c9;
+    border-radius: 8px;
+
+    background: #e8f5e9;
+}
+
+.tips-content {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    color: #2e7d32;
+
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.tip-icon {
+    flex-shrink: 0;
+
+    color: #22c55e;
+
+    font-size: 26px;
+}
+
+.close-banner-btn {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+    color: #2e7d32;
+
+    cursor: pointer;
+}
+
+.close-banner-btn:hover {
+    background: rgba(46, 125, 50, 0.1);
+    color: #ef4444;
+}
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media screen and (max-width: 1000px) {
+    .inventory-card {
+        grid-column: 1 / 2;
+        grid-row: 6;
+    }
+
+    .recommendation-card {
+        grid-column: 2 / 3;
+        grid-row: 6;
+    }
+
+    .weather-strip {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 18px 0;
+    }
+
+    .farm-tips-banner {
+        grid-column: 1 / 3;
+        grid-row: 7;
+    }
+
+    .weather-item:nth-child(2) {
+        border-right: none;
+    }
+
+    .recommendation-body {
+        align-items: center;
+        flex-direction: column;
+
+        text-align: center;
+    }
+
+    .recommendation-content ul {
+        grid-template-columns: 1fr;
+
+        text-align: left;
+    }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media screen and (max-width: 760px) {
+    .inventory-card {
+        grid-column: 1;
+        grid-row: 8;
+    }
+
+    .recommendation-card {
+        grid-column: 1;
+        grid-row: 9;
+    }
+
+    .weather-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .farm-tips-banner {
+        grid-column: 1;
+        grid-row: 10;
+    }
+
+    .weather-item {
+        padding: 13px 0;
+
+        border-right: none !important;
+    }
+
+    .weather-item:not(:last-child) {
+        border-bottom: 1px solid #e5e7eb;
+    }
+}
+
+@media screen and (max-width: 550px) {
+    .inventory-item {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .inventory-status {
+        margin-left: 55px;
+    }
+
+    .recommendation-content ul {
+        grid-template-columns: 1fr;
+    }
+
+    .farm-tips-banner {
+        align-items: flex-start;
+    }
+}

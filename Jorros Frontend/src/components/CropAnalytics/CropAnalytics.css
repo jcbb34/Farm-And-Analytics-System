@@ -1,0 +1,571 @@
+.crop-analytics-section {
+    margin-top: 28px;
+}
+
+.crop-analytics-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    margin-bottom: 17px;
+}
+
+.crop-analytics-heading h2 {
+    margin: 0 0 5px;
+    color: #166534;
+    font-size: 1.45rem;
+}
+
+.crop-analytics-heading p {
+    margin: 0;
+    color: #777777;
+    font-size: 0.85rem;
+}
+
+.crop-analytics-heading > span {
+    color: #777777;
+    font-size: 0.77rem;
+    text-align: right;
+}
+
+/* =========================================
+   ANALYTICS GRID
+========================================= */
+
+.crop-analytics-grid {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.35fr)
+        minmax(0, 1fr)
+        minmax(280px, 0.8fr);
+    align-items: stretch;
+    gap: 20px;
+}
+
+/* =========================================
+   ANALYTICS CARDS
+========================================= */
+
+.crop-analytics-card {
+    min-width: 0;
+    height: 405px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.crop-analytics-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 18px;
+}
+
+.crop-analytics-card-header h3 {
+    margin: 0 0 5px;
+    color: #166534;
+    font-size: 1rem;
+}
+
+.crop-analytics-card-header p {
+    margin: 0;
+    color: #777777;
+    font-size: 0.77rem;
+}
+
+.crop-analytics-card-header > .material-symbols-outlined {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #e8f5e9;
+    color: #166534;
+    font-size: 24px;
+}
+
+/* =========================================
+   HARVEST PREDICTION
+========================================= */
+
+.harvest-prediction-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.harvest-prediction-card .harvest-prediction-chart {
+    margin-top: auto;
+}
+
+.harvest-prediction-chart {
+    width: 100%;
+    min-width: 0;
+    height: 225px;
+    display: flex;
+    align-items: stretch;
+    gap: clamp(4px, 0.55vw, 9px);
+    padding-top: 10px;
+    overflow: hidden;
+}
+
+.harvest-month-column {
+    min-width: 0;
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.harvest-bar-area {
+    width: 100%;
+    min-width: 0;
+    height: 155px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 0 clamp(2px, 0.3vw, 5px);
+    border-bottom: 1px solid #d1d5db;
+}
+
+.harvest-bar-area > span {
+    position: relative;
+    width: min(100%, 46px);
+    max-width: 46px;
+    min-width: 8px;
+    min-height: 15px;
+    display: block;
+    border-radius: 7px 7px 0 0;
+    background: linear-gradient(180deg, #66bb6a, #2e7d32);
+    transition: height 0.25s ease;
+}
+
+.harvest-bar-area strong {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    color: #166534;
+    font-size: 0.67rem;
+    font-weight: 600;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+.harvest-month-column > small {
+    width: 100%;
+    margin-top: 8px;
+    color: #444444;
+    font-size: clamp(0.58rem, 0.62vw, 0.69rem);
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+}
+
+.harvest-month-column > p {
+    width: 100%;
+    margin: 4px 0 0;
+    color: #888888;
+    font-size: clamp(0.56rem, 0.58vw, 0.65rem);
+    line-height: 1.2;
+    text-align: center;
+}
+
+/* =========================================
+   YIELD PERFORMANCE
+========================================= */
+
+.yield-performance-card {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.yield-performance-list {
+    width: 100%;
+    height: 272px;
+    max-height: 272px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding-right: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.yield-performance-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.yield-performance-list::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 20px;
+}
+
+.yield-performance-list::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.yield-performance-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 20px;
+}
+
+.yield-performance-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.yield-performance-item {
+    min-width: 0;
+    flex-shrink: 0;
+    padding: 2px 0;
+}
+
+.yield-performance-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.yield-performance-label strong {
+    overflow: hidden;
+    color: #333333;
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.yield-performance-label span {
+    flex-shrink: 0;
+    color: #166534;
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+.yield-performance-track {
+    width: 100%;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #e5e7eb;
+}
+
+.yield-performance-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #81c784, #16a34a);
+}
+
+.yield-performance-item > small {
+    display: block;
+    margin-top: 3px;
+    color: #888888;
+    font-size: 0.65rem;
+}
+
+/* =========================================
+   PRODUCTIVITY
+========================================= */
+
+.productivity-card {
+    overflow: hidden;
+}
+
+.productivity-card .crop-analytics-card-header {
+    margin-bottom: 14px;
+}
+
+.productivity-stat-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.productivity-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fafafa;
+}
+
+.productivity-stat-item.wide {
+    grid-column: 1 / -1;
+}
+
+.productivity-stat-item > .material-symbols-outlined {
+    width: 37px;
+    height: 37px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: #e8f5e9;
+    color: #166534;
+    font-size: 21px;
+}
+
+.productivity-stat-item small,
+.productivity-stat-item strong {
+    display: block;
+}
+
+.productivity-stat-item small {
+    margin-bottom: 4px;
+    color: #777777;
+    font-size: 0.66rem;
+}
+
+.productivity-stat-item strong {
+    color: #333333;
+    font-size: 0.78rem;
+}
+
+/* =========================================
+   EMPTY STATE
+========================================= */
+
+.crop-analytics-empty {
+    width: 100%;
+    min-height: 170px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #999999;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+/* =========================================
+   YIELD HISTORY
+========================================= */
+
+.crop-yield-history-card {
+    margin-top: 20px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.crop-yield-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 22px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.crop-yield-history-header h3 {
+    margin: 0 0 5px;
+    color: #166534;
+    font-size: 1rem;
+}
+
+.crop-yield-history-header p {
+    margin: 0;
+    color: #777777;
+    font-size: 0.77rem;
+}
+
+.crop-yield-history-header > span {
+    color: #777777;
+    font-size: 0.78rem;
+}
+
+.crop-yield-table-wrapper {
+    overflow-x: auto;
+}
+
+.crop-yield-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
+}
+
+.crop-yield-table th {
+    padding: 14px 15px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+    color: #555555;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.crop-yield-table td {
+    padding: 15px;
+    border-bottom: 1px solid #eeeeee;
+    color: #444444;
+    font-size: 0.78rem;
+    vertical-align: middle;
+}
+
+.crop-yield-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* =========================================
+   YIELD QUALITY
+========================================= */
+
+.yield-quality {
+    display: inline-flex;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 0.69rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.yield-quality.grade-a {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.yield-quality.grade-b {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.yield-quality.grade-c {
+    background: #fef3c7;
+    color: #a16207;
+}
+
+.yield-quality.for-processing {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.yield-quality.rejected {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.crop-yield-empty {
+    padding: 35px !important;
+    color: #888888 !important;
+    text-align: center;
+}
+
+/* =========================================
+   RESPONSIVE - 1200PX
+========================================= */
+
+@media screen and (max-width: 1200px) {
+    .crop-analytics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .crop-analytics-card {
+        height: 405px;
+    }
+
+    .productivity-card {
+        grid-column: 1 / -1;
+        min-height: auto;
+    }
+
+    .productivity-stat-list {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .productivity-stat-item.wide {
+        grid-column: auto;
+    }
+
+    .yield-performance-list {
+        max-height: 272px;
+    }
+}
+
+/* =========================================
+   RESPONSIVE - 850PX
+========================================= */
+
+@media screen and (max-width: 850px) {
+    .crop-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .crop-analytics-card {
+        height: auto;
+        min-height: 360px;
+    }
+
+    .productivity-card {
+        grid-column: auto;
+    }
+
+    .productivity-stat-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .productivity-stat-item.wide {
+        grid-column: 1 / -1;
+    }
+
+    .yield-performance-list {
+        max-height: 272px;
+    }
+}
+
+/* =========================================
+   RESPONSIVE - MOBILE
+========================================= */
+
+@media screen and (max-width: 600px) {
+    .crop-analytics-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .crop-analytics-heading > span {
+        text-align: left;
+    }
+
+    .harvest-prediction-chart {
+        overflow-x: auto;
+        overflow-y: hidden;
+        gap: 10px;
+    }
+
+    .harvest-month-column {
+        min-width: 72px;
+        flex: 0 0 72px;
+    }
+
+    .yield-performance-list {
+        max-height: 272px;
+        padding-right: 6px;
+    }
+
+    .productivity-stat-list {
+        grid-template-columns: 1fr;
+    }
+
+    .productivity-stat-item.wide {
+        grid-column: auto;
+    }
+}

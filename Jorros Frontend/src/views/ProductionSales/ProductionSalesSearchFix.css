@@ -1,0 +1,160 @@
+/* =========================================================
+   STEP 105 — PRODUCTION & SALES SEARCH
+   Match the Livestock page search field exactly:
+   the wrapper has no border; the input owns the border/focus ring.
+========================================================= */
+
+.ps-actions {
+    gap: 12px;
+}
+
+.ps-search {
+    position: relative !important;
+    display: block !important;
+    flex: 0 1 420px !important;
+    width: 420px !important;
+    min-width: 260px !important;
+    height: 44px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+}
+
+/* Never draw a focus ring on the wrapper. */
+.ps-search:focus,
+.ps-search:focus-visible,
+.ps-search:focus-within {
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.ps-search > .material-symbols-outlined {
+    position: absolute !important;
+    z-index: 2 !important;
+    top: 50% !important;
+    left: 13px !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #777777 !important;
+    font-size: 22px !important;
+    line-height: 1 !important;
+    transform: translateY(-50%) !important;
+    pointer-events: none !important;
+}
+
+/* Same dimensions/border/focus behavior as .livestock-toolbar input. */
+.ps-search > input,
+.ps-search > input[type="text"],
+.ps-search > input[type="search"] {
+    display: block !important;
+    width: 100% !important;
+    height: 44px !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 13px 0 43px !important;
+    box-sizing: border-box !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    outline: none !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    color: #333333 !important;
+    -webkit-text-fill-color: #333333 !important;
+    font-family: inherit !important;
+    font-size: 0.84rem !important;
+    font-weight: 400 !important;
+    line-height: normal !important;
+    cursor: text !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+}
+
+.ps-search > input:hover {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+}
+
+.ps-search > input:focus,
+.ps-search > input:focus-visible,
+.ps-search > input:active {
+    border-color: #2e7d32 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12) !important;
+}
+
+.ps-search > input::placeholder {
+    color: #777777 !important;
+    -webkit-text-fill-color: #777777 !important;
+    opacity: 1 !important;
+}
+
+.ps-primary {
+    min-height: 44px !important;
+    white-space: nowrap;
+}
+
+/* Keep the four top metric cards static. */
+.ps-summary-grid article,
+.ps-summary-grid article:hover,
+.ps-summary-grid article:focus,
+.ps-summary-grid article:focus-within {
+    transform: none !important;
+    transition: none !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07) !important;
+    cursor: default !important;
+}
+
+html[data-theme="dark"] .ps-search,
+html[data-theme="dark"] .ps-search:focus-within {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="dark"] .ps-search > input {
+    border-color: var(--theme-border, #294236) !important;
+    background: var(--theme-surface, #102018) !important;
+    color: var(--theme-text, #f2f7f4) !important;
+    -webkit-text-fill-color: var(--theme-text, #f2f7f4) !important;
+}
+
+html[data-theme="dark"] .ps-search > input:focus,
+html[data-theme="dark"] .ps-search > input:focus-visible {
+    border-color: #72dd8d !important;
+    box-shadow: 0 0 0 3px rgba(114, 221, 141, 0.14) !important;
+}
+
+html[data-theme="dark"] .ps-search > input::placeholder {
+    color: var(--theme-text-muted, #b5c5bb) !important;
+    -webkit-text-fill-color: var(--theme-text-muted, #b5c5bb) !important;
+}
+
+html[data-theme="dark"] .ps-search > .material-symbols-outlined {
+    color: var(--theme-text-muted, #b5c5bb) !important;
+}
+
+@media (max-width: 1100px) {
+    .ps-search {
+        flex: 1 1 320px !important;
+        width: auto !important;
+    }
+}
+
+@media (max-width: 720px) {
+    .ps-search {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+}

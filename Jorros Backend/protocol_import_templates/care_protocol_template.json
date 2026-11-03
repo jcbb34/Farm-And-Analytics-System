@@ -1,0 +1,48 @@
+{
+  "protocols": [
+    {
+      "name": "Veterinarian/Agriculturist Approved Protocol Name",
+      "module": "Livestock",
+      "target_type": "Pig",
+      "target_breed": null,
+      "target_variety": null,
+      "production_purpose": "Meat",
+      "growth_stage": null,
+      "description": "Exact farm-approved protocol.",
+      "effective_from": "2026-09-10",
+      "effective_to": null,
+      "approval_status": "Approved",
+      "source_title": "Official source or approved product label",
+      "source_url": "https://example.gov.ph/replace-with-authoritative-source",
+      "citations": ["Replace with exact authoritative citation or licensed-expert approval record"],
+      "last_reviewed_date": "2026-09-10",
+      "steps": [
+        {
+          "sequence_number": 1,
+          "title": "Approved care step",
+          "category": "inspection",
+          "timing_anchor": "birth_date",
+          "offset_days": 0,
+          "age_start_days": null,
+          "age_end_days": null,
+          "previous_step_sequence": null,
+          "recurrence_interval_days": null,
+          "recurrence_occurrences": 1,
+          "instructions": "Replace with the exact approved instruction.",
+          "priority": "Medium",
+          "requires_review": true,
+          "requires_evidence": true,
+          "planned_quantity": null,
+          "planned_unit": null,
+          "dose_basis": null,
+          "resource_product_name": null,
+          "resource_category": null,
+          "safety_notes": "Replace with exact label/expert safety notes.",
+          "withdrawal_interval_days": null,
+          "preharvest_interval_days": null,
+          "source_citation": "Exact step-level citation or approval record"
+        }
+      ]
+    }
+  ]
+}

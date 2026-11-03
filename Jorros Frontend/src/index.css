@@ -1,0 +1,100 @@
+:root {
+    font-family: "Inter", Arial, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+
+    /* Shared compact KPI/summary-card scale. Employee My Tasks is the visual reference. */
+    --summary-card-compact-height: 78px;
+    --summary-card-compact-gap: 10px;
+    --summary-card-compact-padding-y: 11px;
+    --summary-card-compact-padding-x: 13px;
+    --summary-card-compact-accent: 3px;
+    --summary-card-compact-icon: 36px;
+    --summary-card-compact-icon-glyph: 20px;
+    --summary-card-compact-label: 0.72rem;
+    --summary-card-compact-label-weight: 600;
+    --summary-card-compact-label-line-height: 1.2;
+    --summary-card-compact-value: 1.28rem;
+    --summary-card-compact-value-weight: 700;
+    --summary-card-compact-value-line-height: 1;
+    --summary-card-compact-description: 0.64rem;
+    --summary-card-compact-description-line-height: 1.25;
+
+    /* Shared application layer system. Keep structural navigation below dialogs. */
+    --layer-page: 0;
+    --layer-sticky-navigation: 100;
+    --layer-dropdown: 300;
+    --layer-modal-backdrop: 1000;
+    --layer-modal: 1100;
+    /* Validation/error/success toasts must stay visible above legacy feature modals
+       (some feature overlays still use numeric z-index values up to 60000). */
+    --layer-critical-toast: 90000;
+    /* System confirmations remain above toasts and every feature modal. */
+    --layer-system-dialog: 100000;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    min-height: 100%;
+    scroll-behavior: smooth;
+}
+
+body {
+    width: 100%;
+    min-width: 320px;
+    min-height: 100vh;
+
+    margin: 0;
+
+    background: #f6f8f6;
+    color: #333333;
+
+    font-family: "Inter", Arial, sans-serif;
+
+    overflow-x: hidden;
+}
+
+#root {
+    width: 100%;
+    min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+img {
+    max-width: 100%;
+}
+
+a {
+    color: inherit;
+}
+/* Small transient notice while the local server or WLAN reconnects. */
+.farm-reconnect-notice {
+    position: fixed;
+    z-index: 900;
+    right: 1rem;
+    bottom: 1rem;
+    max-width: min(25rem, calc(100vw - 2rem));
+    padding: .65rem .85rem;
+    color: #13371d;
+    background: #fff7df;
+    border: 1px solid #d8b76b;
+    border-radius: .7rem;
+    box-shadow: 0 4px 16px #0002;
+    font-size: .85rem;
+}

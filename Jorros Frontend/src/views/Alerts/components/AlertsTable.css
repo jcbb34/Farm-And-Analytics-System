@@ -1,0 +1,52 @@
+/* Alert table only scrolls vertically when the record list is long. */
+.alerts-page-scroll-table {
+    max-height: 560px;
+    overflow-x: auto;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+/* Keep column names visible while scrolling through alert records. */
+.alerts-page-records-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #fafafa;
+}
+
+/* Source tells users whether the alert was created manually or by the system. */
+.alerts-page-source-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 68px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.alerts-page-source-badge.system {
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.alerts-page-source-badge.manual {
+    border: 1px solid #d1fae5;
+    background: #ecfdf5;
+    color: #047857;
+}
+
+/* Seven columns still fit comfortably on normal desktop screens. */
+.alerts-page-records-table th:nth-child(6),
+.alerts-page-records-table td:nth-child(6) {
+    min-width: 90px;
+}
+
+.alerts-page-records-table th:last-child,
+.alerts-page-records-table td:last-child {
+    min-width: 190px;
+}

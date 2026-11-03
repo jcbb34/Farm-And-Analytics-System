@@ -1,0 +1,231 @@
+.shared-device-page {
+    min-height: 100vh;
+    background: #f4f8f4;
+    color: #17321f;
+    font-family: inherit;
+    padding: 20px clamp(14px, 3vw, 36px) 40px;
+}
+
+.shared-device-header {
+    max-width: 1180px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 20px;
+    background: #ffffff;
+    border: 1px solid #d7e2d8;
+    border-radius: 18px;
+    box-shadow: 0 4px 18px rgba(0, 64, 0, 0.06);
+}
+
+.shared-device-brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.shared-device-brand img { width: 68px; height: 62px; object-fit: contain; flex: 0 0 auto; }
+.shared-device-eyebrow { display: inline-block; margin-bottom: 4px; color: #006400; font-size: 0.82rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.shared-device-brand h1 { margin: 0; font-size: clamp(1.55rem, 3vw, 2rem); line-height: 1.1; color: #102c18; }
+.shared-device-brand p { margin: 7px 0 0; max-width: 640px; color: #526258; font-size: 0.95rem; line-height: 1.5; }
+
+.shared-device-header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.shared-connectivity, .shared-current-user, .shared-pending-summary { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 8px 12px; border-radius: 12px; font-weight: 700; }
+.shared-connectivity.online { background: #e7f7ec; color: #0d6b2b; }
+.shared-connectivity.offline { background: #fff0e5; color: #9b3a00; }
+.shared-connectivity .material-symbols-outlined, .shared-current-user .material-symbols-outlined, .shared-pending-summary .material-symbols-outlined { font-size: 21px; }
+
+.shared-language { display: inline-flex; min-height: 44px; border: 1px solid #cfd9d1; border-radius: 12px; overflow: hidden; background: #fff; }
+.shared-language button { min-height: 44px; padding: 0 12px; border: 0; background: transparent; color: #33483a; font-weight: 700; }
+.shared-language button.active { background: #006400; color: #fff; }
+
+.shared-header-button, .shared-small-action, .shared-back-button, .shared-listen-button, .shared-primary-button, .shared-secondary-button, .shared-start-button, .shared-submit-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-weight: 700;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+.shared-header-button { min-height: 44px; padding: 8px 12px; background: #fff; border: 1px solid #b8c8bb; color: #1d3b26; }
+.shared-header-button.danger { border-color: #e3b5b5; color: #9a2424; }
+.shared-header-button:focus-visible, .shared-small-action:focus-visible, .shared-language button:focus-visible, .shared-back-button:focus-visible, .shared-listen-button:focus-visible, .shared-primary-button:focus-visible, .shared-secondary-button:focus-visible, .shared-start-button:focus-visible, .shared-submit-button:focus-visible, .shared-field input:focus-visible, .shared-field textarea:focus-visible, .shared-photo-picker:focus-within { outline: 3px solid rgba(0, 100, 0, 0.28); outline-offset: 2px; }
+
+.shared-device-status-row { max-width: 1180px; margin: 0 auto 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.shared-current-user { background: #fff; border: 1px solid #d7e2d8; }
+.shared-pending-summary { background: #fff7d9; color: #6c5200; border: 1px solid #f0d477; }
+.shared-small-action { min-height: 44px; padding: 8px 13px; background: #fff; border: 1px solid #c9d6cb; color: #21472d; margin-left: auto; }
+
+.shared-offline-notice, .shared-error, .shared-success { max-width: 1180px; margin: 0 auto 14px; border-radius: 14px; padding: 13px 16px; display: flex; align-items: center; gap: 10px; line-height: 1.45; }
+.shared-offline-notice { background: #fff3e7; border: 1px solid #f2c18f; color: #8a3600; }
+.shared-error { background: #fff0f0; border: 1px solid #efb1b1; color: #982222; }
+.shared-success { background: #e9f8ed; border: 1px solid #a9dfb7; color: #0b6227; }
+.shared-success.queued { background: #eef5ff; border-color: #b8d2f5; color: #174c86; }
+.shared-success .material-symbols-outlined { font-size: 30px; }
+.shared-success div { display: grid; gap: 2px; }
+
+.shared-task-list, .shared-task-detail { max-width: 1180px; margin: 0 auto; }
+.shared-task-list { display: grid; gap: 14px; }
+.shared-task-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; padding: 20px; background: #fff; border: 1px solid #d7e2d8; border-radius: 18px; }
+.shared-task-card.has-draft { border-color: #c0d6ee; background: #fbfdff; }
+.shared-task-card-title { display: flex; align-items: flex-start; gap: 10px; }
+.shared-task-card-title > .material-symbols-outlined { color: #08772b; font-size: 29px; }
+.shared-task-card h2 { margin: 0; color: #102c18; font-size: clamp(1.15rem, 2.5vw, 1.38rem); line-height: 1.3; }
+.shared-task-meta { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; color: #5a685e; font-size: 0.93rem; }
+.shared-task-meta > span { display: inline-flex; align-items: center; gap: 5px; }
+.shared-task-meta .material-symbols-outlined { font-size: 18px; }
+.shared-task-meta .attention { color: #a23b00; font-weight: 700; }
+.shared-coverage-note { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; padding: 7px 10px; background: #e9f8ed; color: #0b6227; border-radius: 9px; font-weight: 700; }
+.shared-task-card-actions { min-width: 188px; display: grid; gap: 8px; justify-items: stretch; }
+.shared-task-card-actions small { max-width: 250px; color: #8a2d2d; line-height: 1.35; }
+
+.shared-primary-button, .shared-secondary-button, .shared-start-button, .shared-submit-button { min-height: 54px; padding: 11px 18px; border: 1px solid transparent; font-size: 1rem; }
+.shared-primary-button, .shared-start-button, .shared-submit-button { background: #08752a; color: #fff; border-color: #08752a; }
+.shared-primary-button:hover:not(:disabled), .shared-start-button:hover:not(:disabled), .shared-submit-button:hover:not(:disabled) { background: #055e21; }
+.shared-secondary-button { background: #fff; color: #284431; border-color: #b8c9bc; }
+.shared-primary-button:disabled, .shared-secondary-button:disabled, .shared-start-button:disabled, .shared-submit-button:disabled, .shared-header-button:disabled { opacity: 0.55; cursor: not-allowed; }
+.shared-sync-badge { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 7px 10px; border-radius: 10px; background: #eef5ff; color: #174c86; font-weight: 800; }
+.shared-sync-badge.conflict { background: #fff0f0; color: #982222; }
+.shared-sync-badge.syncing { background: #eef6ee; color: #236334; }
+
+.shared-empty { min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; padding: 24px; text-align: center; background: #fff; border: 1px dashed #bfd0c2; border-radius: 18px; color: #536359; }
+.shared-empty .material-symbols-outlined { font-size: 42px; color: #16853a; }
+
+.shared-back-button { min-height: 48px; margin-bottom: 12px; padding: 9px 14px; background: #fff; color: #21472d; border: 1px solid #c4d3c7; }
+.shared-detail-card { background: #fff; border: 1px solid #d7e2d8; border-radius: 20px; overflow: hidden; }
+.shared-detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px; border-bottom: 1px solid #e3ebe4; }
+.shared-detail-heading h2 { margin: 6px 0 5px; font-size: clamp(1.35rem, 3vw, 1.75rem); color: #102c18; }
+.shared-detail-heading p { margin: 0; color: #5d6c62; }
+.shared-detail-status { display: inline-block; padding: 5px 9px; border-radius: 999px; background: #eef5ef; color: #176b31; font-weight: 800; font-size: 0.82rem; }
+.shared-start-button { min-width: 150px; }
+
+.shared-instructions { margin: 20px 22px 0; padding: 18px; background: #f3f8f3; border: 1px solid #d8e7da; border-radius: 15px; }
+.shared-section-title { display: flex; align-items: center; gap: 8px; color: #145d2b; }
+.shared-section-title h3 { margin: 0; font-size: 1.08rem; }
+.shared-instructions p { margin: 12px 0 14px; font-size: 1.04rem; line-height: 1.65; color: #263f2d; white-space: pre-wrap; }
+.shared-listen-button { min-height: 48px; padding: 9px 14px; background: #fff; color: #145d2b; border: 1px solid #aac7b1; }
+.shared-correction-feedback { display: flex; align-items: flex-start; gap: 9px; margin: 0 0 14px; padding: 12px 13px; border: 1px solid #efc37e; border-radius: 12px; background: #fff8e8; color: #7c4600; }
+.shared-correction-feedback .material-symbols-outlined { font-size: 23px; }
+.shared-correction-feedback div { display: grid; gap: 3px; }
+.shared-correction-feedback span { line-height: 1.45; }
+
+.shared-submit-form { padding: 22px; }
+.shared-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.shared-field { display: grid; gap: 8px; min-width: 0; color: #223b2a; font-weight: 700; }
+.shared-field.full { grid-column: 1 / -1; }
+.shared-field > span small { color: #6e7d73; font-weight: 500; }
+.shared-field input, .shared-field textarea { width: 100%; min-height: 52px; border: 1px solid #b9c9bc; border-radius: 12px; background: #fff; color: #17321f; padding: 12px 13px; font: inherit; font-weight: 500; }
+.shared-field textarea { min-height: 92px; resize: vertical; }
+.shared-field > small { color: #65756a; line-height: 1.4; font-weight: 500; }
+.shared-photo-picker { position: relative; min-height: 64px; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 12px; border: 2px dashed #8eb99a; border-radius: 14px; background: #f5fbf6; color: #0d6b2b; cursor: pointer; overflow: hidden; }
+.shared-photo-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.shared-selected-file { display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.shared-resource-warning { margin-top: 12px; padding: 11px 13px; border-radius: 11px; background: #fff0f0; border: 1px solid #edbbbb; color: #8e2222; font-weight: 600; line-height: 1.45; }
+.shared-submit-button { width: 100%; margin-top: 20px; min-height: 60px; font-size: 1.08rem; }
+
+@media (max-width: 900px) {
+    .shared-device-header { align-items: flex-start; flex-direction: column; }
+    .shared-device-header-actions { width: 100%; justify-content: flex-start; }
+    .shared-task-card { grid-template-columns: 1fr; }
+    .shared-task-card-actions { min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .shared-task-card-actions .shared-sync-badge, .shared-task-card-actions small { grid-column: 1 / -1; max-width: none; }
+}
+
+@media (max-width: 640px) {
+    .shared-device-page { padding: 10px 10px 28px; }
+    .shared-device-header { padding: 15px; border-radius: 15px; }
+    .shared-device-brand { align-items: flex-start; }
+    .shared-device-brand img { width: 54px; height: 50px; }
+    .shared-device-header-actions, .shared-language { width: 100%; }
+    .shared-language button { flex: 1; }
+    .shared-header-button { flex: 1 1 calc(50% - 8px); min-height: 50px; }
+    .shared-device-status-row { align-items: stretch; }
+    .shared-current-user, .shared-pending-summary, .shared-small-action { width: 100%; margin-left: 0; justify-content: center; }
+    .shared-task-card { padding: 16px; border-radius: 15px; }
+    .shared-task-card-actions { grid-template-columns: 1fr; }
+    .shared-task-card-actions .shared-sync-badge, .shared-task-card-actions small { grid-column: 1; }
+    .shared-primary-button, .shared-secondary-button, .shared-start-button, .shared-submit-button { min-height: 58px; font-size: 1.02rem; }
+    .shared-detail-heading { align-items: stretch; flex-direction: column; padding: 18px; }
+    .shared-start-button { width: 100%; }
+    .shared-instructions { margin: 14px 14px 0; }
+    .shared-submit-form { padding: 16px 14px 18px; }
+    .shared-field-grid { grid-template-columns: 1fr; }
+    .shared-field.full { grid-column: 1; }
+}
+
+
+.shared-device-lock-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    min-height: 100dvh;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 24px;
+    background: #0b3d16;
+    color: #ffffff;
+    font-family: var(--font-family, Inter, sans-serif);
+    font-size: 1.125rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.shared-device-lock-screen .material-symbols-outlined {
+    font-size: 2rem;
+}
+
+/* Phone safe-area and overflow hardening for real farm handsets. */
+@media (max-width: 640px) {
+    .shared-device-page {
+        width: 100%;
+        max-width: 100vw;
+        min-width: 0;
+        overflow-x: hidden;
+        padding-right: max(10px, env(safe-area-inset-right));
+        padding-bottom: max(28px, env(safe-area-inset-bottom));
+        padding-left: max(10px, env(safe-area-inset-left));
+    }
+
+    .shared-device-header,
+    .shared-device-status-row,
+    .shared-offline-notice,
+    .shared-error,
+    .shared-success,
+    .shared-task-list,
+    .shared-task-detail,
+    .shared-task-card,
+    .shared-detail-card,
+    .shared-submit-form {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .shared-device-header-actions,
+    .shared-language,
+    .shared-task-card-actions,
+    .shared-field-grid {
+        min-width: 0;
+    }
+
+    .shared-device-brand,
+    .shared-task-card-title,
+    .shared-task-meta,
+    .shared-coverage-note,
+    .shared-detail-heading,
+    .shared-instructions,
+    .shared-field,
+    .shared-selected-file {
+        min-width: 0;
+    }
+
+    .shared-device-brand *,
+    .shared-task-card *,
+    .shared-detail-card *,
+    .shared-offline-notice *,
+    .shared-error *,
+    .shared-success * {
+        overflow-wrap: anywhere;
+    }
+}

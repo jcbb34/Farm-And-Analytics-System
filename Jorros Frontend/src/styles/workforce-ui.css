@@ -1,0 +1,510 @@
+/* =========================================================
+   WORKFORCE UI TOKENS
+   Shared, scoped visual rules for Task Management / My Tasks.
+   Keeps the existing JoRoss farm-green design while preventing
+   modal, form, button, evidence, and responsive style drift.
+========================================================= */
+
+:root {
+    --workforce-green: #2e7d32;
+    --workforce-green-hover: #256b2a;
+    --workforce-green-text: #256b2a;
+    --workforce-green-active: #1f5f25;
+    --workforce-green-soft: #f0f8f1;
+    --workforce-surface: var(--theme-surface, #ffffff);
+    --workforce-surface-soft: var(--theme-surface-soft, #f8faf8);
+    --workforce-text: var(--theme-text, #26322b);
+    --workforce-muted: var(--theme-text-muted, #66736b);
+    --workforce-border: var(--theme-border, #e3e9e5);
+    --workforce-input-bg: var(--theme-input-bg, #ffffff);
+    --workforce-danger: #b42318;
+    --workforce-danger-hover: #912018;
+    --workforce-danger-bg: #fff5f5;
+    --workforce-danger-border: #f2b8b5;
+    --workforce-warning: #b54708;
+    --workforce-warning-bg: #fff8eb;
+    --workforce-warning-border: #f6c98c;
+    --workforce-disabled-bg: #eef1ef;
+    --workforce-disabled-border: #d5dbd7;
+    --workforce-disabled-text: #7d8881;
+    --workforce-control-height: 44px;
+    --workforce-control-radius: 10px;
+    --workforce-control-font-size: 0.875rem;
+    --workforce-control-font-weight: 600;
+    --workforce-control-icon-size: 20px;
+    --workforce-body-size: 0.875rem;
+    --workforce-small-size: 0.8rem;
+    --workforce-caption-size: 0.72rem;
+    --workforce-section-title-size: 1rem;
+    --workforce-modal-title-size: 1.35rem;
+    --workforce-focus-ring: 0 0 0 3px rgba(46, 125, 50, 0.22);
+    --workforce-modal-radius: 16px;
+    --workforce-modal-header-pad: 24px 28px;
+    --workforce-modal-body-pad: 24px 28px 28px;
+    --workforce-modal-section-gap: 18px;
+}
+
+html[data-theme="dark"] {
+    --workforce-green-soft: #15291b;
+    --workforce-danger: #ff8b85;
+    --workforce-danger-hover: #ffaaa6;
+    --workforce-danger-bg: #351817;
+    --workforce-danger-border: #7b3431;
+    --workforce-warning: #ffbe73;
+    --workforce-warning-bg: #342512;
+    --workforce-warning-border: #735124;
+    --workforce-disabled-bg: #243129;
+    --workforce-disabled-border: #3b4a40;
+    --workforce-disabled-text: #87958c;
+    --workforce-green-text: #72dd8d;
+    --workforce-focus-ring: 0 0 0 3px rgba(114, 221, 141, 0.28);
+}
+
+/* Shared operational buttons. Compact table actions remain intentionally compact. */
+.workforce-layout .workforce-button:not(.compact),
+.workforce-layout .workforce-modal-cancel,
+.workforce-layout .workforce-modal-save,
+.workforce-layout .workforce-modal-review-submit,
+.workforce-layout .my-task-submit-cancel,
+.workforce-layout .my-task-submit-save {
+    min-height: var(--workforce-control-height);
+    border-radius: var(--workforce-control-radius);
+    font-family: "Inter", Arial, sans-serif;
+    font-size: var(--workforce-control-font-size);
+    font-weight: var(--workforce-control-font-weight);
+    line-height: 1.15;
+}
+
+.workforce-layout :is(
+    .workforce-button,
+    .workforce-modal-cancel,
+    .workforce-modal-save,
+    .workforce-modal-review-submit,
+    .my-task-submit-cancel,
+    .my-task-submit-save
+) .material-symbols-outlined {
+    font-size: var(--workforce-control-icon-size);
+    line-height: 1;
+}
+
+.workforce-layout :is(
+    button,
+    [role="button"],
+    input,
+    select,
+    textarea
+):focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: var(--workforce-focus-ring);
+}
+
+.workforce-layout :is(
+    .workforce-button,
+    .workforce-modal-cancel,
+    .workforce-modal-save,
+    .workforce-modal-review-submit,
+    .my-task-submit-cancel,
+    .my-task-submit-save
+):disabled {
+    border-color: var(--workforce-disabled-border);
+    background: var(--workforce-disabled-bg);
+    color: var(--workforce-disabled-text);
+    opacity: 1;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Consistent semantic button variants in the workforce surfaces. */
+.workforce-layout .workforce-button:not(.secondary):not(.warn):not(.danger):not(.reassign-needed):not(:disabled),
+.workforce-layout .workforce-modal-save:not(.danger-action):not(:disabled),
+.workforce-layout .my-task-submit-save:not(:disabled) {
+    background: var(--workforce-green);
+    color: #ffffff;
+}
+
+.workforce-layout .workforce-button:not(.secondary):not(.warn):not(.danger):not(.reassign-needed):hover:not(:disabled),
+.workforce-layout .workforce-modal-save:not(.danger-action):hover:not(:disabled),
+.workforce-layout .my-task-submit-save:hover:not(:disabled) {
+    background: var(--workforce-green-hover);
+}
+
+.workforce-layout .workforce-button.secondary:not(:disabled),
+.workforce-layout .workforce-modal-cancel:not(:disabled),
+.workforce-layout .my-task-submit-cancel:not(:disabled) {
+    border: 1px solid var(--workforce-border);
+    background: var(--workforce-surface);
+    color: var(--workforce-text);
+}
+
+.workforce-layout .workforce-button.secondary:hover:not(:disabled),
+.workforce-layout .workforce-modal-cancel:hover:not(:disabled),
+.workforce-layout .my-task-submit-cancel:hover:not(:disabled) {
+    border-color: #8ebf96;
+    background: var(--workforce-green-soft);
+    color: var(--workforce-green-text);
+}
+
+.workforce-layout .workforce-button.warn:not(:disabled) {
+    border: 1px solid var(--workforce-warning-border);
+    background: var(--workforce-warning-bg);
+    color: var(--workforce-warning);
+}
+
+.workforce-layout .workforce-button.danger:not(:disabled),
+.workforce-layout .workforce-modal-save.danger-action:not(:disabled) {
+    border: 1px solid var(--workforce-danger-border);
+    background: var(--workforce-danger-bg);
+    color: var(--workforce-danger);
+}
+
+/* Common form language. Page CSS still owns grid/layout decisions. */
+.workforce-layout .workforce-field label {
+    color: var(--workforce-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.workforce-layout .workforce-field :is(input, select, textarea),
+.workforce-layout .workforce-select {
+    border-color: var(--workforce-border);
+    background: var(--workforce-input-bg);
+    color: var(--workforce-text);
+}
+
+.workforce-layout .workforce-field :is(input, select, textarea):focus,
+.workforce-layout .workforce-select:focus {
+    border-color: var(--workforce-green);
+    outline: none;
+    box-shadow: var(--workforce-focus-ring);
+}
+
+.workforce-layout :is(.workforce-field-help, .workforce-help-text) {
+    color: var(--workforce-muted);
+    font-size: max(0.76rem, 12px);
+    line-height: 1.45;
+}
+
+/* Shared modal shell consistency for employee and manager task workflows. */
+.workforce-layout :is(.workforce-task-modal, .my-task-submit-modal, .workforce-confirm-modal) {
+    border: 1px solid var(--workforce-border);
+    border-radius: var(--workforce-modal-radius);
+    background: var(--workforce-surface);
+    color: var(--workforce-text);
+}
+
+.workforce-layout :is(.workforce-modal-header, .my-task-submit-header) {
+    padding: var(--workforce-modal-header-pad);
+    border-bottom-color: var(--workforce-green);
+    background: var(--workforce-surface);
+}
+
+.workforce-layout :is(.workforce-modal-header, .my-task-submit-header) :is(h2, h3) {
+    color: var(--workforce-green-text);
+}
+
+.workforce-layout :is(.workforce-modal-header, .my-task-submit-header) p {
+    color: var(--workforce-muted);
+}
+
+.workforce-layout :is(.workforce-modal-form, .my-task-submit-form) {
+    scrollbar-gutter: stable;
+}
+
+.workforce-layout :is(.workforce-modal-section, .my-task-submit-section) {
+    border-color: var(--workforce-border);
+    background: var(--workforce-surface);
+}
+
+.workforce-layout :is(.workforce-modal-footer, .my-task-submit-footer) {
+    border-top-color: var(--workforce-border);
+}
+
+/* Tabs, search/filter controls, tables, badges, and empty/loading surfaces. */
+.workforce-layout .workforce-tab {
+    min-height: var(--workforce-control-height);
+    border-radius: var(--workforce-control-radius);
+    border-color: var(--workforce-border);
+    background: var(--workforce-surface);
+    color: var(--workforce-text);
+    font-size: var(--workforce-control-font-size);
+}
+
+.workforce-layout .workforce-tab:hover:not(.active) {
+    border-color: #8ebf96;
+    background: var(--workforce-green-soft);
+    color: var(--workforce-green-text);
+}
+
+.workforce-layout .workforce-tab.active {
+    border-color: var(--workforce-green);
+    background: var(--workforce-green);
+    color: #ffffff;
+}
+
+.workforce-layout :is(.assignment-filters, .my-tasks-filters) {
+    border-color: var(--workforce-border);
+    background: var(--workforce-surface-soft);
+}
+
+.workforce-layout :is(.assignment-search, .my-tasks-search) {
+    min-height: var(--workforce-control-height);
+    border-color: var(--workforce-border);
+    border-radius: var(--workforce-control-radius);
+    background: var(--workforce-input-bg);
+}
+
+.workforce-layout :is(.assignment-search, .my-tasks-search):focus-within {
+    border-color: var(--workforce-green);
+    box-shadow: var(--workforce-focus-ring);
+}
+
+.workforce-layout :is(.assignment-search, .my-tasks-search) input,
+.workforce-layout .assignment-filters select {
+    color: var(--workforce-text);
+}
+
+.workforce-layout :is(.workforce-card, .workforce-table-wrap) {
+    border-color: var(--workforce-border);
+    background: var(--workforce-surface);
+    color: var(--workforce-text);
+}
+
+.workforce-layout .workforce-table th {
+    border-color: var(--workforce-border);
+    background: var(--workforce-surface-soft);
+    color: var(--workforce-text);
+}
+
+.workforce-layout .workforce-table td {
+    border-color: var(--workforce-border);
+    background: var(--workforce-surface);
+    color: var(--workforce-text);
+}
+
+.workforce-layout .workforce-empty,
+.workforce-layout .workforce-inline-loading {
+    border-color: var(--workforce-border);
+    background: var(--workforce-surface-soft);
+    color: var(--workforce-muted);
+}
+
+/* Dark theme: retain the green identity without white/pale modal leaks. */
+html[data-theme="dark"] .workforce-layout,
+html[data-theme="dark"] .workforce-page {
+    background: var(--theme-page-bg);
+    color: var(--workforce-text);
+}
+
+html[data-theme="dark"] .workforce-layout :is(
+    .workforce-stat,
+    .workforce-card,
+    .task-card,
+    .workforce-table-wrap,
+    .workforce-task-modal,
+    .workforce-confirm-modal,
+    .my-task-submit-modal,
+    .workforce-modal-section,
+    .my-task-submit-section,
+    .my-task-submit-detail-grid > div,
+    .workforce-resource-summary,
+    .evidence-uploaded-file
+) {
+    border-color: var(--workforce-border);
+    background: var(--workforce-surface);
+    color: var(--workforce-text);
+}
+
+html[data-theme="dark"] .workforce-layout :is(
+    .workforce-header p,
+    .workforce-card-subtitle,
+    .task-note,
+    .submission-summary small,
+    .my-task-submit-header p,
+    .my-task-submit-section-title p,
+    .workforce-modal-section-title p
+) {
+    color: var(--workforce-muted);
+}
+
+html[data-theme="dark"] .workforce-layout :is(
+    .my-task-submit-detail-grid > div,
+    .my-task-submit-resource,
+    .workforce-resource-summary,
+    .assignment-filters,
+    .my-tasks-filters
+) {
+    background: var(--workforce-surface-soft);
+}
+
+html[data-theme="dark"] .workforce-layout .workforce-table tbody tr:hover td {
+    background: var(--theme-hover-bg);
+}
+
+html[data-theme="dark"] .workforce-layout :is(.workforce-modal-close, .my-task-submit-close) {
+    color: var(--workforce-text);
+}
+
+html[data-theme="dark"] .workforce-layout :is(.workforce-modal-close, .my-task-submit-close):hover {
+    background: var(--theme-hover-bg);
+}
+
+@media (max-width: 768px) {
+    :root {
+        --workforce-modal-header-pad: 20px;
+        --workforce-modal-body-pad: 18px;
+    }
+
+    .workforce-layout :is(.workforce-tabs, .workforce-actions) {
+        gap: 8px;
+    }
+
+    .workforce-layout .workforce-tab {
+        flex: 1 1 132px;
+    }
+}
+
+@media (max-width: 390px) {
+    .workforce-layout :is(.workforce-modal-footer, .my-task-submit-footer) {
+        gap: 9px;
+    }
+
+    .workforce-layout :is(
+        .workforce-modal-cancel,
+        .workforce-modal-save,
+        .workforce-modal-review-submit,
+        .my-task-submit-cancel,
+        .my-task-submit-save
+    ) {
+        width: 100%;
+    }
+}
+
+/* Small operational badges: same readable type scale and pill geometry. */
+.workforce-layout :is(
+    .employee-availability-badge,
+    .task-reassignment-badge,
+    .archive-count-badge,
+    .reassign-recommended-badge,
+    .record-origin-label
+) {
+    min-height: 28px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    font-size: max(0.75rem, 12px);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+html[data-theme="dark"] .workforce-layout :is(
+    .archive-count-badge,
+    .record-origin-label
+) {
+    border-color: var(--workforce-border);
+    background: var(--workforce-surface-soft);
+    color: var(--workforce-text);
+}
+
+/* Shared primary workforce navigation — mirrors Task Management/Farm Intelligence. */
+.workforce-layout .workforce-tabs.workforce-primary-tabs {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 66px;
+    margin: 22px 0 18px;
+    padding: 8px 14px;
+    overflow: visible;
+    border: 1px solid var(--workforce-border, #e5e7eb);
+    border-radius: 13px;
+    background: var(--workforce-surface, #ffffff);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.workforce-layout .workforce-primary-tabs .workforce-primary-tab {
+    min-height: 48px;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: #59665e;
+    font-family: "Inter", Arial, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.workforce-layout .workforce-primary-tabs .workforce-primary-tab:hover {
+    border-color: #d5ead9;
+    background: #f2faf4;
+    color: #166534;
+    box-shadow: none;
+}
+
+.workforce-layout .workforce-primary-tabs .workforce-primary-tab.active {
+    border-color: #bfe3c7;
+    background: #e8f5e9;
+    color: #166534;
+    box-shadow: inset 0 -2px 0 #22a447;
+}
+
+.workforce-layout .workforce-primary-tabs .workforce-primary-tab .material-symbols-outlined {
+    flex: 0 0 auto;
+    font-size: 20px;
+    line-height: 1;
+    color: currentColor;
+}
+
+.workforce-layout .workforce-primary-tabs .workforce-primary-tab.active .material-symbols-outlined {
+    color: #16823a;
+}
+
+html[data-theme="dark"] .workforce-layout .workforce-tabs.workforce-primary-tabs {
+    border-color: var(--workforce-border, #2a3d30);
+    background: var(--workforce-surface, #0f1912);
+    box-shadow: none;
+}
+
+html[data-theme="dark"] .workforce-layout .workforce-primary-tabs .workforce-primary-tab {
+    border-color: transparent;
+    background: transparent;
+    color: #b8c4bb;
+}
+
+html[data-theme="dark"] .workforce-layout .workforce-primary-tabs .workforce-primary-tab:hover,
+html[data-theme="dark"] .workforce-layout .workforce-primary-tabs .workforce-primary-tab.active {
+    border-color: #315f3d;
+    background: #16301d;
+    color: #a7e5b6;
+}
+
+@media (max-width: 720px) {
+    .workforce-layout .workforce-tabs.workforce-primary-tabs {
+        flex-wrap: nowrap;
+        min-height: 62px;
+        padding: 7px 10px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+        scroll-snap-type: x proximity;
+    }
+
+    .workforce-layout .workforce-primary-tabs .workforce-primary-tab {
+        min-height: 46px;
+        padding: 8px 12px;
+        scroll-snap-align: start;
+    }
+}

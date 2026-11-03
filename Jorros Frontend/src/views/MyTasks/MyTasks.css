@@ -1,0 +1,2055 @@
+/* =========================================================
+   WORKFORCE MODULES
+   Visual language intentionally matches Livestock Management.
+   Used by Task Management, My Tasks, and Staff Calendar.
+========================================================= */
+
+.workforce-layout {
+    width: 100%;
+    min-height: 100vh;
+    background: #f6f8f6;
+}
+
+.workforce-page {
+    width: calc(100% - 80px);
+    min-height: 100vh;
+    margin-left: 80px;
+    padding: 28px 30px 40px;
+    background: #f6f8f6;
+    color: #333333;
+    font-family: "Inter", Arial, sans-serif;
+}
+
+/* ========================= HEADER ========================= */
+.workforce-header {
+    position: relative;
+    min-height: 82px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 25px;
+    padding: 8px 0 18px;
+    border-bottom: 2px solid #2e7d32;
+}
+
+.workforce-heading {
+    min-width: 0;
+}
+
+.workforce-header h1 {
+    margin: 0 0 6px;
+    color: #2e7d32;
+    font-size: clamp(1.5rem, 2.3vw, 2rem);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.workforce-header p {
+    margin: 0;
+    color: #666666;
+    font-size: 0.94rem;
+    line-height: 1.5;
+}
+
+.workforce-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 14px;
+}
+
+/* ========================== TABS ========================== */
+.workforce-tabs {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+    margin-bottom: 18px;
+}
+
+.workforce-tab {
+    min-height: 43px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #555555;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
+.workforce-tab:hover {
+    border-color: #9fc9a6;
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.workforce-tab.active {
+    border-color: #178b2d;
+    background: #178b2d;
+    color: #ffffff;
+    box-shadow: 0 3px 9px rgba(23, 139, 45, 0.18);
+}
+
+/* ====================== SUMMARY CARDS ===================== */
+/* Keep summary-card accent borders visually separate from the page header divider. */
+.workforce-header + .workforce-stats {
+    margin-top: 28px;
+}
+
+.workforce-stats {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 18px;
+    margin: 0 0 24px;
+}
+
+.workforce-stat {
+    min-width: 0;
+    min-height: 125px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    border: none;
+    border-top: 5px solid #43a047;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+}
+
+
+.workforce-stat-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    border-radius: 11px;
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.workforce-stat-icon .material-symbols-outlined {
+    font-size: 28px;
+}
+
+.workforce-stat-copy {
+    min-width: 0;
+}
+
+.workforce-stat span.workforce-stat-label,
+.workforce-stat-copy > span:not(.workforce-stat-icon) {
+    display: block;
+    margin: 0 0 8px;
+    color: #666666;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.workforce-stat strong {
+    display: block;
+    margin: 0;
+    color: #222222;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.workforce-stat.total,
+.workforce-stat.pending,
+.workforce-stat.today {
+    border-top-color: #43a047;
+}
+
+.workforce-stat.progress,
+.workforce-stat.upcoming {
+    border-top-color: #1e88e5;
+}
+
+.workforce-stat.review {
+    border-top-color: #8e24aa;
+}
+
+.workforce-stat.overdue,
+.workforce-stat.returned {
+    border-top-color: #fb8c00;
+}
+
+.workforce-stat.reassign,
+.workforce-stat.open {
+    border-top-color: #6d4c41;
+}
+
+.workforce-stat.progress .workforce-stat-icon,
+.workforce-stat.upcoming .workforce-stat-icon {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.workforce-stat.review .workforce-stat-icon {
+    background: #f5f3ff;
+    color: #7e22ce;
+}
+
+.workforce-stat.overdue .workforce-stat-icon,
+.workforce-stat.returned .workforce-stat-icon {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.workforce-stat.reassign .workforce-stat-icon,
+.workforce-stat.open .workforce-stat-icon {
+    background: #f5f0ee;
+    color: #6d4c41;
+}
+
+/* =========================== CARD ========================= */
+.workforce-card {
+    margin-bottom: 22px;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.workforce-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.workforce-card h2 {
+    margin: 0;
+    color: #166534;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.workforce-card h3 {
+    color: #333333;
+}
+
+.workforce-card-subtitle {
+    margin: 5px 0 0;
+    color: #777777;
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.workforce-help-text {
+    margin: -6px 0 16px;
+    color: #777777;
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+/* ========================= FORMS ========================== */
+.workforce-form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.workforce-field {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.workforce-field.full {
+    grid-column: 1 / -1;
+}
+
+.workforce-field label {
+    color: #555555;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.workforce-field input,
+.workforce-field select,
+.workforce-field textarea,
+.workforce-select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 13px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    outline: none;
+    background: #ffffff;
+    color: #333333;
+    font-size: 0.84rem;
+    line-height: 1.35;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.workforce-field textarea {
+    min-height: 88px;
+    resize: vertical;
+}
+
+.workforce-field input:focus,
+.workforce-field select:focus,
+.workforce-field textarea:focus,
+.workforce-select:focus {
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+}
+
+.workforce-field input[type="checkbox"] {
+    width: 16px;
+    min-height: 16px;
+    margin-right: 7px;
+    accent-color: #178b2d;
+    vertical-align: middle;
+}
+
+.workforce-field label:has(input[type="checkbox"]) {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+
+/* ========================= BUTTONS ======================== */
+.workforce-button {
+    min-height: 43px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #178b2d;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.2;
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.workforce-button:hover:not(:disabled) {
+    background: #116f23;
+}
+
+.workforce-button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.workforce-button.secondary {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #555555;
+}
+
+.workforce-button.secondary:hover:not(:disabled) {
+    border-color: #9fc9a6;
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.workforce-button.warn {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+
+.workforce-button.warn:hover:not(:disabled) {
+    background: #ffedd5;
+}
+
+.workforce-button.danger {
+    background: #fff1f2;
+    color: #dc2626;
+    border: 1px solid #fecdd3;
+}
+
+.workforce-button.danger:hover:not(:disabled) {
+    background: #fee2e2;
+}
+
+.workforce-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* ========================== TABLE ========================= */
+.workforce-table-wrap {
+    width: 100%;
+    max-height: 560px;
+    overflow: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    scrollbar-gutter: stable;
+}
+
+.workforce-table {
+    width: 100%;
+    min-width: 880px;
+    border-collapse: collapse;
+}
+
+.workforce-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.workforce-table th {
+    padding: 14px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+    color: #555555;
+    font-size: 0.77rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.workforce-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #eeeeee;
+    color: #444444;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    vertical-align: middle;
+}
+
+.workforce-table tbody tr:hover {
+    background: #fbfefb;
+}
+
+.workforce-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.workforce-table td strong {
+    color: #222222;
+    font-weight: 650;
+}
+
+.workforce-table small {
+    color: #777777;
+    font-size: 0.72rem;
+}
+
+/* ===================== TASK PRESENTATION ================== */
+.task-status {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6px 11px;
+    border-radius: 20px;
+    background: #f3f4f6;
+    color: #555555;
+    font-size: 0.71rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.task-status.pending {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.task-status.in-progress {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.task-status.upcoming {
+    background: #eff6ff;
+    color: #1e40af;
+}
+
+.task-status.submitted-for-review {
+    background: #f5f3ff;
+    color: #7e22ce;
+}
+
+.task-status.completed {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.task-status.returned {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.task-status.cancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.task-status.resolved {
+    background: #e8f5e9;
+    color: #166534;
+}
+
+.workforce-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.task-card {
+    min-width: 0;
+    padding: 17px;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.045);
+}
+
+
+.task-card h3 {
+    margin: 0 0 6px;
+    color: #222222;
+    font-size: 0.9rem;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 12px;
+    color: #777777;
+    font-size: 0.72rem;
+    line-height: 1.35;
+}
+
+.task-note {
+    margin-top: 10px;
+    padding: 10px 11px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f8faf8;
+    color: #555555;
+    font-size: 0.76rem;
+    line-height: 1.45;
+}
+
+.task-note strong {
+    color: #333333;
+}
+
+.task-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* ===================== MY TASKS SEARCH / FILTERS ==================== */
+.my-tasks-filters {
+    display: grid;
+    grid-template-columns: minmax(300px, 1.7fr) repeat(3, minmax(145px, 0.8fr)) auto;
+    gap: 10px;
+    align-items: center;
+    margin: 4px 0 12px;
+    padding: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fafcfb;
+}
+
+.my-tasks-search {
+    min-width: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.my-tasks-search:focus-within {
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
+.my-tasks-search .material-symbols-outlined {
+    flex: 0 0 auto;
+    color: #6b7280;
+    font-size: 20px;
+}
+
+.my-tasks-search input {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #333333;
+    font: inherit;
+    font-size: 0.8rem;
+}
+
+.my-tasks-filters select {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    outline: none;
+    background: #ffffff;
+    color: #333333;
+    font: inherit;
+    font-size: 0.78rem;
+}
+
+.my-tasks-filters select:focus {
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
+.my-tasks-clear {
+    min-height: 44px;
+    padding: 9px 15px;
+    border: 1px solid #b9ddc1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #166534;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.my-tasks-clear:hover:not(:disabled) {
+    background: #f0fdf4;
+}
+
+.my-tasks-clear:disabled {
+    border-color: #d1d5db;
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.task-readonly-note {
+    margin-top: 12px;
+    color: #6b7280;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.my-tasks-results {
+    margin: 0 2px 12px;
+    color: #6b7280;
+    font-size: 0.78rem;
+}
+
+.my-tasks-results strong {
+    color: #333333;
+    font-weight: 650;
+}
+
+/* My Tasks cards are informational work containers, not hoverable cards.
+   The explicit hover rule also prevents global Staff Calendar styles from
+   changing them after client-side navigation. */
+.my-tasks-page .task-card,
+.my-tasks-page .task-card:hover {
+    border-color: #e5e7eb !important;
+    background: #ffffff !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.045) !important;
+    transform: none !important;
+    transition: none !important;
+}
+
+/* ======================= MESSAGES ========================= */
+.workforce-error {
+    margin: 16px 0;
+    padding: 12px 14px;
+    border: 1px solid #fecaca;
+    border-radius: 9px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.workforce-empty {
+    padding: 52px 20px;
+    color: #888888;
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+/* ======================= CALENDAR ========================= */
+.workforce-calendar-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 18px;
+    margin: 22px 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.workforce-calendar-toolbar .workforce-tabs {
+    margin: 0;
+}
+
+.calendar-day-card {
+    min-height: 180px;
+}
+
+.calendar-day-card.today {
+    border-color: #9fc9a6;
+    box-shadow: inset 0 4px 0 #43a047, 0 3px 10px rgba(0, 0, 0, 0.045);
+}
+
+.calendar-day-card h3 {
+    color: #166534;
+}
+
+/* ======================= RESPONSIVE ======================= */
+@media screen and (max-width: 1300px) {
+    .workforce-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media screen and (max-width: 1180px) {
+    .my-tasks-filters {
+        grid-template-columns: minmax(260px, 1.6fr) repeat(2, minmax(140px, 0.8fr));
+    }
+
+    .my-tasks-clear {
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 1000px) {
+    .workforce-page {
+        padding: 22px 18px 36px;
+    }
+
+    .workforce-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .workforce-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .workforce-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .workforce-form-grid,
+    .workforce-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (max-width: 720px) {
+    .workforce-page {
+        width: 100%;
+        margin-left: 0;
+        padding: 18px 14px 30px;
+    }
+
+    .workforce-stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .workforce-stat {
+        min-height: 105px;
+    }
+
+    .workforce-tabs,
+    .workforce-calendar-toolbar {
+        align-items: stretch;
+    }
+
+    .workforce-tab,
+    .workforce-button,
+    .workforce-select {
+        flex: 1 1 auto;
+    }
+}
+
+@media screen and (max-width: 720px) {
+    .my-tasks-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .my-tasks-search,
+    .my-tasks-filters select,
+    .my-tasks-clear {
+        width: 100%;
+    }
+}
+
+/* ==================== MY TASKS ATTENTION STATES ==================== */
+.workforce-stat.missed {
+    border-top-color: #dc2626;
+}
+
+.workforce-stat.missed .workforce-stat-icon {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.task-missed-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 11px;
+    padding: 10px 12px;
+    border: 1px solid #fed7aa;
+    border-radius: 9px;
+    background: #fff7ed;
+    color: #9a3412;
+}
+
+.task-missed-banner .material-symbols-outlined {
+    margin-top: 1px;
+    font-size: 19px;
+}
+
+.task-missed-banner strong,
+.task-missed-banner span {
+    display: block;
+}
+
+.task-missed-banner strong {
+    margin-bottom: 2px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.task-missed-banner span:not(.material-symbols-outlined) {
+    color: #7c2d12;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.task-upcoming-lock-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 11px 13px;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1e3a8a;
+}
+
+.task-upcoming-lock-note > .material-symbols-outlined {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    font-size: 20px;
+}
+
+.task-upcoming-lock-note > div {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
+.task-upcoming-lock-note strong,
+.task-upcoming-lock-note span {
+    overflow-wrap: anywhere;
+}
+
+.task-upcoming-lock-note strong {
+    font-size: var(--workforce-body-size, 0.875rem);
+    font-weight: 700;
+}
+
+.task-upcoming-lock-note span {
+    font-size: var(--workforce-small-size, 0.8rem);
+    line-height: 1.45;
+}
+
+.task-late-completion {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.task-late-completion .material-symbols-outlined {
+    font-size: 16px;
+}
+
+/* ==================== MY TASKS SUBMIT WORK MODAL ==================== */
+.my-task-submit-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 22px;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.my-task-submit-modal {
+    width: min(820px, 96%);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #ffffff;
+    color: #333333;
+    font-family: "Inter", Arial, sans-serif;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+}
+
+.my-task-submit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-shrink: 0;
+    gap: 20px;
+    padding: 24px 28px;
+    border-bottom: 2px solid #16a34a;
+    background: #ffffff;
+}
+
+.my-task-submit-header h2 {
+    margin: 0 0 7px;
+    color: #166534;
+    font-size: 1.7rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.my-task-submit-header p {
+    margin: 0;
+    color: #666666;
+    font-size: 0.86rem;
+    line-height: 1.5;
+}
+
+.my-task-submit-header p strong {
+    color: #333333;
+}
+
+.my-task-submit-close {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #444444;
+    cursor: pointer;
+}
+
+.my-task-submit-close:hover {
+    background: #f3f4f6;
+}
+
+.my-task-submit-form {
+    flex: 1;
+    padding: 24px 28px 28px;
+    overflow-y: auto;
+}
+
+.my-task-submit-section {
+    padding: 21px;
+    margin-bottom: 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.045);
+}
+
+.my-task-submit-section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 19px;
+}
+
+.my-task-submit-section-title > .material-symbols-outlined {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    border-radius: 11px;
+    background: #ecfdf5;
+    color: #166534;
+    font-size: 25px;
+}
+
+.my-task-submit-section-title h3 {
+    margin: 0 0 3px;
+    color: #166534;
+    font-size: 1.08rem;
+    font-weight: 700;
+}
+
+.my-task-submit-section-title p {
+    margin: 0;
+    color: #777777;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.my-task-submit-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.my-task-submit-detail-grid > div {
+    min-width: 0;
+    padding: 12px 13px;
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+    background: #f8faf8;
+}
+
+.my-task-submit-detail-grid span,
+.my-task-submit-resource span {
+    display: block;
+    margin-bottom: 4px;
+    color: #777777;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.my-task-submit-detail-grid strong,
+.my-task-submit-resource strong {
+    display: block;
+    overflow-wrap: anywhere;
+    color: #333333;
+    font-size: 0.84rem;
+    font-weight: 650;
+}
+
+.my-task-submit-resource {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    margin-top: 13px;
+    padding: 12px 13px;
+    border: 1px solid #bbf7d0;
+    border-radius: 9px;
+    background: #f0fdf4;
+}
+
+.my-task-submit-resource > .material-symbols-outlined {
+    margin-top: 1px;
+    color: #15803d;
+    font-size: 21px;
+}
+
+.my-task-submit-resource small {
+    display: block;
+    margin-top: 3px;
+    color: #4b5563;
+    font-size: 0.74rem;
+    line-height: 1.4;
+}
+
+.my-task-submit-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 17px;
+}
+
+.my-task-submit-form-grid .workforce-field.full {
+    grid-column: 1 / -1;
+}
+
+.my-task-submit-form-grid .workforce-field label {
+    color: #555555;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.my-task-submit-form-grid .workforce-field input,
+.my-task-submit-form-grid .workforce-field textarea {
+    min-height: 46px;
+    padding: 11px 13px;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 0.84rem;
+}
+
+.my-task-submit-form-grid .workforce-field textarea {
+    min-height: 96px;
+}
+
+.my-task-submit-form-grid .workforce-field small {
+    color: #777777;
+    font-size: 0.72rem;
+    line-height: 1.35;
+}
+
+.my-task-submit-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 21px 2px 1px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.my-task-submit-cancel,
+.my-task-submit-save {
+    min-height: 46px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 22px;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.my-task-submit-cancel {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #555555;
+}
+
+.my-task-submit-cancel:hover {
+    border-color: #9fc9a6;
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.my-task-submit-save {
+    border: none;
+    background: #166534;
+    color: #ffffff;
+}
+
+.my-task-submit-save:hover {
+    background: #14532d;
+}
+
+.my-task-submit-cancel .material-symbols-outlined,
+.my-task-submit-save .material-symbols-outlined {
+    font-size: 18px;
+}
+
+@media screen and (max-width: 720px) {
+    .my-task-submit-overlay {
+        align-items: flex-end;
+        padding: 8px;
+    }
+
+    .my-task-submit-modal {
+        width: 100%;
+        max-height: 94vh;
+        border-radius: 15px 15px 10px 10px;
+    }
+
+    .my-task-submit-header,
+    .my-task-submit-form {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .my-task-submit-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .my-task-submit-section {
+        padding: 17px;
+    }
+
+    .my-task-submit-detail-grid,
+    .my-task-submit-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .my-task-submit-footer {
+        flex-direction: column-reverse;
+    }
+
+    .my-task-submit-cancel,
+    .my-task-submit-save {
+        width: 100%;
+    }
+}
+
+.my-task-evidence-history {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Employee roster visibility */
+.my-schedule-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.my-schedule-week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(145px, 1fr));
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.my-schedule-day {
+    min-width: 0;
+    min-height: 112px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #f8faf8;
+    color: #667085;
+    font-size: 0.74rem;
+    line-height: 1.4;
+}
+
+.my-schedule-day > strong {
+    color: #166534;
+    font-size: 0.8rem;
+}
+
+.my-schedule-day.today {
+    border-color: #86c894;
+    box-shadow: inset 0 3px 0 #2e7d32;
+    background: #f0fdf4;
+}
+
+@media screen and (max-width: 1000px) {
+    .my-schedule-week {
+        grid-template-columns: repeat(3, minmax(190px, 1fr));
+    }
+}
+
+@media screen and (max-width: 720px) {
+    .my-schedule-actions,
+    .my-schedule-actions .workforce-button {
+        width: 100%;
+    }
+
+    .my-schedule-week {
+        grid-template-columns: 1fr;
+        overflow-x: visible;
+    }
+}
+
+:root[data-theme="dark"] .my-schedule-day,
+[data-theme="dark"] .my-schedule-day {
+    background: #172019;
+    border-color: #334038;
+    color: #b7c0b9;
+}
+
+.my-leave-request {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.my-leave-request-heading h3 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 0.95rem;
+}
+
+.my-leave-request-heading p {
+    margin: 4px 0 14px;
+    color: #667085;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.my-leave-request-grid {
+    display: grid;
+    grid-template-columns: minmax(150px, 0.9fr) repeat(2, minmax(145px, 0.8fr)) minmax(220px, 1.5fr);
+    gap: 12px;
+    align-items: end;
+}
+
+.my-leave-request-grid .workforce-field {
+    min-width: 0;
+}
+
+.my-leave-request-grid .workforce-field > span {
+    display: block;
+    margin-bottom: 6px;
+    color: #374151;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.my-leave-request-grid select,
+.my-leave-request-grid input {
+    width: 100%;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+.my-leave-request-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+@media screen and (max-width: 1000px) {
+    .my-leave-request-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media screen and (max-width: 720px) {
+    .my-leave-request-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .my-leave-request-actions,
+    .my-leave-request-actions .workforce-button {
+        width: 100%;
+    }
+}
+
+:root[data-theme="dark"] .my-leave-request,
+[data-theme="dark"] .my-leave-request {
+    border-top-color: #334038;
+}
+
+:root[data-theme="dark"] .my-leave-request-heading h3,
+[data-theme="dark"] .my-leave-request-heading h3,
+:root[data-theme="dark"] .my-leave-request-grid .workforce-field > span,
+[data-theme="dark"] .my-leave-request-grid .workforce-field > span {
+    color: #e7ece8;
+}
+
+:root[data-theme="dark"] .my-leave-request-heading p,
+[data-theme="dark"] .my-leave-request-heading p {
+    color: #aab5ad;
+}
+
+.my-schedule-leave-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.my-schedule-leave-cancel {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #b42318;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.my-schedule-leave-cancel:focus-visible {
+    outline: 2px solid #2e7d32;
+    outline-offset: 3px;
+    border-radius: 3px;
+}
+
+/* Coverage task and leave history visibility */
+.coverage-task-banner {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 10px 0;
+    padding: 10px 12px;
+    border: 1px solid #b7e4c7;
+    border-radius: 10px;
+    background: #ecfdf3;
+    color: #166534;
+}
+.coverage-task-banner .material-symbols-outlined { font-size: 21px; }
+.coverage-task-banner > div { display: flex; flex-direction: column; gap: 2px; }
+.coverage-task-banner span { font-size: .8rem; }
+.my-leave-history { margin-top: 18px; }
+.my-leave-history-list { display: grid; gap: 10px; }
+.my-leave-history-card {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(120px, 1fr)) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+.my-leave-history-card > div { min-width: 0; }
+.my-leave-history-card small { color: #667085; }
+.my-leave-history-status { font-weight: 700; }
+@media (max-width: 900px) {
+    .my-leave-history-card { grid-template-columns: 1fr; align-items: start; }
+}
+:root[data-theme="dark"] .coverage-task-banner,
+[data-theme="dark"] .coverage-task-banner { background: rgba(34,197,94,.12); border-color: rgba(74,222,128,.35); color: #bbf7d0; }
+:root[data-theme="dark"] .my-leave-history-card,
+[data-theme="dark"] .my-leave-history-card { border-color: #334038; }
+
+.my-leave-history-heading { margin-bottom: 10px; }
+.my-leave-history-heading h3 { margin: 0; }
+.my-leave-history-heading p { margin: 4px 0 0; color: #667085; font-size: .82rem; }
+.my-leave-history-row {
+    display: grid;
+    grid-template-columns: minmax(170px, 1.2fr) auto minmax(240px, 2fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+.my-leave-history-row > div:first-child,
+.my-leave-history-feedback { display: flex; flex-direction: column; gap: 3px; }
+.my-leave-history-row span,
+.my-leave-history-feedback span { font-size: .78rem; color: #667085; }
+@media (max-width: 900px) { .my-leave-history-row { grid-template-columns: 1fr; align-items: start; } }
+:root[data-theme="dark"] .my-leave-history-row,
+[data-theme="dark"] .my-leave-history-row { border-color: #334038; }
+
+/* =========================================================
+   EMPLOYEE MY TASKS TABS
+========================================================= */
+.my-tasks-page .my-tasks-primary-tabs {
+    margin-bottom: 12px;
+}
+
+.my-tasks-tab-panel {
+    min-width: 0;
+}
+
+.my-tasks-compact-stats {
+    gap: var(--summary-card-compact-gap);
+    margin-bottom: 12px;
+}
+
+.my-tasks-page .my-tasks-compact-stats .workforce-stat {
+    min-height: var(--summary-card-compact-height);
+    gap: var(--summary-card-compact-gap);
+    padding: var(--summary-card-compact-padding-y) var(--summary-card-compact-padding-x);
+    border-top-width: var(--summary-card-compact-accent);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.my-tasks-page .my-tasks-compact-stats .workforce-stat:hover {
+    background: #fbfefc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .07);
+    transform: translateY(-1px);
+}
+
+.my-tasks-page .my-tasks-compact-stats .workforce-stat-icon {
+    width: var(--summary-card-compact-icon);
+    height: var(--summary-card-compact-icon);
+    flex: 0 0 var(--summary-card-compact-icon);
+    border-radius: 9px;
+}
+
+.my-tasks-page .my-tasks-compact-stats .workforce-stat-icon .material-symbols-outlined {
+    font-size: var(--summary-card-compact-icon-glyph);
+}
+
+.my-tasks-page .my-tasks-compact-stats .workforce-stat-label {
+    font-size: var(--summary-card-compact-label);
+    font-weight: var(--summary-card-compact-label-weight);
+    line-height: var(--summary-card-compact-label-line-height);
+}
+
+.my-tasks-page .my-tasks-compact-stats .workforce-stat-copy strong {
+    margin-top: 2px;
+    font-size: var(--summary-card-compact-value);
+    font-weight: var(--summary-card-compact-value-weight);
+    line-height: var(--summary-card-compact-value-line-height);
+}
+
+.my-tasks-toolbar-header {
+    gap: 12px;
+}
+
+.my-tasks-tab-refresh {
+    min-width: 104px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    white-space: nowrap;
+}
+
+.my-assigned-work-card {
+    margin-top: 0;
+}
+
+.my-task-card-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.my-task-status-stack {
+    display: flex;
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.task-status.archived {
+    border: 1px solid #cbd5e1;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.my-schedule-task-link {
+    min-height: 38px;
+    margin-top: auto;
+    padding: 8px 10px;
+    border: 1px solid #bfe3c7;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #166534;
+    font: inherit;
+    font-size: .74rem;
+    font-weight: 700;
+    line-height: 1.25;
+    cursor: pointer;
+}
+
+.my-schedule-task-link:hover {
+    background: #f0fdf4;
+}
+
+.my-leave-tab-stack {
+    display: grid;
+    gap: 14px;
+}
+
+.my-leave-tab-stack .my-leave-request,
+.my-leave-tab-stack .my-leave-history {
+    margin: 0;
+}
+
+.my-leave-tab-stack .my-leave-request {
+    padding-top: 20px;
+    border-top: 0;
+}
+
+.my-leave-tab-stack .my-leave-request-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.my-leave-tab-stack .my-leave-request-heading h2,
+.my-leave-tab-stack .my-leave-history-heading h2 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.my-leave-tab-stack .my-leave-request-heading p,
+.my-leave-tab-stack .my-leave-history-heading p {
+    margin: 4px 0 0;
+    color: #667085;
+    font-size: .8rem;
+    line-height: 1.45;
+}
+
+.my-task-report-modal {
+    max-width: 760px;
+}
+
+.my-task-report-body {
+    padding: 22px 26px;
+    overflow-y: auto;
+}
+
+.my-task-report-details {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+html[data-theme="dark"] .my-tasks-page .my-tasks-compact-stats .workforce-stat:hover {
+    background: #132018;
+}
+
+html[data-theme="dark"] .my-schedule-task-link {
+    border-color: #315f3d;
+    background: #0f1912;
+    color: #a7e5b6;
+}
+
+html[data-theme="dark"] .my-schedule-task-link:hover {
+    background: #16301d;
+}
+
+html[data-theme="dark"] .task-status.archived {
+    border-color: #475569;
+    background: #1e293b;
+    color: #cbd5e1;
+}
+
+html[data-theme="dark"] .my-leave-tab-stack .my-leave-request-heading h2,
+html[data-theme="dark"] .my-leave-tab-stack .my-leave-history-heading h2 {
+    color: #e7ece8;
+}
+
+@media screen and (max-width: 1180px) {
+    .my-tasks-page .my-tasks-compact-stats {
+        grid-template-columns: repeat(5, minmax(125px, 1fr));
+        overflow-x: auto;
+        padding-bottom: 3px;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .my-tasks-page .my-tasks-compact-stats {
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+        overflow-x: visible;
+    }
+
+    .my-tasks-toolbar-header,
+    .my-leave-tab-stack .my-leave-request-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .my-tasks-tab-refresh {
+        align-self: flex-start;
+    }
+}
+
+@media screen and (max-width: 720px) {
+    .my-tasks-page .my-tasks-compact-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .my-tasks-page .my-tasks-compact-stats .workforce-stat {
+        min-height: 72px;
+        padding: 10px;
+    }
+
+    .my-task-card-heading {
+        flex-direction: column;
+    }
+
+    .my-task-status-stack {
+        align-items: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .my-tasks-tab-refresh,
+    .my-leave-tab-stack .my-tasks-tab-refresh {
+        width: 100%;
+    }
+
+    .my-task-report-body {
+        padding: 18px;
+    }
+}
+
+@media screen and (max-width: 440px) {
+    .my-tasks-page .my-tasks-compact-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Leave-request status badges are scoped here because My Tasks does not load the
+   manager-only LeaveRequestsPanel stylesheet. Keep the same established tokens. */
+.my-tasks-page .leave-status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.my-tasks-page .leave-status-badge.pending { background: #fff8e7; color: #9a6700; }
+.my-tasks-page .leave-status-badge.approved { background: #eaf7ec; color: #1f6d2a; }
+.my-tasks-page .leave-status-badge.rejected { background: #fff1f0; color: #b42318; }
+.my-tasks-page .leave-status-badge.cancelled { background: #f2f4f7; color: #667085; }
+
+:root[data-theme="dark"] .my-tasks-page .leave-status-badge.pending,
+[data-theme="dark"] .my-tasks-page .leave-status-badge.pending { background: #3a2b12; color: #ffcf70; }
+:root[data-theme="dark"] .my-tasks-page .leave-status-badge.approved,
+[data-theme="dark"] .my-tasks-page .leave-status-badge.approved { background: #17351d; color: #86efac; }
+:root[data-theme="dark"] .my-tasks-page .leave-status-badge.rejected,
+[data-theme="dark"] .my-tasks-page .leave-status-badge.rejected { background: #3a1917; color: #ffaaa6; }
+:root[data-theme="dark"] .my-tasks-page .leave-status-badge.cancelled,
+[data-theme="dark"] .my-tasks-page .leave-status-badge.cancelled { background: #25302a; color: #aab5ad; }
+
+/* Assigned Work uses the shared system type scale. */
+.my-tasks-page .my-assigned-work-card {
+    font-family: "Inter", Arial, sans-serif;
+}
+
+.my-tasks-page .my-assigned-work-card :is(.my-tasks-search input, .my-tasks-filters select) {
+    font-family: inherit;
+    font-size: var(--workforce-control-font-size, 0.875rem);
+    font-weight: 400;
+    line-height: 1.35;
+}
+
+.my-tasks-page .my-assigned-work-card .my-tasks-clear {
+    font-family: inherit;
+    font-size: var(--workforce-control-font-size, 0.875rem);
+    font-weight: var(--workforce-control-font-weight, 600);
+    line-height: 1.15;
+}
+
+.my-tasks-page .my-assigned-work-card .my-tasks-results {
+    font-size: var(--ui-small-size, 0.78rem);
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.my-tasks-page .my-assigned-work-card .my-tasks-results strong {
+    font-weight: 600;
+}
+
+.my-tasks-page .my-assigned-work-card .task-card h3 {
+    font-size: var(--ui-body-size, 0.88rem);
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.my-tasks-page .my-assigned-work-card .task-meta {
+    font-size: var(--ui-small-size, 0.78rem);
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.my-tasks-page .my-assigned-work-card .task-status {
+    font-size: max(0.75rem, 12px);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.my-tasks-page .my-assigned-work-card .coverage-task-banner strong {
+    font-size: var(--ui-body-size, 0.88rem);
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.my-tasks-page .my-assigned-work-card .coverage-task-banner span:not(.material-symbols-outlined),
+.my-tasks-page .my-assigned-work-card .task-missed-banner span:not(.material-symbols-outlined) {
+    font-size: var(--ui-small-size, 0.78rem);
+    font-weight: 400;
+    line-height: 1.45;
+}
+
+.my-tasks-page .my-assigned-work-card .task-missed-banner strong {
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.my-tasks-page .my-assigned-work-card .workforce-card-subtitle,
+.my-tasks-page .my-assigned-work-card .task-note,
+.my-tasks-page .my-assigned-work-card .task-readonly-note {
+    font-family: inherit;
+    font-weight: 400;
+}
+
+.my-tasks-page .my-assigned-work-card .task-note strong {
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   EMPLOYEE PHONE LAYOUT
+   Keep the desktop workforce layout unchanged while allowing
+   task-only employees to use the full phone viewport.
+========================================================= */
+@media screen and (max-width: 720px) {
+    .my-tasks-page {
+        max-width: 100vw;
+        overflow-x: hidden;
+        padding: 14px 12px 96px;
+    }
+
+    .my-tasks-page .workforce-header {
+        min-height: 0;
+        gap: 14px;
+        padding: 4px 0 14px;
+    }
+
+    .my-tasks-page .workforce-header h1 {
+        font-size: clamp(1.45rem, 7vw, 1.8rem);
+    }
+
+    .my-tasks-page .workforce-header p {
+        font-size: 0.88rem;
+        line-height: 1.45;
+    }
+
+    .my-tasks-page .workforce-actions {
+        align-items: center;
+        gap: 8px;
+    }
+
+    .my-tasks-page .workforce-actions > .workforce-button {
+        min-width: 0;
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    .my-tasks-primary-tabs {
+        width: 100%;
+        max-width: 100%;
+        flex-wrap: nowrap;
+        gap: 8px;
+        margin: 14px 0 16px;
+        padding: 2px 2px 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-inline: contain;
+        scroll-snap-type: x proximity;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .my-tasks-primary-tabs .workforce-tab {
+        min-width: max-content;
+        min-height: 48px;
+        flex: 0 0 auto;
+        gap: 7px;
+        padding: 10px 14px;
+        scroll-snap-align: start;
+        white-space: nowrap;
+    }
+
+    .my-tasks-primary-tabs .material-symbols-outlined {
+        font-size: 21px;
+    }
+
+    .my-tasks-compact-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .my-tasks-compact-stats .workforce-stat {
+        min-width: 0;
+        min-height: 82px;
+        padding: 12px;
+    }
+
+    .my-tasks-compact-stats .workforce-stat:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+
+    .my-tasks-filters,
+    .my-task-list,
+    .workforce-card,
+    .my-schedule-week,
+    .my-leave-request-grid {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .my-tasks-filters {
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .my-tasks-search input,
+    .my-tasks-filters select,
+    .my-tasks-clear {
+        min-height: 48px;
+        font-size: 0.9rem;
+    }
+
+    .workforce-task-card,
+    .my-task-card {
+        max-width: 100%;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .task-coverage-banner,
+    .task-missed-banner {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .task-coverage-banner *,
+    .task-missed-banner * {
+        overflow-wrap: anywhere;
+    }
+
+    .my-schedule-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .my-schedule-actions .workforce-button {
+        min-width: 0;
+        width: 100%;
+        min-height: 48px;
+        padding-inline: 10px;
+    }
+
+    .my-schedule-actions .workforce-button:nth-child(3),
+    .my-schedule-actions .workforce-button:nth-child(4) {
+        grid-column: auto;
+    }
+
+    .my-schedule-day {
+        min-height: 0;
+        padding: 14px;
+        font-size: 0.86rem;
+    }
+
+    .my-schedule-day > strong {
+        font-size: 0.96rem;
+    }
+
+    .my-schedule-day .workforce-button {
+        width: 100%;
+        min-height: 46px;
+        margin-top: 4px;
+        white-space: normal;
+        line-height: 1.3;
+    }
+
+    .my-leave-request-actions .workforce-button {
+        min-height: 52px;
+    }
+}
+
+@media screen and (max-width: 430px) {
+    .my-tasks-page {
+        padding-inline: 10px;
+    }
+
+    .my-tasks-compact-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .my-tasks-compact-stats .workforce-stat {
+        padding: 10px;
+    }
+
+    .my-schedule-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+   EXACT SHARED SUMMARY CARD RENDER CONTRACT
+   My Tasks is the canonical visual reference.
+========================================================= */
+.my-tasks-page .my-tasks-compact-stats .workforce-stat {
+    box-sizing: border-box;
+    height: var(--summary-card-compact-height);
+    min-height: var(--summary-card-compact-height);
+    max-height: var(--summary-card-compact-height);
+    padding: var(--summary-card-compact-padding-y) var(--summary-card-compact-padding-x);
+    gap: var(--summary-card-compact-gap);
+}
+.my-tasks-page .my-tasks-compact-stats .workforce-stat-label {
+    margin: 0 0 2px;
+    font-size: var(--summary-card-compact-label);
+    font-weight: var(--summary-card-compact-label-weight);
+    line-height: var(--summary-card-compact-label-line-height);
+}
+.my-tasks-page .my-tasks-compact-stats .workforce-stat-copy strong {
+    margin: 0;
+    font-size: var(--summary-card-compact-value);
+    font-weight: var(--summary-card-compact-value-weight);
+    line-height: var(--summary-card-compact-value-line-height);
+}
+
+
+.task-card-deep-link {
+    outline: 3px solid rgba(22, 163, 74, 0.28);
+    outline-offset: 2px;
+}
+
+.my-tasks-dashboard-return {
+    margin: 0 0 16px;
+}
+
+/* Compact employee self-service attendance bar. */
+.my-attendance-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 16px 0 0;
+    padding: 12px 16px;
+    border: 1px solid #d7e8da;
+    border-left: 4px solid #2e7d32;
+    border-radius: 10px;
+    background: #ffffff;
+}
+.my-attendance-copy { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.my-attendance-copy strong { color: #166534; font-size: .86rem; }
+.my-attendance-copy span { color: #4b5563; font-size: .82rem; }
+.my-attendance-error { width: 100%; color: #b91c1c; font-size: .76rem; }
+@media (max-width: 700px) {
+    .my-attendance-bar { align-items: stretch; flex-direction: column; }
+    .my-attendance-bar .workforce-button { width: 100%; justify-content: center; }
+}

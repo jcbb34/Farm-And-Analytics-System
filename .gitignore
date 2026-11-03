@@ -1,0 +1,83 @@
+# =========================
+# JOROSS FARM - GIT IGNORE
+# =========================
+
+# -------------------------
+# Frontend / Next.js
+# -------------------------
+Jorros Frontend/node_modules/
+Jorros Frontend/.next/
+Jorros Frontend/out/
+Jorros Frontend/.env
+Jorros Frontend/.env.local
+Jorros Frontend/.env.development.local
+Jorros Frontend/.env.production.local
+
+# npm logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# -------------------------
+# Backend / Python
+# -------------------------
+Jorros Backend/.venv/
+Jorros Backend/venv/
+Jorros Backend/env/
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# -------------------------
+# Private environment files
+# -------------------------
+Jorros Backend/.env
+Jorros Backend/.env.local
+
+# Keep examples
+!Jorros Backend/.env.example
+!Jorros Frontend/.env.local.example
+
+# -------------------------
+# Generated backend data
+# -------------------------
+Jorros Backend/generated_reports/*
+Jorros Backend/import_uploads/*
+Jorros Backend/backups/*
+
+# Keep folders if .gitkeep exists
+!Jorros Backend/generated_reports/.gitkeep
+!Jorros Backend/import_uploads/.gitkeep
+!Jorros Backend/backups/.gitkeep
+
+# -------------------------
+# Temporary files
+# -------------------------
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# VS Code local settings
+.vscode/
+Jorros Backend/storage/
+.vs/
+Jorros Backend/uploads/
+
+# Browser test artifacts
+Jorros Frontend/test-results/
+Jorros Frontend/playwright-report/

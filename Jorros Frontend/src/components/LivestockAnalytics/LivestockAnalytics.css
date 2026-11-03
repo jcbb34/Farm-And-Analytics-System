@@ -1,0 +1,689 @@
+.livestock-insights {
+    margin-top: 28px;
+}
+
+.livestock-insights-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+
+    gap: 20px;
+    margin-bottom: 17px;
+}
+
+.livestock-insights-heading h2 {
+    margin: 0 0 5px;
+
+    color: #166534;
+
+    font-size: 1.45rem;
+}
+
+.livestock-insights-heading p {
+    margin: 0;
+
+    color: #777777;
+
+    font-size: 0.85rem;
+}
+
+.livestock-insights-heading > span {
+    color: #777777;
+
+    font-size: 0.76rem;
+    text-align: right;
+}
+
+/* =========================================
+   ANALYTICS
+========================================= */
+
+.livestock-analytics-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 20px;
+}
+
+.livestock-chart-card {
+    min-width: 0;
+    min-height: 380px;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 21px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 4px 14px
+        rgba(0, 0, 0, 0.06);
+}
+
+.livestock-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.livestock-chart-header h3 {
+    margin: 0 0 5px;
+
+    color: #166534;
+
+    font-size: 1rem;
+}
+
+.livestock-chart-header p {
+    margin: 0;
+
+    color: #777777;
+
+    font-size: 0.77rem;
+}
+
+.livestock-chart-header
+    > .material-symbols-outlined {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 10px;
+
+    background: #e8f5e9;
+    color: #166534;
+
+    font-size: 24px;
+}
+
+.livestock-chart-area {
+    width: 100%;
+    height: 275px;
+
+    min-width: 0;
+
+    flex: 1;
+}
+
+.livestock-chart-area canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.doughnut-chart-area {
+    max-width: 500px;
+
+    margin: auto;
+}
+
+.feed-cost-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 15px;
+    padding: 13px 15px;
+    margin-top: 10px;
+
+    border-radius: 9px;
+
+    background: #f0fdf4;
+}
+
+.feed-cost-summary small {
+    color: #666666;
+
+    font-size: 0.75rem;
+}
+
+.feed-cost-summary strong {
+    color: #166534;
+
+    font-size: 1rem;
+}
+
+/* =========================================
+   RECORD CARDS
+========================================= */
+
+.livestock-record-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.livestock-record-card {
+    min-width: 0;
+    min-height: 350px;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 21px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 4px 14px
+        rgba(0, 0, 0, 0.06);
+}
+
+.livestock-record-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 15px;
+    margin-bottom: 18px;
+}
+
+.livestock-record-header h3 {
+    margin: 0 0 5px;
+
+    color: #166534;
+
+    font-size: 1rem;
+}
+
+.livestock-record-header p {
+    margin: 0;
+
+    color: #777777;
+
+    font-size: 0.76rem;
+}
+
+.livestock-record-header
+    > .material-symbols-outlined {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 10px;
+
+    background: #e8f5e9;
+    color: #166534;
+
+    font-size: 24px;
+}
+
+.livestock-record-preview-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+.livestock-record-preview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+    padding: 14px;
+
+    border: 1px solid #eeeeee;
+    border-radius: 10px;
+
+    background: #fafafa;
+}
+
+.livestock-record-preview strong,
+.livestock-record-preview p,
+.livestock-record-preview small {
+    display: block;
+}
+
+.livestock-record-preview strong {
+    color: #333333;
+
+    font-size: 0.82rem;
+}
+
+.livestock-record-preview p {
+    margin: 5px 0 0;
+
+    color: #777777;
+
+    font-size: 0.73rem;
+}
+
+.livestock-record-preview-right {
+    min-width: 0;
+
+    text-align: right;
+}
+
+.livestock-record-preview-right strong {
+    overflow: hidden;
+
+    color: #166534;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.livestock-record-preview-right small {
+    margin-top: 5px;
+
+    color: #777777;
+
+    font-size: 0.71rem;
+}
+
+.livestock-record-empty {
+    flex: 1;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    color: #999999;
+
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.livestock-view-all-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    align-self: center;
+
+    gap: 5px;
+    padding: 9px 13px;
+    margin-top: 18px;
+
+    border: none;
+
+    background: transparent;
+    color: #178b2d;
+
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.livestock-view-all-button:hover {
+    color: #116f23;
+}
+
+.livestock-view-all-button
+    .material-symbols-outlined {
+    font-size: 19px;
+}
+
+/* =========================================
+   FARM TIP
+========================================= */
+
+.livestock-farm-tip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+    padding: 13px 16px;
+    margin-top: 20px;
+
+    border: 1px solid #c8e6c9;
+    border-radius: 9px;
+
+    background: #e8f5e9;
+}
+
+.livestock-farm-tip > div {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+}
+
+.livestock-farm-tip
+    > div
+    > .material-symbols-outlined {
+    flex-shrink: 0;
+
+    color: #2e7d32;
+
+    font-size: 25px;
+}
+
+.livestock-farm-tip p {
+    margin: 0;
+
+    color: #2e7d32;
+
+    font-size: 0.83rem;
+    line-height: 1.5;
+}
+
+.livestock-farm-tip > button {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+    color: #2e7d32;
+
+    cursor: pointer;
+}
+
+.livestock-farm-tip
+    > button:hover {
+    background:
+        rgba(46, 125, 50, 0.1);
+
+    color: #dc2626;
+}
+
+/* =========================================
+   VIEW ALL MODALS
+========================================= */
+
+.livestock-record-modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 20px;
+
+    background:
+        rgba(0, 0, 0, 0.58);
+
+    z-index: 15000;
+}
+
+.livestock-record-modal {
+    width: min(1350px, 97%);
+    max-height: 92vh;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    border-radius: 16px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 25px 65px
+        rgba(0, 0, 0, 0.27);
+}
+
+.livestock-record-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    flex-shrink: 0;
+
+    gap: 20px;
+    padding: 25px 30px;
+
+    border-bottom: 2px solid #16a34a;
+}
+
+.livestock-record-modal-header h2 {
+    margin: 0 0 7px;
+
+    color: #166534;
+
+    font-size: 2rem;
+}
+
+.livestock-record-modal-header p {
+    margin: 0;
+
+    color: #666666;
+
+    font-size: 0.88rem;
+}
+
+.livestock-record-modal-header
+    > button {
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+    color: #444444;
+
+    cursor: pointer;
+}
+
+.livestock-record-modal-header
+    > button:hover {
+    background: #f3f4f6;
+}
+
+.livestock-record-modal-body {
+    flex: 1;
+
+    padding: 25px 30px 30px;
+
+    overflow-y: auto;
+}
+
+.livestock-record-table-wrapper {
+    overflow-x: auto;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+}
+
+.livestock-record-table {
+    width: 100%;
+    min-width: 1250px;
+
+    border-collapse: collapse;
+}
+
+.livestock-record-table.feeding-table {
+    min-width: 1150px;
+}
+
+.livestock-record-table th {
+    padding: 14px 15px;
+
+    border-bottom: 1px solid #e5e7eb;
+
+    background: #fafafa;
+    color: #555555;
+
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.livestock-record-table td {
+    padding: 15px;
+
+    border-bottom: 1px solid #eeeeee;
+
+    color: #444444;
+
+    font-size: 0.77rem;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+.livestock-record-table
+    tbody
+    tr:last-child
+    td {
+    border-bottom: none;
+}
+
+.livestock-record-table td small {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #777777;
+
+    font-size: 0.69rem;
+}
+
+.livestock-record-table td strong {
+    color: #166534;
+}
+
+.livestock-record-status {
+    display: inline-flex;
+
+    padding: 6px 10px;
+
+    border-radius: 20px;
+
+    background: #dcfce7;
+    color: #15803d;
+
+    font-size: 0.68rem;
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+.livestock-record-status.due,
+.livestock-record-status.due-soon {
+    background: #fef3c7;
+    color: #a16207;
+}
+
+.livestock-record-status.not-vaccinated {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.livestock-record-status.scheduled {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.livestock-record-table-empty {
+    padding: 45px !important;
+
+    color: #888888 !important;
+
+    text-align: center;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media screen and (max-width: 950px) {
+    .livestock-analytics-grid,
+    .livestock-record-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (max-width: 650px) {
+    .livestock-insights-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .livestock-insights-heading > span {
+        text-align: left;
+    }
+
+    .livestock-chart-card,
+    .livestock-record-card {
+        padding: 18px;
+    }
+
+    .livestock-record-preview {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .livestock-record-preview-right {
+        text-align: left;
+    }
+
+    .livestock-record-modal-overlay {
+        padding: 9px;
+    }
+
+    .livestock-record-modal {
+        width: 100%;
+        max-height: 97vh;
+    }
+
+    .livestock-record-modal-header,
+    .livestock-record-modal-body {
+        padding: 20px;
+    }
+
+    .livestock-record-modal-header h2 {
+        font-size: 1.55rem;
+    }
+}
+
+@media screen and (max-width: 500px) {
+    .livestock-farm-tip {
+        align-items: flex-start;
+    }
+
+    .feed-cost-summary {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

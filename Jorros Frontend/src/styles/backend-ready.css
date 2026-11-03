@@ -1,0 +1,49 @@
+/* Backend-readiness helpers. These styles do not change the existing design. */
+
+.app-action-denied {
+    opacity: 0.48 !important;
+    cursor: not-allowed !important;
+    filter: grayscale(0.35);
+}
+
+.app-action-denied:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.app-permission-disabled-wrapper {
+    display: inline-flex;
+    opacity: 0.48;
+    cursor: not-allowed;
+}
+
+body[data-read-only="true"] [data-editor-only="true"] {
+    display: none !important;
+}
+
+body[data-read-only="true"] [data-viewer-disabled="true"] {
+    opacity: 0.48;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.app-unsaved-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #b45309;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.app-unsaved-indicator::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+}
+
+[data-theme="dark"] .app-action-denied {
+    opacity: 0.42 !important;
+}

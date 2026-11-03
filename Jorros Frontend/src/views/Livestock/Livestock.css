@@ -1,0 +1,1537 @@
+.livestock-layout {
+    width: 100%;
+    min-height: 100vh;
+
+    background: #f6f8f6;
+}
+
+.livestock-page {
+    width: calc(100% - 80px);
+    min-height: 100vh;
+
+    margin-left: 80px;
+    padding: 28px 30px 40px;
+
+    background: #f6f8f6;
+}
+
+/* =========================================
+   HEADER
+========================================= */
+
+.livestock-header {
+    position: relative;
+
+    min-height: 82px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 25px;
+    padding: 8px 0 18px;
+
+    border-bottom: 2px solid #2e7d32;
+}
+
+.livestock-heading {
+    min-width: 0;
+}
+
+.livestock-heading h1 {
+    margin: 0 0 6px;
+
+    color: #2e7d32;
+
+    font-size: clamp(
+        1.5rem,
+        2.3vw,
+        2rem
+    );
+}
+
+.livestock-heading p {
+    margin: 0;
+
+    color: #666666;
+
+    font-size: 0.94rem;
+    line-height: 1.5;
+}
+
+.livestock-header-actions {
+    display: flex;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    gap: 16px;
+}
+
+/* =========================================
+   NOTIFICATION
+========================================= */
+
+.livestock-notification-button {
+    position: relative;
+
+    width: 44px;
+    height: 44px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+    color: #333333;
+}
+
+.livestock-notification-button:hover {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.livestock-notification-button
+    .material-symbols-outlined {
+    font-size: 29px;
+}
+
+.livestock-notification-dot {
+    position: absolute;
+
+    top: 5px;
+    right: 5px;
+
+    width: 9px;
+    height: 9px;
+
+    border: 2px solid #f6f8f6;
+    border-radius: 50%;
+
+    background: #ef4444;
+}
+
+/* =========================================
+   PROFILE
+========================================= */
+
+.livestock-profile-container {
+    position: relative;
+}
+
+.livestock-profile-button {
+    min-width: 230px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+    padding: 6px 13px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 25px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 3px 10px
+        rgba(0, 0, 0, 0.07);
+}
+
+.livestock-profile-avatar {
+    width: 35px;
+    height: 35px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #dddddd;
+    color: #333333;
+}
+
+.livestock-profile-avatar.large {
+    width: 48px;
+    height: 48px;
+}
+
+.livestock-profile-text {
+    min-width: 0;
+    flex: 1;
+
+    text-align: left;
+}
+
+.livestock-profile-text strong,
+.livestock-profile-text small {
+    display: block;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.livestock-profile-text strong {
+    color: #333333;
+
+    font-size: 0.84rem;
+}
+
+.livestock-profile-text small {
+    margin-top: 2px;
+
+    color: #666666;
+
+    font-size: 0.7rem;
+}
+
+.livestock-profile-arrow {
+    color: #666666;
+
+    font-size: 21px;
+}
+
+.livestock-profile-dropdown {
+    position: absolute;
+
+    top: calc(100% + 12px);
+    right: 0;
+
+    width: 300px;
+
+    overflow: hidden;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 14px 35px
+        rgba(0, 0, 0, 0.16);
+
+    z-index: 3000;
+}
+
+.livestock-dropdown-user {
+    display: flex;
+    align-items: center;
+
+    gap: 13px;
+    padding: 18px;
+
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.livestock-dropdown-user strong,
+.livestock-dropdown-user small {
+    display: block;
+}
+
+.livestock-dropdown-user strong {
+    margin-bottom: 4px;
+
+    color: #333333;
+}
+
+.livestock-dropdown-user small {
+    color: #777777;
+}
+
+.livestock-profile-dropdown > button {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+    padding: 15px 18px;
+
+    border: none;
+
+    background: #ffffff;
+    color: #333333;
+
+    text-align: left;
+}
+
+.livestock-profile-dropdown
+    > button:hover {
+    background: #f0fdf4;
+    color: #2e7d32;
+}
+
+/* =========================================
+   STATISTICS
+========================================= */
+
+.livestock-summary-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(5, minmax(0, 1fr));
+
+    gap: var(--summary-card-compact-gap);
+    margin-top: 16px;
+}
+
+.livestock-summary-card {
+    min-width: 0;
+    min-height: var(--summary-card-compact-height);
+
+    display: flex;
+    align-items: center;
+
+    gap: var(--summary-card-compact-gap);
+    padding: var(--summary-card-compact-padding-y) var(--summary-card-compact-padding-x);
+
+    border-top: var(--summary-card-compact-accent) solid transparent;
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 4px 14px
+        rgba(0, 0, 0, 0.07);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.livestock-summary-card:hover {
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 8px 20px
+        rgba(0, 0, 0, 0.1);
+}
+
+.livestock-summary-icon {
+    width: var(--summary-card-compact-icon);
+    height: var(--summary-card-compact-icon);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 11px;
+
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.livestock-summary-icon
+    .material-symbols-outlined {
+    font-size: var(--summary-card-compact-icon-glyph);
+}
+
+.livestock-summary-card p {
+    margin: 0 0 2px;
+
+    color: #666666;
+
+    font-size: var(--summary-card-compact-label);
+    font-weight: var(--summary-card-compact-label-weight);
+    line-height: var(--summary-card-compact-label-line-height);
+}
+
+.livestock-summary-card h2 {
+    margin: 0;
+
+    color: #222222;
+
+    font-size: var(--summary-card-compact-value);
+    font-weight: var(--summary-card-compact-value-weight);
+    line-height: var(--summary-card-compact-value-line-height);
+}
+
+.livestock-summary-card.total {
+    border-top-color: #43a047;
+}
+
+.livestock-summary-card.healthy {
+    border-top-color: #1e88e5;
+}
+
+.livestock-summary-card.risk {
+    border-top-color: #fb8c00;
+}
+
+.livestock-summary-card.vaccination {
+    border-top-color: #8e24aa;
+}
+
+.livestock-summary-card.births {
+    border-top-color: #6d4c41;
+}
+
+/* =========================================
+   FILTER TOOLBAR
+========================================= */
+
+.livestock-toolbar {
+    display: grid;
+    grid-template-columns:
+        minmax(280px, 2fr)
+        repeat(3, minmax(160px, 1fr))
+        auto;
+
+    gap: 13px;
+    padding: 18px;
+    margin-top: 22px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 4px 14px
+        rgba(0, 0, 0, 0.05);
+}
+
+.livestock-search-box {
+    position: relative;
+
+    min-width: 0;
+}
+
+.livestock-search-box
+    .material-symbols-outlined {
+    position: absolute;
+
+    top: 50%;
+    left: 13px;
+
+    color: #777777;
+
+    font-size: 22px;
+
+    transform: translateY(-50%);
+}
+
+.livestock-search-box input {
+    padding-left: 43px !important;
+}
+
+.livestock-toolbar input,
+.livestock-toolbar select {
+    width: 100%;
+    height: 44px;
+
+    padding: 0 13px;
+
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    outline: none;
+
+    background: #ffffff;
+    color: #333333;
+
+    font-size: 0.84rem;
+}
+
+.livestock-toolbar input:focus,
+.livestock-toolbar select:focus {
+    border-color: #2e7d32;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(46, 125, 50, 0.12);
+}
+
+.livestock-clear-button {
+    height: 44px;
+
+    padding: 0 18px;
+
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+
+    background: #ffffff;
+    color: #555555;
+
+    font-weight: 600;
+}
+
+.livestock-clear-button:hover {
+    background: #f3f4f6;
+}
+
+/* =========================================
+   ACTIONS
+========================================= */
+
+.livestock-action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+    margin: 25px 0 16px;
+}
+
+.livestock-action-row h2 {
+    margin: 0 0 5px;
+
+    color: #166534;
+
+    font-size: 1.45rem;
+}
+
+.livestock-action-row p {
+    margin: 0;
+
+    color: #777777;
+
+    font-size: 0.85rem;
+}
+
+.livestock-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 10px;
+}
+
+.livestock-add-button {
+    min-height: 43px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+    padding: 10px 16px;
+
+    border-radius: 8px;
+
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.livestock-add-button {
+    border: none;
+
+    background: #178b2d;
+    color: #ffffff;
+}
+
+.livestock-add-button:hover {
+    background: #116f23;
+}
+
+.livestock-add-button
+    .material-symbols-outlined {
+    font-size: 20px;
+}
+
+/* =========================================
+   TABLE
+========================================= */
+
+.livestock-table-card {
+    overflow: hidden;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 4px 14px
+        rgba(0, 0, 0, 0.06);
+}
+
+.livestock-table-wrapper {
+    width: 100%;
+    max-height: 520px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    scrollbar-gutter: stable;
+}
+
+/* Keep the column labels visible while scrolling through livestock records. */
+.livestock-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+.livestock-table {
+    width: 100%;
+    min-width: 0;
+
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+/* Fixed column proportions keep the entire table inside the card. */
+.livestock-col-id {
+    width: 8%;
+}
+
+.livestock-col-record {
+    width: 15%;
+}
+
+.livestock-col-type {
+    width: 11%;
+}
+
+.livestock-col-count {
+    width: 10%;
+}
+
+.livestock-col-health {
+    width: 11%;
+}
+
+.livestock-col-growth {
+    width: 7%;
+}
+
+.livestock-col-age {
+    width: 12%;
+}
+
+.livestock-col-location {
+    width: 14%;
+}
+
+.livestock-col-actions {
+    width: 12%;
+}
+
+.livestock-table th {
+    padding: 14px 10px;
+
+    border-bottom: 1px solid #e5e7eb;
+
+    background: #fafafa;
+    color: #555555;
+
+    font-size: 0.77rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: normal;
+}
+
+.livestock-table td {
+    padding: 14px 10px;
+
+    border-bottom: 1px solid #eeeeee;
+
+    color: #444444;
+
+    font-size: 0.8rem;
+    vertical-align: middle;
+}
+
+.livestock-table tbody tr:hover {
+    background: #fbfefb;
+}
+
+.livestock-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.animal-id {
+    color: #166534;
+
+    white-space: nowrap;
+}
+
+.animal-name-cell {
+    display: flex;
+    align-items: center;
+
+    gap: 11px;
+}
+
+.animal-type-icon {
+    width: 39px;
+    height: 39px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 9px;
+
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.animal-type-icon.chicken,
+.animal-type-icon.duck {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.animal-type-icon.cattle {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.animal-type-icon.goat {
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
+.animal-name-cell strong,
+.animal-name-cell small,
+.table-subtext {
+    display: block;
+}
+
+.animal-name-cell strong {
+    margin-bottom: 4px;
+
+    color: #222222;
+}
+
+.animal-name-cell small,
+.table-subtext {
+    margin-top: 4px;
+
+    color: #777777;
+
+    font-size: 0.72rem;
+}
+
+
+.livestock-stacked-cell {
+    min-width: 0;
+}
+
+.livestock-stacked-cell strong,
+.livestock-stacked-cell small {
+    display: block;
+
+    overflow-wrap: anywhere;
+}
+
+.livestock-stacked-cell strong {
+    color: #333333;
+
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.livestock-stacked-cell small {
+    margin-top: 4px;
+
+    color: #777777;
+
+    font-size: 0.7rem;
+    line-height: 1.35;
+}
+
+.livestock-table td,
+.livestock-table th {
+    overflow-wrap: anywhere;
+}
+
+.livestock-growth-stage {
+    display: block;
+    color: #166534;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.livestock-table .animal-name-cell {
+    min-width: 0;
+}
+
+.livestock-table .animal-name-cell > div {
+    min-width: 0;
+}
+
+.livestock-table .animal-name-cell strong,
+.livestock-table .animal-name-cell small {
+    overflow-wrap: anywhere;
+}
+
+.livestock-health-status {
+    display: inline-flex;
+
+    padding: 6px 11px;
+
+    border-radius: 20px;
+
+    font-size: 0.71rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.livestock-health-status.healthy {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.livestock-health-status.under-treatment {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.livestock-health-status.at-risk {
+    background: #fef3c7;
+    color: #a16207;
+}
+
+.livestock-health-status.sick {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.livestock-row-actions {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: nowrap;
+
+    gap: 5px;
+}
+
+.livestock-row-actions button {
+    width: 32px;
+    height: 32px;
+
+    flex: 0 0 32px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #f0fdf4;
+    color: #2e7d32;
+}
+
+.livestock-row-actions button:hover {
+    background: #dcfce7;
+}
+
+.livestock-row-actions
+    button.archive {
+    background: #fff1f2;
+    color: #dc2626;
+}
+
+.livestock-row-actions
+    button.archive:hover {
+    background: #fee2e2;
+}
+
+.livestock-row-actions
+    .material-symbols-outlined {
+    font-size: 19px;
+}
+
+.livestock-empty-table {
+    padding: 55px !important;
+
+    color: #888888 !important;
+
+    text-align: center;
+}
+
+.livestock-empty-table
+    .material-symbols-outlined {
+    font-size: 40px;
+}
+
+.livestock-empty-table p {
+    margin: 9px 0 0;
+}
+
+/* =========================================
+   TABLE FOOTER
+========================================= */
+
+.livestock-table-footer {
+    display: flex;
+    align-items: center;
+
+    padding: 13px 18px;
+
+    border-top: 1px solid #e5e7eb;
+
+    color: #777777;
+
+    font-size: 0.78rem;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media screen and (max-width: 1300px) {
+    .livestock-summary-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+    .livestock-toolbar {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+    .livestock-search-box {
+        grid-column: 1 / 3;
+    }
+}
+
+@media screen and (max-width: 950px) {
+    .livestock-summary-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .livestock-action-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+@media screen and (max-width: 760px) {
+    .livestock-page {
+        width: calc(100% - 70px);
+
+        margin-left: 70px;
+        padding: 20px 16px 30px;
+    }
+
+    .livestock-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .livestock-header-actions {
+        width: 100%;
+
+        justify-content: flex-end;
+    }
+
+    .livestock-profile-button {
+        min-width: auto;
+    }
+
+    .livestock-profile-text,
+    .livestock-profile-arrow {
+        display: none;
+    }
+
+    .livestock-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .livestock-search-box {
+        grid-column: auto;
+    }
+
+    .livestock-table-footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+@media screen and (max-width: 550px) {
+    .livestock-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .livestock-action-buttons {
+        width: 100%;
+    }
+
+    .livestock-add-button {
+        width: 100%;
+    }
+
+    .livestock-profile-dropdown {
+        position: fixed;
+
+        top: 80px;
+        right: 12px;
+        left: 82px;
+
+        width: auto;
+    }
+}
+
+
+/* =========================================
+   NO-HORIZONTAL-SCROLL TABLE
+========================================= */
+
+@media screen and (max-width: 1250px) {
+    .livestock-table th,
+    .livestock-table td {
+        padding-left: 7px;
+        padding-right: 7px;
+
+        font-size: 0.72rem;
+    }
+
+    .livestock-table .animal-type-icon {
+        width: 34px;
+        height: 34px;
+    }
+
+    .livestock-table .animal-name-cell {
+        gap: 7px;
+    }
+
+    .livestock-health-status {
+        padding: 5px 8px;
+
+        font-size: 0.66rem;
+        white-space: normal;
+        text-align: center;
+    }
+
+    .livestock-row-actions {
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .livestock-row-actions button {
+        width: 30px;
+        height: 30px;
+
+        flex-basis: 30px;
+    }
+
+    .livestock-row-actions
+        .material-symbols-outlined {
+        font-size: 17px;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    /*
+       Still no horizontal scrollbar. Less important secondary
+       columns are hidden so View/Edit/Archive stay reachable.
+    */
+    .livestock-table th:nth-child(4),
+    .livestock-table td:nth-child(4),
+    .livestock-table th:nth-child(7),
+    .livestock-table td:nth-child(7) {
+        display: none;
+    }
+
+    .livestock-col-id {
+        width: 10%;
+    }
+
+    .livestock-col-record {
+        width: 20%;
+    }
+
+    .livestock-col-type {
+        width: 12%;
+    }
+
+    .livestock-col-count,
+    .livestock-col-age {
+        width: 0;
+    }
+
+    .livestock-col-health {
+        width: 13%;
+    }
+
+    .livestock-col-growth {
+        width: 10%;
+    }
+
+    .livestock-col-location {
+        width: 15%;
+    }
+
+    .livestock-col-actions {
+        width: 20%;
+    }
+}
+
+@media screen and (max-width: 700px) {
+    .livestock-table th:nth-child(3),
+    .livestock-table td:nth-child(3),
+    .livestock-table th:nth-child(8),
+    .livestock-table td:nth-child(8) {
+        display: none;
+    }
+
+    .livestock-table th,
+    .livestock-table td {
+        padding: 10px 6px;
+
+        font-size: 0.68rem;
+    }
+
+    .livestock-table .animal-type-icon {
+        display: none;
+    }
+
+    .livestock-col-id {
+        width: 15%;
+    }
+
+    .livestock-col-record {
+        width: 25%;
+    }
+
+    .livestock-col-type {
+        width: 0;
+    }
+
+    .livestock-col-health {
+        width: 16%;
+    }
+
+    .livestock-col-growth {
+        width: 14%;
+    }
+
+    .livestock-col-location {
+        width: 0;
+    }
+
+    .livestock-col-actions {
+        width: 30%;
+    }
+
+    .livestock-row-actions {
+        flex-wrap: wrap;
+    }
+
+    .livestock-row-actions button {
+        width: 28px;
+        height: 28px;
+
+        flex-basis: 28px;
+    }
+}
+
+/* =========================================
+   FEEDING HISTORY + MODAL LAYERING
+========================================= */
+
+.feeding-history-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.52);
+    isolation: isolate;
+    overscroll-behavior: contain;
+}
+
+.feeding-history-modal {
+    position: relative;
+    z-index: 1;
+    width: min(1180px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow: hidden;
+    border: 1px solid #dfe8e2;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 22px 60px rgba(15, 23, 42, 0.18);
+}
+
+.feeding-history-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.feeding-history-modal-header h2 {
+    margin: 4px 0 5px;
+    color: #173a24;
+    font-size: 1.3rem;
+}
+
+.feeding-history-modal-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.86rem;
+}
+
+.feeding-history-table-wrap {
+    max-height: calc(100vh - 230px);
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.feeding-history-table {
+    width: 100%;
+    min-width: 1050px;
+    border-collapse: collapse;
+}
+
+.feeding-history-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8faf9;
+    color: #53645a;
+    font-size: 0.73rem;
+    font-weight: 800;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.feeding-history-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid #edf1ee;
+    color: #334155;
+    font-size: 0.78rem;
+    vertical-align: middle;
+}
+
+.feeding-history-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.feeding-history-table td strong {
+    color: #173a24;
+}
+
+.feeding-history-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.feeding-history-notes {
+    min-width: 190px;
+    white-space: normal;
+}
+
+.feeding-history-table-empty {
+    padding: 42px !important;
+    color: #94a3b8 !important;
+    text-align: center;
+}
+
+.feeding-history-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    border-top: 1px solid #e5e7eb;
+    background: #ffffff;
+}
+
+.feeding-history-modal-footer span {
+    color: #64748b;
+    font-size: 0.76rem;
+}
+
+.feeding-history-modal-footer button {
+    min-width: 86px;
+    padding: 9px 15px;
+    border: 1px solid #d7e1da;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #334155;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.livestock-row-actions button.feeding-history-action {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.livestock-row-actions button.feeding-history-action:hover {
+    background: #dbeafe;
+}
+
+@media screen and (max-width: 760px) {
+    .feeding-history-overlay {
+        align-items: flex-end;
+        padding: 12px;
+    }
+
+    .feeding-history-modal {
+        max-height: calc(100vh - 24px);
+    }
+}
+
+
+/* Keep the read-only history dialog aligned with the livestock page. */
+.feeding-history-modal {
+    font-family: inherit;
+    color: #333333;
+}
+
+.feeding-history-eyebrow {
+    color: #2e7d32;
+    font-size: 0.69rem;
+    font-weight: 700;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+}
+
+.feeding-history-close {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: #f3f4f6;
+    color: #475569;
+    cursor: pointer;
+}
+
+.feeding-history-modal-header h2 {
+    margin-top: 5px;
+    color: #333333;
+    font-size: 1.18rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.feeding-history-modal-header p {
+    color: #777777;
+    font-size: 0.82rem;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.feeding-history-modal-footer span {
+    color: #777777;
+    font-size: 0.73rem;
+    font-weight: 400;
+}
+
+.feeding-history-table td strong {
+    color: #333333;
+    font-weight: 600;
+}
+
+.feeding-history-table th {
+    color: #555555;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.feeding-history-table td {
+    color: #666666;
+    font-size: 0.77rem;
+    font-weight: 400;
+}
+
+.feeding-history-status {
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+.feeding-history-modal-footer button {
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+/* Five row actions: View, History, Transfer, Edit, Archive.
+   Reserve enough space so Archive is never clipped on desktop. */
+.livestock-col-id {
+    width: 8%;
+}
+
+.livestock-col-record {
+    width: 15%;
+}
+
+.livestock-col-type {
+    width: 11%;
+}
+
+.livestock-col-count {
+    width: 9%;
+}
+
+.livestock-col-health {
+    width: 11%;
+}
+
+.livestock-col-age {
+    width: 11%;
+}
+
+.livestock-col-location {
+    width: 17%;
+}
+
+.livestock-col-actions {
+    width: 18%;
+}
+
+.livestock-row-actions {
+    width: 100%;
+    justify-content: center;
+    gap: 4px;
+    overflow: visible;
+}
+
+.livestock-row-actions button {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    cursor: pointer;
+}
+
+.livestock-row-actions button.archive {
+    display: flex;
+    visibility: visible;
+    opacity: 1;
+}
+
+@media screen and (max-width: 1250px) {
+    .livestock-col-record {
+        width: 14%;
+    }
+
+    .livestock-col-location {
+        width: 16%;
+    }
+
+    .livestock-col-actions {
+        width: 20%;
+    }
+
+    .livestock-row-actions button {
+        width: 28px;
+        height: 28px;
+        flex-basis: 28px;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .livestock-col-record {
+        width: 19%;
+    }
+
+    .livestock-col-type {
+        width: 13%;
+    }
+
+    .livestock-col-health {
+        width: 14%;
+    }
+
+    .livestock-col-age {
+        width: 14%;
+    }
+
+    .livestock-col-location {
+        width: 17%;
+    }
+
+    .livestock-col-actions {
+        width: 23%;
+    }
+
+    .livestock-row-actions {
+        gap: 3px;
+    }
+
+    .livestock-row-actions button {
+        width: 26px;
+        height: 26px;
+        flex-basis: 26px;
+    }
+
+    .livestock-row-actions .material-symbols-outlined {
+        font-size: 16px;
+    }
+}
+
+@media screen and (max-width: 700px) {
+    .livestock-col-actions {
+        width: 25%;
+    }
+
+    .livestock-row-actions button {
+        width: 24px;
+        height: 24px;
+        flex-basis: 24px;
+    }
+
+    .livestock-row-actions .material-symbols-outlined {
+        font-size: 15px;
+    }
+}
+
+/* Integrated livestock workflow enhancements */
+.livestock-manage-pens-button{display:inline-flex;align-items:center;gap:8px;border:1px solid #13743b;background:#fff;color:#13743b;border-radius:10px;padding:12px 17px;font-weight:700;cursor:pointer}.livestock-manage-pens-button:hover{background:#eef9f2}.livestock-health-breakdown{display:flex;flex-direction:column;align-items:flex-start;gap:5px}.livestock-health-breakdown small{font-size:11px;color:#6b7280;line-height:1.3;white-space:normal}.livestock-row-actions .movement{color:#6b4f1d;background:#fff7e6}.livestock-row-actions .movement:hover{background:#ffedc2}
+
+/* Exact My Tasks summary-card geometry and type scale. */
+.livestock-summary-card {
+    box-sizing: border-box;
+    height: var(--summary-card-compact-height);
+    min-height: var(--summary-card-compact-height);
+    max-height: var(--summary-card-compact-height);
+    padding: var(--summary-card-compact-padding-y) var(--summary-card-compact-padding-x);
+    gap: var(--summary-card-compact-gap);
+}
+.livestock-summary-card p {
+    margin: 0 0 2px;
+    font-size: var(--summary-card-compact-label);
+    font-weight: var(--summary-card-compact-label-weight);
+    line-height: var(--summary-card-compact-label-line-height);
+}
+.livestock-summary-card h2 {
+    margin: 0;
+    font-size: var(--summary-card-compact-value);
+    font-weight: var(--summary-card-compact-value-weight);
+    line-height: var(--summary-card-compact-value-line-height);
+}
+.livestock-summary-icon {
+    width: var(--summary-card-compact-icon);
+    height: var(--summary-card-compact-icon);
+    flex: 0 0 var(--summary-card-compact-icon);
+    border-radius: 9px;
+}

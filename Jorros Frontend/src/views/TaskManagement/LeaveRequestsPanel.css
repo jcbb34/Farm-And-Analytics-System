@@ -1,0 +1,362 @@
+/* Leave Requests lives inside Task Management and follows the shared workforce UI language. */
+.leave-approval-workspace {
+    min-width: 0;
+    font-family: "Inter", Arial, sans-serif;
+}
+
+.leave-approval-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.leave-approval-header h2 {
+    margin: 0 0 4px;
+    color: var(--workforce-text, #26322b);
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.leave-pending-count {
+    min-width: 88px;
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border: 1px solid var(--workforce-warning-border, #f6c98c);
+    border-radius: 10px;
+    background: var(--workforce-warning-bg, #fff8eb);
+    color: var(--workforce-warning, #b54708);
+}
+
+.leave-pending-count strong {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.leave-pending-count span {
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.leave-status-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.leave-status-tabs .workforce-tab {
+    min-height: 40px;
+    padding: 8px 14px;
+    font-family: "Inter", Arial, sans-serif;
+    font-size: 0.8rem;
+}
+
+.leave-request-table td {
+    vertical-align: top;
+}
+
+.leave-request-table small {
+    color: var(--workforce-muted, #66736b);
+    font-size: 0.76rem;
+    line-height: 1.45;
+}
+
+.leave-request-table .workforce-button {
+    white-space: nowrap;
+}
+
+.leave-status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.leave-status-badge.pending { background: #fff8e7; color: #9a6700; }
+.leave-status-badge.approved { background: #eaf7ec; color: #1f6d2a; }
+.leave-status-badge.rejected { background: #fff1f0; color: #b42318; }
+.leave-status-badge.cancelled { background: #f2f4f7; color: #667085; }
+
+.leave-review-overlay {
+    z-index: 1200;
+    padding: 24px;
+}
+
+.leave-review-modal {
+    width: min(1120px, 96vw);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--workforce-border, #e3e9e5);
+    border-radius: var(--workforce-modal-radius, 16px);
+    background: var(--workforce-surface, #fff);
+    color: var(--workforce-text, #26322b);
+    box-shadow: 0 24px 70px rgba(16, 24, 40, 0.2);
+    font-family: "Inter", Arial, sans-serif;
+}
+
+.leave-review-modal-header,
+.leave-review-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--workforce-border, #e3e9e5);
+    background: var(--workforce-surface, #fff);
+}
+
+.leave-review-modal-header h2 {
+    margin: 2px 0 0;
+    color: var(--workforce-green-text, #256b2a);
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.leave-review-modal-footer {
+    border-top: 1px solid var(--workforce-border, #e3e9e5);
+    border-bottom: 0;
+}
+
+.leave-review-modal-body {
+    overflow-y: auto;
+    padding: 20px 22px;
+    background: var(--workforce-surface, #fff);
+}
+
+.leave-review-section {
+    padding: 0 0 20px;
+    margin: 0 0 20px;
+    border-bottom: 1px solid var(--workforce-border, #e3e9e5);
+}
+
+.leave-review-section:last-child {
+    margin-bottom: 0;
+    border-bottom: 0;
+}
+
+.leave-review-section h3 {
+    margin: 0 0 10px;
+    color: var(--workforce-text, #26322b);
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.leave-review-section textarea,
+.leave-review-section select {
+    width: 100%;
+    border: 1px solid var(--workforce-border, #e3e9e5);
+    border-radius: var(--workforce-control-radius, 10px);
+    background: var(--workforce-input-bg, #fff);
+    color: var(--workforce-text, #26322b);
+    font-family: "Inter", Arial, sans-serif;
+    font-size: 0.84rem;
+}
+
+.leave-review-section select {
+    min-height: var(--workforce-control-height, 44px);
+    padding: 8px 10px;
+}
+
+.leave-review-section textarea {
+    min-height: 88px;
+    padding: 10px 12px;
+    resize: vertical;
+}
+
+.leave-review-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.leave-review-detail-grid > div,
+.leave-overlap-grid > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px;
+    border: 1px solid var(--workforce-border, #e3e9e5);
+    border-radius: 10px;
+    background: var(--workforce-surface-soft, #f8faf8);
+}
+
+.leave-review-detail-grid > div.full {
+    grid-column: 1 / -1;
+}
+
+.leave-review-detail-grid span,
+.leave-overlap-grid span,
+.leave-coverage-summary span,
+.leave-candidate-card span,
+.leave-candidate-card small {
+    color: var(--workforce-muted, #66736b);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.leave-review-detail-grid strong,
+.leave-overlap-grid strong,
+.leave-candidate-card strong {
+    color: var(--workforce-text, #26322b);
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.leave-review-section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 18px;
+    margin-bottom: 10px;
+}
+
+.leave-review-section-heading h3,
+.leave-review-section-heading p {
+    margin: 0;
+}
+
+.leave-review-section-heading p {
+    margin-top: 4px;
+    color: var(--workforce-muted, #66736b);
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.leave-default-cover {
+    width: min(360px, 100%);
+    flex: 0 0 min(360px, 100%);
+}
+
+.leave-default-cover span,
+.leave-cancel-reason label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--workforce-text, #26322b);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.leave-overlap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.leave-candidate-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+.leave-candidate-card {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px;
+    border: 1px solid var(--workforce-border, #e3e9e5);
+    border-radius: 10px;
+    background: var(--workforce-surface, #fff);
+}
+
+.leave-candidate-card.available {
+    border-color: #abefc6;
+    background: #ecfdf3;
+}
+
+.leave-candidate-card.warning {
+    border-color: var(--workforce-warning-border, #f6c98c);
+    background: var(--workforce-warning-bg, #fff8eb);
+}
+
+.leave-candidate-card .blocker {
+    color: var(--workforce-danger, #b42318);
+    font-weight: 700;
+}
+
+.leave-coverage-summary {
+    min-width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.leave-cancel-reason {
+    margin-top: 12px;
+}
+
+.leave-review-primary-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+@media screen and (max-width: 800px) {
+    .leave-approval-header,
+    .leave-review-section-heading,
+    .leave-review-modal-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .leave-pending-count {
+        align-self: flex-start;
+    }
+
+    .leave-review-detail-grid,
+    .leave-overlap-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .leave-default-cover {
+        width: 100%;
+        flex-basis: auto;
+    }
+
+    .leave-review-modal-footer > div,
+    .leave-review-primary-actions {
+        width: 100%;
+    }
+
+    .leave-review-primary-actions {
+        flex-direction: column;
+    }
+
+    .leave-review-modal-footer .workforce-button {
+        width: 100%;
+    }
+}
+
+:root[data-theme="dark"] .leave-status-badge.pending,
+[data-theme="dark"] .leave-status-badge.pending { background: #3a2b12; color: #ffcf70; }
+:root[data-theme="dark"] .leave-status-badge.approved,
+[data-theme="dark"] .leave-status-badge.approved { background: #17351d; color: #86efac; }
+:root[data-theme="dark"] .leave-status-badge.rejected,
+[data-theme="dark"] .leave-status-badge.rejected { background: #3a1917; color: #ffaaa6; }
+:root[data-theme="dark"] .leave-status-badge.cancelled,
+[data-theme="dark"] .leave-status-badge.cancelled { background: #25302a; color: #aab5ad; }
+:root[data-theme="dark"] .leave-candidate-card.available,
+[data-theme="dark"] .leave-candidate-card.available { background: #17351d; border-color: #2f6c3c; }
+
+/* Linked navigation focus */
+.leave-request-table tr.leave-row-deep-link > td {
+    background: #f0fdf4;
+    box-shadow: inset 0 1px 0 #bbdfc1, inset 0 -1px 0 #bbdfc1;
+}
+.leave-request-table tr.leave-row-deep-link > td:first-child {
+    box-shadow: inset 3px 0 0 #22a447, inset 0 1px 0 #bbdfc1, inset 0 -1px 0 #bbdfc1;
+}
+:root[data-theme="dark"] .leave-request-table tr.leave-row-deep-link > td,
+[data-theme="dark"] .leave-request-table tr.leave-row-deep-link > td { background: #17311f; }

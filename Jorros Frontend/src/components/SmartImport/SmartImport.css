@@ -1,0 +1,1235 @@
+.smart-import-overlay {
+    position: fixed;
+    inset: 0;
+    /* Keep the modal above the page header and profile menu. */
+    z-index: 20000;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 24px;
+
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(3px);
+}
+
+.smart-import-modal {
+    width: min(1180px, 96vw);
+    max-height: 94vh;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+
+    background: #ffffff;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+.smart-import-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+    padding: 20px 24px;
+
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.smart-import-modal-title {
+    display: flex;
+    align-items: center;
+
+    gap: 13px;
+}
+
+.smart-import-modal-title > .material-symbols-outlined {
+    width: 45px;
+    height: 45px;
+
+    display: grid;
+    place-items: center;
+
+    flex-shrink: 0;
+
+    border-radius: 11px;
+
+    background: #e8f5e9;
+    color: #166534;
+
+    font-size: 25px;
+}
+
+.smart-import-modal-title h2,
+.smart-import-modal-title p {
+    margin: 0;
+}
+
+.smart-import-modal-title h2 {
+    color: #166534;
+
+    font-size: 1.3rem;
+    line-height: 1.25;
+}
+
+.smart-import-modal-title p {
+    margin-top: 4px;
+
+    color: #6b7280;
+
+    font-size: 0.76rem;
+    line-height: 1.45;
+}
+
+.smart-import-modal-header > button {
+    width: 36px;
+    height: 36px;
+
+    display: grid;
+    place-items: center;
+
+    flex-shrink: 0;
+    padding: 0;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #f3f4f6;
+    color: #4b5563;
+
+    cursor: pointer;
+}
+
+.smart-import-modal-header > button:hover {
+    background: #e5e7eb;
+}
+
+.smart-import-modal-body {
+    flex: 1;
+
+    overflow-y: auto;
+    padding: 22px 24px;
+
+    background: #fafafa;
+}
+
+.smart-import-dropzone {
+    min-height: 330px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: 10px;
+    padding: 34px;
+
+    border: 2px dashed #cbd5e1;
+    border-radius: 15px;
+
+    background: #ffffff;
+    text-align: center;
+}
+
+.smart-import-dropzone.selected {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+.smart-import-dropzone > .material-symbols-outlined {
+    font-size: 50px;
+    color: #16a34a;
+}
+
+.smart-import-dropzone h3,
+.smart-import-dropzone p,
+.smart-import-dropzone small {
+    margin: 0;
+}
+
+.smart-import-dropzone h3 {
+    color: #1f2937;
+    font-size: 1.1rem;
+}
+
+.smart-import-dropzone p {
+    max-width: 610px;
+
+    color: #6b7280;
+    font-size: 0.78rem;
+    line-height: 1.55;
+}
+
+.smart-import-dropzone small {
+    color: #9ca3af;
+    font-size: 0.7rem;
+}
+
+.smart-import-dropzone button,
+.smart-import-modal-footer button,
+.smart-import-history-heading button {
+    min-height: 40px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+    padding: 9px 15px;
+
+    border-radius: 8px;
+
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.smart-import-dropzone button {
+    margin-top: 6px;
+
+    border: 1px solid #166534;
+
+    background: #166534;
+    color: #ffffff;
+}
+
+.smart-import-file-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 14px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+
+    border: 1px solid #d1fae5;
+    border-radius: 12px;
+
+    background: #f0fdf4;
+}
+
+.smart-import-file-summary > div {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+}
+
+.smart-import-file-summary > div > .material-symbols-outlined {
+    color: #166534;
+}
+
+.smart-import-file-summary strong,
+.smart-import-file-summary small {
+    display: block;
+}
+
+.smart-import-file-summary strong {
+    overflow: hidden;
+
+    color: #1f2937;
+
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.smart-import-file-summary small {
+    margin-top: 3px;
+
+    color: #6b7280;
+    font-size: 0.68rem;
+}
+
+.smart-import-file-summary code {
+    padding: 6px 8px;
+
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+
+    background: #ffffff;
+    color: #4b5563;
+
+    font-size: 0.66rem;
+}
+
+.smart-import-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.smart-import-summary-card {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+    padding: 12px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 11px;
+
+    background: #ffffff;
+}
+
+.smart-import-summary-card > .material-symbols-outlined {
+    width: 34px;
+    height: 34px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 8px;
+
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.smart-import-summary-card strong,
+.smart-import-summary-card small {
+    display: block;
+}
+
+.smart-import-summary-card strong {
+    color: #111827;
+    font-size: 1rem;
+}
+
+.smart-import-summary-card small {
+    margin-top: 2px;
+
+    color: #6b7280;
+    font-size: 0.66rem;
+}
+
+.smart-import-summary-card.valid > .material-symbols-outlined {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.smart-import-summary-card.invalid > .material-symbols-outlined {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.smart-import-summary-card.duplicate > .material-symbols-outlined {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.smart-import-summary-card.generated > .material-symbols-outlined {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.smart-import-exact-duplicate,
+.smart-import-admin-warning,
+.smart-import-report-warning,
+.smart-import-error-banner {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 12px;
+    padding: 16px;
+
+    border-radius: 11px;
+}
+
+.smart-import-exact-duplicate {
+    border: 1px solid #fed7aa;
+    background: #fff7ed;
+}
+
+.smart-import-exact-duplicate > .material-symbols-outlined {
+    color: #c2410c;
+    font-size: 25px;
+}
+
+.smart-import-exact-duplicate h3,
+.smart-import-exact-duplicate p {
+    margin: 0;
+}
+
+.smart-import-exact-duplicate h3 {
+    color: #9a3412;
+    font-size: 0.95rem;
+}
+
+.smart-import-exact-duplicate p {
+    margin-top: 5px;
+
+    color: #7c2d12;
+    font-size: 0.74rem;
+    line-height: 1.5;
+}
+
+.smart-import-exact-duplicate dl {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 9px;
+    margin: 14px 0 0;
+}
+
+.smart-import-exact-duplicate dl div {
+    padding: 9px;
+
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.smart-import-exact-duplicate dt,
+.smart-import-exact-duplicate dd {
+    margin: 0;
+}
+
+.smart-import-exact-duplicate dt {
+    color: #9a3412;
+    font-size: 0.62rem;
+}
+
+.smart-import-exact-duplicate dd {
+    margin-top: 3px;
+
+    color: #431407;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.smart-import-admin-warning {
+    margin-bottom: 14px;
+
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+}
+
+.smart-import-admin-warning > .material-symbols-outlined {
+    color: #2563eb;
+}
+
+.smart-import-admin-warning strong {
+    color: #1d4ed8;
+    font-size: 0.78rem;
+}
+
+.smart-import-admin-warning ul {
+    margin: 5px 0 0;
+    padding-left: 18px;
+
+    color: #475569;
+    font-size: 0.7rem;
+}
+
+.smart-import-sheet-list {
+    display: grid;
+
+    gap: 14px;
+}
+
+.smart-import-sheet-card {
+    padding: 16px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+
+    background: #ffffff;
+}
+
+.smart-import-sheet-header,
+.smart-import-type-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 14px;
+}
+
+.smart-import-sheet-title {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+}
+
+.smart-import-sheet-title > .material-symbols-outlined {
+    width: 36px;
+    height: 36px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 9px;
+
+    background: #e8f5e9;
+    color: #166534;
+}
+
+.smart-import-sheet-title h3,
+.smart-import-sheet-title p {
+    margin: 0;
+}
+
+.smart-import-sheet-title h3 {
+    color: #1f2937;
+    font-size: 0.9rem;
+}
+
+.smart-import-sheet-title p {
+    margin-top: 3px;
+
+    color: #6b7280;
+    font-size: 0.68rem;
+}
+
+.smart-import-sheet-controls {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+}
+
+.smart-import-confidence {
+    padding: 5px 8px;
+
+    border-radius: 999px;
+
+    font-size: 0.64rem;
+    font-weight: 700;
+}
+
+.smart-import-confidence.high {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.smart-import-confidence.medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.smart-import-confidence.low {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.smart-import-check {
+    display: flex;
+    align-items: center;
+
+    gap: 6px;
+
+    color: #4b5563;
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+.smart-import-type-row {
+    padding-top: 13px;
+    margin-top: 13px;
+
+    border-top: 1px solid #f0f0f0;
+}
+
+.smart-import-type-row > label {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    color: #4b5563;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.smart-import-type-row select,
+.smart-import-mapping-grid select,
+.smart-import-duplicate-action {
+    min-height: 36px;
+    padding: 7px 9px;
+
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+
+    background: #ffffff;
+    color: #374151;
+
+    font-family: inherit;
+    font-size: 0.7rem;
+}
+
+.smart-import-sheet-counts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+
+    gap: 6px;
+}
+
+.smart-import-sheet-counts span {
+    padding: 5px 7px;
+
+    border-radius: 6px;
+
+    background: #f3f4f6;
+    color: #4b5563;
+
+    font-size: 0.63rem;
+    font-weight: 600;
+}
+
+.smart-import-sheet-counts .valid {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.smart-import-sheet-counts .invalid {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.smart-import-sheet-counts .duplicate {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.smart-import-report-warning {
+    margin-top: 13px;
+
+    border: 1px solid #d1d5db;
+    background: #f8fafc;
+}
+
+.smart-import-report-warning > .material-symbols-outlined {
+    color: #64748b;
+}
+
+.smart-import-report-warning strong {
+    color: #334155;
+    font-size: 0.75rem;
+}
+
+.smart-import-report-warning p {
+    margin: 4px 0 0;
+
+    color: #64748b;
+    font-size: 0.68rem;
+    line-height: 1.5;
+}
+
+.smart-import-mapping-details {
+    margin-top: 13px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+
+    background: #fafafa;
+}
+
+.smart-import-mapping-details summary {
+    padding: 10px 12px;
+
+    color: #166534;
+    font-size: 0.72rem;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.smart-import-mapping-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    gap: 10px;
+    padding: 0 12px 12px;
+}
+
+.smart-import-mapping-grid label {
+    min-width: 0;
+}
+
+.smart-import-mapping-grid label > span {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #4b5563;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.smart-import-mapping-grid em {
+    margin-left: 2px;
+
+    color: #dc2626;
+    font-style: normal;
+}
+
+.smart-import-mapping-grid select {
+    width: 100%;
+}
+
+.smart-import-row-preview {
+    margin-top: 13px;
+}
+
+.smart-import-row-preview-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+
+    gap: 10px;
+    margin-bottom: 7px;
+}
+
+.smart-import-row-preview-heading strong {
+    color: #374151;
+    font-size: 0.74rem;
+}
+
+.smart-import-row-preview-heading small {
+    color: #9ca3af;
+    font-size: 0.62rem;
+}
+
+.smart-import-preview-table-wrap,
+.smart-import-history-table-wrap {
+    width: 100%;
+
+    overflow-x: auto;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+}
+
+.smart-import-preview-table,
+.smart-import-history-table {
+    width: 100%;
+
+    border-collapse: collapse;
+}
+
+.smart-import-preview-table th,
+.smart-import-preview-table td,
+.smart-import-history-table th,
+.smart-import-history-table td {
+    padding: 9px 10px;
+
+    border-bottom: 1px solid #eeeeee;
+
+    color: #4b5563;
+    font-size: 0.66rem;
+    text-align: left;
+    vertical-align: top;
+}
+
+.smart-import-preview-table th,
+.smart-import-history-table th {
+    background: #f8faf8;
+    color: #166534;
+
+    font-size: 0.64rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.smart-import-preview-table td strong,
+.smart-import-preview-table td small,
+.smart-import-history-table td strong,
+.smart-import-history-table td small {
+    display: block;
+}
+
+.smart-import-preview-table td strong,
+.smart-import-history-table td strong {
+    color: #1f2937;
+}
+
+.smart-import-preview-table td small,
+.smart-import-history-table td small {
+    margin-top: 3px;
+
+    color: #6b7280;
+}
+
+.smart-import-generated-code {
+    color: #4338ca !important;
+}
+
+.smart-import-row-status,
+.smart-import-history-status {
+    display: inline-flex;
+    padding: 5px 7px;
+
+    border-radius: 999px;
+
+    background: #e5e7eb;
+    color: #4b5563;
+
+    font-size: 0.61rem;
+    font-weight: 700;
+}
+
+.smart-import-row-status.ready,
+.smart-import-history-status.completed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.smart-import-row-status.invalid,
+.smart-import-row-status.error,
+.smart-import-history-status.failed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.smart-import-row-status.unsupported,
+.smart-import-row-status.skipped {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.smart-import-history-status.rolled-back {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.smart-import-duplicate-label {
+    margin-top: 4px !important;
+
+    color: #b45309 !important;
+}
+
+.smart-import-error-list,
+.smart-import-warning-list {
+    margin: 0;
+    padding-left: 15px;
+
+    font-size: 0.63rem;
+    line-height: 1.45;
+}
+
+.smart-import-error-list {
+    color: #b91c1c;
+}
+
+.smart-import-warning-list {
+    color: #92400e;
+}
+
+.smart-import-ok-text,
+.smart-import-new-label {
+    color: #15803d;
+    font-size: 0.63rem;
+    font-weight: 600;
+}
+
+.smart-import-permission-note {
+    margin: 10px 0 0;
+    padding: 8px 10px;
+
+    border-radius: 7px;
+
+    background: #eff6ff;
+    color: #1e40af;
+
+    font-size: 0.65rem;
+    line-height: 1.5;
+}
+
+.smart-import-error-banner {
+    margin-top: 14px;
+
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.smart-import-error-banner p {
+    margin: 0;
+
+    font-size: 0.72rem;
+    line-height: 1.45;
+}
+
+.smart-import-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 8px;
+    padding: 14px 24px;
+
+    border-top: 1px solid #e5e7eb;
+
+    background: #ffffff;
+}
+
+.smart-import-modal-footer button.secondary {
+    border: 1px solid #d1d5db;
+
+    background: #ffffff;
+    color: #166534;
+}
+
+.smart-import-modal-footer button.secondary:hover {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+
+.smart-import-modal-footer button.primary {
+    border: 1px solid #166534;
+
+    background: #166534;
+    color: #ffffff;
+}
+
+.smart-import-modal-footer button.primary:hover {
+    background: #14532d;
+}
+
+.smart-import-modal-footer button.warning {
+    border: 1px solid #f59e0b;
+
+    background: #fff7ed;
+    color: #b45309;
+}
+
+.smart-import-modal-footer button:disabled,
+.smart-import-dropzone button:disabled {
+    opacity: 0.55;
+
+    cursor: not-allowed;
+}
+
+/* Import history inside Settings */
+
+.smart-import-history-card {
+    margin-top: 20px;
+
+    overflow: hidden;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+
+    background: #ffffff;
+}
+
+.smart-import-history-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 12px;
+    padding: 17px 19px;
+}
+
+.smart-import-history-heading h2,
+.smart-import-history-heading p {
+    margin: 0;
+}
+
+.smart-import-history-heading h2 {
+    color: #166534;
+    font-size: 1rem;
+}
+
+.smart-import-history-heading p {
+    margin-top: 4px;
+
+    color: #777777;
+    font-size: 0.7rem;
+}
+
+.smart-import-history-heading button {
+    width: 36px;
+    min-height: 36px;
+    padding: 0;
+
+    border: 1px solid #d1d5db;
+
+    background: #ffffff;
+    color: #166534;
+}
+
+.smart-import-history-table td:first-child {
+    min-width: 180px;
+}
+
+.smart-import-history-actions {
+    display: flex;
+
+    gap: 5px;
+}
+
+.smart-import-history-actions button {
+    width: 31px;
+    height: 31px;
+
+    display: grid;
+    place-items: center;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 7px;
+
+    background: #f0fdf4;
+    color: #166534;
+
+    cursor: pointer;
+}
+
+.smart-import-history-actions button.rollback {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.smart-import-history-empty {
+    padding: 35px !important;
+
+    color: #9ca3af !important;
+    text-align: center !important;
+}
+
+.smart-import-history-empty .material-symbols-outlined {
+    font-size: 34px;
+}
+
+.smart-import-history-empty p {
+    margin: 6px 0 0;
+}
+
+.smart-import-history-card > footer {
+    padding: 11px 17px;
+
+    border-top: 1px solid #e5e7eb;
+
+    color: #777777;
+    font-size: 0.68rem;
+}
+
+@media screen and (max-width: 980px) {
+    .smart-import-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .smart-import-mapping-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .smart-import-exact-duplicate dl {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media screen and (max-width: 700px) {
+    .smart-import-overlay {
+        padding: 7px;
+    }
+
+    .smart-import-modal {
+        max-height: 97vh;
+    }
+
+    .smart-import-modal-header,
+    .smart-import-modal-footer {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .smart-import-modal-body {
+        padding: 16px;
+    }
+
+    .smart-import-sheet-header,
+    .smart-import-type-row,
+    .smart-import-file-summary,
+    .smart-import-row-preview-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .smart-import-sheet-controls,
+    .smart-import-sheet-counts {
+        width: 100%;
+
+        justify-content: flex-start;
+    }
+
+    .smart-import-summary-grid,
+    .smart-import-mapping-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .smart-import-file-summary code {
+        max-width: 100%;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .smart-import-modal-footer > button {
+        width: 100%;
+    }
+}
+
+html[data-theme="dark"] .smart-import-modal,
+html[data-theme="dark"] .smart-import-sheet-card,
+html[data-theme="dark"] .smart-import-summary-card,
+html[data-theme="dark"] .smart-import-history-card,
+html[data-theme="dark"] .smart-import-dropzone,
+html[data-theme="dark"] .smart-import-modal-footer {
+    border-color: #2b3d32;
+    background: #15241b;
+}
+
+html[data-theme="dark"] .smart-import-modal-body {
+    background: #0d1511;
+}
+
+html[data-theme="dark"] .smart-import-sheet-card h3,
+html[data-theme="dark"] .smart-import-summary-card strong,
+html[data-theme="dark"] .smart-import-preview-table td strong,
+html[data-theme="dark"] .smart-import-history-table td strong,
+html[data-theme="dark"] .smart-import-dropzone h3 {
+    color: #e5eee8;
+}
+
+/* Multi-sheet workbook overview */
+.smart-import-workbook-overview {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #dbe4df;
+    border-radius: 12px;
+    background: #f8fbf9;
+}
+
+.smart-import-workbook-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.smart-import-workbook-heading > div {
+    display: grid;
+    gap: 2px;
+}
+
+.smart-import-workbook-heading strong {
+    color: #14532d;
+    font-size: 0.82rem;
+}
+
+.smart-import-workbook-heading small {
+    color: #64748b;
+    font-size: 0.7rem;
+}
+
+.smart-import-workbook-heading > .material-symbols-outlined {
+    color: #15803d;
+}
+
+.smart-import-workbook-sheets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 8px;
+}
+
+.smart-import-workbook-sheet {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border: 1px solid #dbe4df;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.smart-import-workbook-sheet > .material-symbols-outlined {
+    color: #16a34a;
+    font-size: 20px;
+}
+
+.smart-import-workbook-sheet > div {
+    min-width: 0;
+    display: grid;
+    gap: 1px;
+}
+
+.smart-import-workbook-sheet strong,
+.smart-import-workbook-sheet small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.smart-import-workbook-sheet strong {
+    color: #1f2937;
+    font-size: 0.74rem;
+}
+
+.smart-import-workbook-sheet small {
+    color: #64748b;
+    font-size: 0.66rem;
+}
+
+.smart-import-workbook-sheet em {
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 0.62rem;
+    font-style: normal;
+    font-weight: 700;
+}
+
+.smart-import-workbook-sheet.excluded {
+    opacity: 0.7;
+    background: #f8fafc;
+}
+
+.smart-import-workbook-sheet.excluded em {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+html[data-theme="dark"] .smart-import-workbook-overview {
+    border-color: #334155;
+    background: #111827;
+}
+
+html[data-theme="dark"] .smart-import-workbook-sheet {
+    border-color: #334155;
+    background: #0f172a;
+}
+
+html[data-theme="dark"] .smart-import-workbook-heading strong,
+html[data-theme="dark"] .smart-import-workbook-sheet strong {
+    color: #e5e7eb;
+}
+
+html[data-theme="dark"] .smart-import-workbook-heading small,
+html[data-theme="dark"] .smart-import-workbook-sheet small {
+    color: #94a3b8;
+}

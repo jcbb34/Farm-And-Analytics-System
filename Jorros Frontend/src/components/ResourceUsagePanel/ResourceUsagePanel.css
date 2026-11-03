@@ -1,0 +1,600 @@
+.resource-usage-panel {
+    font-family: "Inter", Arial, sans-serif;
+    margin-top: 18px;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    background: #ffffff;
+}
+
+.resource-usage-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 16px;
+}
+
+.resource-usage-heading h3 {
+    margin: 0 0 5px;
+    color: #14532d;
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.resource-usage-heading p {
+    max-width: 680px;
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.resource-usage-heading > button,
+.resource-usage-form-actions button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 11px 24px;
+    border: 0;
+    border-radius: 9px;
+    background: #166534;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.resource-usage-heading > button .material-symbols-outlined,
+.resource-usage-form-actions .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.resource-usage-totals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.resource-usage-totals > div {
+    padding: 11px 13px;
+    border: 1px solid #dcfce7;
+    border-radius: 11px;
+    background: #f0fdf4;
+}
+
+.resource-usage-totals small,
+.resource-usage-row small {
+    color: #6b7280;
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.resource-usage-totals strong {
+    display: block;
+    margin-top: 3px;
+    color: #166534;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.resource-usage-form {
+    margin-bottom: 18px;
+    padding: 16px;
+    border: 1px solid #d1fae5;
+    border-radius: 13px;
+    background: #f8fffa;
+}
+
+.resource-usage-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+}
+
+.resource-usage-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.resource-usage-field label {
+    color: #333333;
+    font-size: 0.87rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.resource-usage-field input,
+.resource-usage-field select,
+.resource-usage-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+    padding: 13px 14px;
+    background: #ffffff;
+    color: #333333;
+    font-family: inherit;
+    font-size: 0.87rem;
+    font-weight: 400;
+    line-height: 1.35;
+}
+
+
+.resource-usage-field input::placeholder,
+.resource-usage-field textarea::placeholder {
+    color: #9ca3af;
+    font-size: 0.87rem;
+    font-weight: 400;
+    opacity: 1;
+}
+
+.resource-usage-field input:focus,
+.resource-usage-field select:focus,
+.resource-usage-field textarea:focus {
+    border-color: #16a34a;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.13);
+}
+
+.resource-usage-unit-input {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+}
+
+.resource-usage-unit-input input {
+    border-radius: 9px 0 0 9px;
+}
+
+.resource-usage-unit-input span {
+    min-width: 62px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    border: 1px solid #d1d5db;
+    border-left: 0;
+    border-radius: 0 9px 9px 0;
+    background: #f3f4f6;
+    color: #4b5563;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.resource-usage-stock-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin: 1px 0 13px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: #ecfdf5;
+    color: #4b5563;
+    font-size: 0.8rem;
+}
+
+.resource-usage-stock-preview strong {
+    color: #166534;
+}
+
+.resource-usage-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+}
+
+.resource-usage-form-actions button.secondary {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #374151;
+}
+
+.resource-usage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.resource-usage-row {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 11px;
+    padding: 12px;
+    border: 1px solid #edf0ee;
+    border-radius: 12px;
+}
+
+.resource-usage-row-icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: #ecfdf5;
+    color: #15803d;
+    font-size: 19px;
+}
+
+.resource-usage-row-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.resource-usage-row-title strong {
+    overflow: hidden;
+    color: #1f2937;
+    font-size: 0.87rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.resource-usage-row-title span {
+    flex-shrink: 0;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.resource-usage-row-main p {
+    margin: 5px 0 0;
+    color: #4b5563;
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.resource-usage-row-quantity {
+    min-width: 92px;
+    text-align: right;
+}
+
+.resource-usage-row-quantity strong,
+.resource-usage-row-quantity small {
+    display: block;
+}
+
+.resource-usage-row-quantity strong {
+    color: #1f2937;
+    font-size: 0.87rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.resource-usage-row-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.resource-usage-row-actions button {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 9px;
+    background: #ecfdf5;
+    color: #15803d;
+    cursor: pointer;
+}
+
+.resource-usage-row-actions button.delete {
+    background: #fff1f2;
+    color: #dc2626;
+}
+
+.resource-usage-row-actions .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.resource-usage-empty,
+.resource-usage-error {
+    padding: 16px;
+    border-radius: 11px;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+.resource-usage-empty {
+    background: #f9fafb;
+    color: #6b7280;
+}
+
+.resource-usage-empty .material-symbols-outlined {
+    display: block;
+    margin-bottom: 5px;
+    color: #9ca3af;
+}
+
+.resource-usage-error {
+    margin-bottom: 12px;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+@media (max-width: 760px) {
+    .resource-usage-heading {
+        flex-direction: column;
+    }
+
+    .resource-usage-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .resource-usage-row {
+        grid-template-columns: 38px minmax(0, 1fr) auto;
+    }
+
+    .resource-usage-row-actions {
+        grid-column: 2 / -1;
+        justify-content: flex-end;
+    }
+}
+
+/* Scheduled employee work uses the same visual system as actual usage while
+   keeping the two actions unmistakably separate. */
+.resource-usage-heading-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px;
+    flex-wrap: wrap;
+}
+
+.resource-usage-heading-actions > button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 11px 20px;
+    border: 0;
+    border-radius: 9px;
+    background: #166534;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.resource-usage-heading-actions > button.secondary {
+    border: 1px solid #bbf7d0;
+    background: #ffffff;
+    color: #166534;
+}
+
+.resource-usage-workflow-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin: -2px 0 16px;
+    padding: 11px 13px;
+    border: 1px solid #dcfce7;
+    border-radius: 10px;
+    background: #f0fdf4;
+    color: #4b5563;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.resource-usage-workflow-note .material-symbols-outlined {
+    color: #15803d;
+    font-size: 19px;
+}
+
+.resource-usage-workflow-note strong {
+    color: #166534;
+}
+
+.resource-schedule-form {
+    border-color: #bbf7d0;
+    background: #fbfffc;
+}
+
+.resource-schedule-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.resource-schedule-title > .material-symbols-outlined {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 38px;
+    border-radius: 10px;
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 20px;
+}
+
+.resource-schedule-title strong,
+.resource-schedule-title small {
+    display: block;
+}
+
+.resource-schedule-title strong {
+    color: #166534;
+    font-size: 0.98rem;
+    font-weight: 700;
+}
+
+.resource-schedule-title small {
+    margin-top: 3px;
+    color: #6b7280;
+    font-size: 0.8rem;
+}
+
+.resource-usage-stock-preview.insufficient {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+}
+
+.resource-stock-warning,
+.resource-stock-warning strong {
+    color: #b91c1c !important;
+}
+
+.resource-schedule-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    color: #374151;
+    font-size: 0.84rem;
+    font-weight: 500;
+}
+
+.resource-schedule-checkbox input {
+    width: 16px;
+    height: 16px;
+    accent-color: #15803d;
+}
+
+.resource-usage-form-actions button:disabled,
+.resource-usage-heading-actions > button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+@media (max-width: 760px) {
+    .resource-usage-heading-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .resource-usage-heading-actions > button {
+        flex: 1 1 160px;
+    }
+}
+
+.resource-scheduled-work {
+    margin-bottom: 16px;
+    padding: 13px;
+    border: 1px solid #dbeafe;
+    border-radius: 11px;
+    background: #f8fbff;
+}
+
+.resource-scheduled-work-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 10px;
+}
+
+.resource-scheduled-work-title > .material-symbols-outlined {
+    color: #1d4ed8;
+    font-size: 20px;
+}
+
+.resource-scheduled-work-title strong,
+.resource-scheduled-work-title small {
+    display: block;
+}
+
+.resource-scheduled-work-title strong {
+    color: #1f2937;
+    font-size: 0.86rem;
+}
+
+.resource-scheduled-work-title small,
+.resource-scheduled-more {
+    margin-top: 2px;
+    color: #6b7280;
+    font-size: 0.76rem;
+}
+
+.resource-scheduled-work-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.resource-scheduled-work-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+    background: #ffffff;
+}
+
+.resource-scheduled-work-row > div:first-child {
+    min-width: 0;
+}
+
+.resource-scheduled-work-row strong,
+.resource-scheduled-work-row small {
+    display: block;
+}
+
+.resource-scheduled-work-row strong {
+    overflow: hidden;
+    color: #374151;
+    font-size: 0.82rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.resource-scheduled-work-row small {
+    margin-top: 2px;
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+.resource-scheduled-work-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    color: #4b5563;
+    font-size: 0.77rem;
+    font-weight: 600;
+}
+
+.resource-task-status {
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #4b5563;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.resource-task-status.in-progress { background: #eff6ff; color: #1d4ed8; }
+.resource-task-status.submitted-for-review { background: #f5f3ff; color: #7e22ce; }
+.resource-task-status.returned { background: #fff7ed; color: #c2410c; }
+
+.resource-scheduled-more {
+    display: block;
+    margin-top: 8px;
+}

@@ -1,0 +1,129 @@
+.two-factor-container {
+    width: min(430px, 100%);
+}
+
+.two-factor-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    margin-bottom: 18px;
+}
+
+.two-factor-shield {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 25px;
+}
+
+.two-factor-heading {
+    margin-bottom: 0;
+}
+
+.two-factor-account {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 17px;
+    border: 1px solid #d1fae5;
+    border-radius: 9px;
+    background: #f0fdf4;
+    color: #166534;
+    font-size: 0.75rem;
+}
+
+.two-factor-account .material-symbols-outlined {
+    font-size: 19px;
+}
+
+.two-factor-code-wrapper input {
+    text-align: center;
+    letter-spacing: 0.38em;
+    font-size: 1.05rem;
+    font-weight: 750;
+}
+
+.two-factor-help-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 0.67rem;
+    line-height: 1.45;
+}
+
+.two-factor-help-row strong {
+    flex-shrink: 0;
+    color: #166534;
+    white-space: nowrap;
+}
+
+.two-factor-back-button {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: #4b5563;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.two-factor-back-button:hover:not(:disabled) {
+    background: #f3f4f6;
+    color: #166534;
+}
+
+.two-factor-back-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.two-factor-back-button .material-symbols-outlined {
+    font-size: 18px;
+}
+
+html[data-theme="dark"] .two-factor-shield {
+    background: #173d25;
+    color: #bbf7d0;
+}
+
+html[data-theme="dark"] .two-factor-account {
+    border-color: #2f5f40;
+    background: #12291b;
+    color: #b7f7ca;
+}
+
+html[data-theme="dark"] .two-factor-help-row {
+    color: #a9bbb0;
+}
+
+html[data-theme="dark"] .two-factor-help-row strong {
+    color: #b7f7ca;
+}
+
+html[data-theme="dark"] .two-factor-back-button {
+    color: #a9bbb0;
+}
+
+html[data-theme="dark"] .two-factor-back-button:hover:not(:disabled) {
+    background: #173022;
+    color: #d9fbe4;
+}

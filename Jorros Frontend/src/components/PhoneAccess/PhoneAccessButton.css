@@ -1,0 +1,79 @@
+.phone-access-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid #d8e4dc;
+    border-radius: 12px;
+    background: #fff;
+    color: #1b7d39;
+    cursor: pointer;
+}
+
+.phone-access-trigger:hover { background: #eff8f1; }
+.phone-access-trigger:focus-visible,
+.phone-access-dialog button:focus-visible,
+.phone-access-dialog select:focus-visible,
+.phone-access-link:focus-visible { outline: 3px solid #22a554; outline-offset: 3px; }
+
+.phone-access-dialog {
+    width: min(460px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    margin: auto;
+    padding: 0;
+    overflow: auto;
+    border: 1px solid #d8e4dc;
+    border-radius: 18px;
+    background: #fff;
+    color: #26362d;
+    box-shadow: 0 24px 70px #0005;
+}
+
+.phone-access-dialog::backdrop { background: #10291bb3; }
+.phone-access-content { padding: 24px; }
+.phone-access-heading { display: flex; align-items: flex-start; gap: 12px; }
+.phone-access-heading h2 { flex: 1; margin: 0; font-size: 1.3rem; color: #166534; }
+.phone-access-heading button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+.phone-access-content p { font-size: .9rem; line-height: 1.55; }
+.phone-access-result { display: grid; justify-items: center; gap: 14px; text-align: center; }
+.phone-access-select { display: grid; gap: 6px; width: 100%; text-align: left; font-size: .85rem; font-weight: 600; }
+.phone-access-select select { width: 100%; min-width: 0; padding: 10px; border: 1px solid #d8e4dc; border-radius: 9px; background: #fff; color: inherit; font: inherit; }
+.phone-access-qr { display: block; width: 256px; max-width: 100%; height: auto; aspect-ratio: 1; background: #fff; image-rendering: pixelated; }
+.phone-access-link { max-width: 100%; overflow-wrap: anywhere; color: #166534; font-weight: 700; font-size: .9rem; }
+.phone-access-help { margin: 0; color: #52615a; }
+.phone-access-error { color: #b42318; }
+.phone-access-refresh { width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 10px; background: #166534; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.phone-access-refresh:disabled { opacity: .65; cursor: wait; }
+
+html[data-theme="dark"] .phone-access-trigger,
+html[data-theme="dark"] .phone-access-dialog,
+html[data-theme="dark"] .phone-access-select select { border-color: #31503d; background: #0d2116; color: #f1f7f3; color-scheme: dark; }
+html[data-theme="dark"] .phone-access-trigger,
+html[data-theme="dark"] .phone-access-heading h2,
+html[data-theme="dark"] .phone-access-link { color: #72dd8d; }
+html[data-theme="dark"] .phone-access-help { color: #b8cebf; }
+html[data-theme="dark"] .phone-access-error { color: #ffb4ab; }
+html[data-theme="dark"] .phone-access-trigger:hover { background: #193c26; }
+
+/* Touch browsers can retain :hover on the fixed rail after a tap. Keep that
+   hover state from covering the dashboard QR control; keyboard expansion stays. */
+@media screen and (max-width: 720px) and (hover: none) {
+    .dashboard-layout .sidebar:hover:not(:focus-within) {
+        width: var(--sidebar-collapsed-width, 80px);
+    }
+}

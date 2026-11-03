@@ -1,0 +1,39 @@
+.workforce-schedule-modal {
+    width: min(1040px, 96vw);
+    max-height: min(92dvh, 940px);
+}
+
+.workforce-schedule-form {
+    min-height: 0;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+
+.workforce-schedule-body {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 20px 24px;
+}
+
+.workforce-schedule-footer {
+    flex: 0 0 auto;
+    padding: 14px 24px 20px;
+    background: var(--workforce-surface, #fff);
+}
+
+.workforce-schedule-state {
+    padding: 24px;
+    color: var(--workforce-text, #26322b);
+}
+
+.workforce-schedule-state p {
+    margin: 0 0 12px;
+}
+
+@media (max-width: 720px) {
+    .workforce-schedule-modal { width: 100%; max-height: 96dvh; }
+    .workforce-schedule-body { padding: 14px; }
+    .workforce-schedule-footer { padding: 14px; }
+}

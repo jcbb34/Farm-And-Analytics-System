@@ -1,0 +1,198 @@
+.livestock-movement-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.52);
+    overscroll-behavior: contain;
+}
+
+.livestock-movement-modal {
+    width: min(720px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
+}
+
+.livestock-movement-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.livestock-movement-header h2 {
+    margin: 0;
+    color: #166534;
+    font-size: 1.3rem;
+}
+
+.livestock-movement-header p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 0.86rem;
+}
+
+.livestock-movement-header > button {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.livestock-movement-body {
+    display: grid;
+    gap: 14px;
+    padding: 20px 22px 22px;
+}
+
+.livestock-movement-mode-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.livestock-movement-mode-row button {
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+    background: #fff;
+    color: #475569;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.livestock-movement-mode-row button.active {
+    border-color: #16a34a;
+    background: #ecfdf3;
+    color: #166534;
+}
+
+.livestock-movement-note {
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: #f0fdf4;
+    color: #166534;
+    font-size: 0.84rem;
+}
+
+.livestock-movement-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.livestock-movement-body label {
+    display: grid;
+    gap: 6px;
+    color: #374151;
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.livestock-movement-body input,
+.livestock-movement-body select,
+.livestock-movement-body textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+    padding: 9px 10px;
+    background: #fff;
+    color: #111827;
+    font: inherit;
+    font-weight: 400;
+}
+
+.livestock-movement-body input,
+.livestock-movement-body select {
+    min-height: 40px;
+}
+
+.livestock-movement-reason {
+    grid-column: 1 / -1;
+}
+
+.livestock-movement-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+.livestock-movement-footer button {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.livestock-movement-footer .secondary {
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+}
+
+.livestock-movement-footer .primary {
+    border: 1px solid #15803d;
+    background: #15803d;
+    color: #fff;
+}
+
+@media (max-width: 640px) {
+    .livestock-movement-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.livestock-movement-breakdown {
+    margin: 16px 0;
+    padding: 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fafafa;
+}
+
+.livestock-movement-breakdown h3 {
+    margin: 0 0 12px;
+    color: #166534;
+    font-size: 0.9rem;
+}
+
+.livestock-movement-grid.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.livestock-movement-grid.health-four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.livestock-movement-breakdown label small {
+    display: block;
+    margin: 3px 0 6px;
+    color: #9ca3af;
+    font-size: 0.68rem;
+    font-weight: 500;
+}
+
+.livestock-movement-warning {
+    display: block;
+    margin-top: 6px;
+    color: #b45309;
+    font-size: 0.7rem;
+    line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+    .livestock-movement-grid.three,
+    .livestock-movement-grid.health-four {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

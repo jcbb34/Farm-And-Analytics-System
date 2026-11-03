@@ -1,0 +1,3425 @@
+.fi-layout {
+    min-height: 100vh;
+    background: #f5f8f6;
+    color: #1f2937;
+}
+
+.fi-content {
+    min-height: 100vh;
+    margin-left: 80px;
+    padding: var(--ui-page-pad-top) var(--ui-page-pad-x) var(--ui-page-pad-bottom);
+    transition: margin-left 0.25s ease;
+}
+
+.sidebar:hover ~ .fi-content {
+    margin-left: 250px;
+}
+
+.fi-page-header {
+    min-height: var(--ui-header-min-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+    padding: 8px 0 18px;
+    border-bottom: 2px solid var(--theme-green);
+}
+
+.fi-page-header h1 {
+    margin: 0 0 6px;
+    color: var(--theme-green);
+    font-size: var(--ui-page-title-size);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.fi-page-header p {
+    max-width: 900px;
+    margin: 0;
+    color: var(--theme-text-muted);
+    font-size: var(--ui-page-subtitle-size);
+    line-height: 1.5;
+}
+
+.fi-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 5px;
+    color: var(--theme-green);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.fi-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    display: flex;
+    gap: 8px;
+    margin: 8px 0 0;
+    padding: 6px;
+    overflow-x: auto;
+    border: 1px solid var(--theme-border);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--theme-shadow);
+}
+
+.fi-tabs button {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 13px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: #526159;
+    font-size: 0.88rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.fi-tabs button:hover {
+    background: #edf8f0;
+    color: #167836;
+}
+
+.fi-tabs button.active {
+    background: #18883c;
+    color: #ffffff;
+}
+
+.fi-tabs .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.fi-stack {
+    display: grid;
+    gap: 8px;
+}
+
+/* Keep one spacing rule between tabs and content */
+.fi-tabs + .fi-stack {
+    margin-top: 8px !important;
+    padding-top: 0 !important;
+}
+
+/* Keep the first card close to the tab bar */
+.fi-tabs + .fi-stack > :first-child {
+    margin-top: 0 !important;
+}
+
+/* Compact spacing used across Farm Intelligence sections */
+.fi-stack > .fi-card + .fi-card,
+.fi-stack > .fi-season-hero + .fi-card {
+    margin-top: 0;
+}
+
+.fi-two-column {
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: 8px;
+    align-items: start;
+}
+
+.fi-card {
+    min-width: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--theme-border);
+    border-radius: var(--ui-card-radius);
+    background: var(--theme-surface);
+    box-shadow: var(--theme-shadow);
+}
+
+.fi-season-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 94% 16%, rgba(39, 180, 76, 0.12), transparent 26%),
+        linear-gradient(135deg, #ffffff, #f4faf5);
+}
+
+.fi-season-copy {
+    min-width: 0;
+    max-width: 980px;
+    flex: 1;
+}
+
+.fi-season-copy h2 {
+    margin: 4px 0 6px;
+    color: #163b25;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.fi-season-copy > p {
+    margin: 0;
+    color: var(--theme-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.fi-season-icon {
+    width: 66px;
+    height: 66px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 18px;
+    background: #e4f5e8;
+    color: var(--theme-green);
+}
+
+.fi-season-icon .material-symbols-outlined {
+    font-size: 36px;
+}
+
+.fi-disclaimer {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 10px;
+    padding: 11px 13px;
+    border: 1px solid #cfe6d5;
+    border-radius: 11px;
+    background: rgba(230, 247, 234, 0.78);
+    color: #476052;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.fi-disclaimer .material-symbols-outlined {
+    color: #16823a;
+    font-size: 20px;
+}
+
+.fi-section-heading {
+    margin-bottom: 8px;
+}
+
+.fi-section-heading h3 {
+    margin: 0 0 4px;
+    color: #163b25;
+    font-size: var(--ui-section-title-size);
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.fi-section-heading p {
+    margin: 0;
+    color: #77857d;
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.fi-heading-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.fi-count-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #e4f6e9;
+    color: #167836;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.fi-form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.fi-form-grid.single {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fi-form-grid label {
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.fi-form-grid label.full,
+.fi-form-divider,
+.fi-form-actions {
+    grid-column: 1 / -1;
+}
+
+.fi-form-grid label > span,
+.fi-backup-settings label > span {
+    color: #3f5046;
+    font-size: 0.8rem;
+    font-weight: 650;
+}
+
+.fi-form-grid input,
+.fi-form-grid select,
+.fi-form-grid textarea,
+.fi-filter-row input,
+.fi-filter-row select,
+.fi-backup-settings select {
+    width: 100%;
+    min-height: var(--ui-control-height);
+    padding: 10px 12px;
+    border: 1px solid #cedbd2;
+    border-radius: 10px;
+    outline: none;
+    background: #ffffff;
+    color: #243129;
+    font: inherit;
+}
+
+.fi-form-grid textarea {
+    resize: vertical;
+    min-height: 95px;
+}
+
+.fi-form-grid input:focus,
+.fi-form-grid select:focus,
+.fi-form-grid textarea:focus,
+.fi-filter-row input:focus,
+.fi-filter-row select:focus,
+.fi-backup-settings select:focus {
+    border-color: #2aad52;
+    box-shadow: 0 0 0 3px rgba(42, 173, 82, 0.12);
+}
+
+.fi-form-grid input:disabled,
+.fi-form-grid select:disabled,
+.fi-form-grid textarea:disabled {
+    opacity: 0.67;
+    cursor: not-allowed;
+}
+
+.fi-unit-field {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid #cedbd2;
+    border-radius: 11px;
+    background: #ffffff;
+}
+
+.fi-unit-field:focus-within {
+    border-color: #2aad52;
+    box-shadow: 0 0 0 3px rgba(42, 173, 82, 0.12);
+}
+
+.fi-unit-field > span {
+    padding: 0 12px;
+    color: #65736b;
+    font-weight: 700;
+}
+
+.fi-unit-field input {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.fi-form-divider {
+    margin-top: 4px;
+    padding-top: 17px;
+    border-top: 1px solid #e5ece7;
+    color: #163b25;
+    font-weight: 800;
+}
+
+.fi-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+}
+
+.fi-primary-button,
+.fi-secondary-button,
+.fi-complete-button {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.fi-primary-button {
+    border: 1px solid #16823a;
+    background: #198b3d;
+    color: #ffffff;
+}
+
+.fi-primary-button:hover {
+    background: #147633;
+}
+
+.fi-secondary-button {
+    border: 1px solid #cbd9cf;
+    background: #ffffff;
+    color: #1a7237;
+}
+
+.fi-secondary-button:hover {
+    background: #eff8f1;
+}
+
+.fi-recommendation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.fi-crop-card {
+    position: relative;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid #dce8df;
+    border-radius: 14px;
+    background: #fbfdfb;
+}
+
+.fi-crop-card.best {
+    border-color: #72c98a;
+    box-shadow: 0 0 0 2px rgba(44, 171, 80, 0.08);
+}
+
+.fi-crop-top,
+.fi-crop-title-row,
+.fi-crop-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.fi-crop-icon,
+.fi-module-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: #e5f7e9;
+    color: #16823a;
+}
+
+.fi-suitability,
+.fi-task-status,
+.fi-module-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.73rem;
+    font-weight: 850;
+}
+
+.fi-suitability.highly-suitable,
+.fi-suitability.suitable {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.fi-suitability.conditional {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.fi-suitability.not-preferred {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.fi-crop-title-row {
+    margin-top: 10px;
+}
+
+.fi-crop-title-row h4 {
+    margin: 0 0 3px;
+    color: #1d3325;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.fi-crop-title-row p {
+    margin: 0;
+    color: #829087;
+    font-size: 0.78rem;
+}
+
+.fi-crop-title-row > strong {
+    color: #16823a;
+    font-size: 1.2rem;
+}
+
+.fi-score-track,
+.fi-achievement-track {
+    width: 100%;
+    height: 8px;
+    margin: 9px 0;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e7ece8;
+}
+
+.fi-score-track span,
+.fi-achievement-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #3fb55e, #1b9d46);
+}
+
+.fi-crop-notes {
+    margin: 0;
+    color: #617067;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.fi-reasons {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: #6b786f;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.fi-reasons li + li {
+    margin-top: 5px;
+}
+
+.fi-crop-meta {
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid #e6eee8;
+    color: #718078;
+    font-size: 0.75rem;
+}
+
+.fi-production-list,
+.fi-task-list,
+.fi-snapshot-list {
+    display: grid;
+    gap: 8px;
+}
+
+.fi-production-card {
+    position: relative;
+    display: grid;
+    gap: 9px;
+    padding: 14px;
+    border: 1px solid #dde7df;
+    border-radius: 14px;
+    background: #fbfdfb;
+}
+
+.fi-production-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.fi-production-main h4,
+.fi-task-header h4 {
+    margin: 0 0 3px;
+    color: #203729;
+}
+
+.fi-production-main p,
+.fi-task-header p {
+    margin: 0;
+    color: #839087;
+    font-size: 0.78rem;
+}
+
+.fi-production-metrics {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.fi-production-metrics > div {
+    padding: 11px 12px;
+    border-radius: 11px;
+    background: #f0f6f2;
+}
+
+.fi-production-metrics small {
+    display: block;
+    margin-bottom: 4px;
+    color: #7c8a81;
+    font-size: 0.7rem;
+}
+
+.fi-production-metrics strong {
+    color: #24362a;
+    font-size: 0.82rem;
+}
+
+.fi-production-metrics .positive {
+    color: #16823a;
+}
+
+.fi-production-metrics .negative {
+    color: #dc2626;
+}
+
+.fi-icon-button {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 10px;
+    background: #eef5f0;
+    color: #477154;
+    cursor: pointer;
+}
+
+.fi-production-card > .fi-icon-button {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+}
+
+.fi-icon-button.danger {
+    background: #fff0f0;
+    color: #dc2626;
+}
+
+.fi-task-card {
+    padding: 14px;
+    border: 1px solid #dce7df;
+    border-radius: 14px;
+    background: #fbfdfb;
+}
+
+.fi-task-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.fi-task-status.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.fi-task-status.completed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.fi-task-status.overdue {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.fi-task-meta {
+    display: grid;
+    gap: 7px;
+    margin-top: 13px;
+    color: #65736b;
+    font-size: 0.78rem;
+}
+
+.fi-task-meta span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.fi-task-meta .material-symbols-outlined {
+    font-size: 17px;
+    color: #17883c;
+}
+
+.fi-task-notes {
+    margin: 13px 0 0;
+    color: #738078;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.fi-complete-button {
+    margin-top: 13px;
+    border: 1px solid #bfe0c8;
+    background: #eaf8ee;
+    color: #157334;
+}
+
+.fi-timeline {
+    position: relative;
+    display: grid;
+    gap: 0;
+}
+
+.fi-timeline::before {
+    content: "";
+    position: absolute;
+    top: 22px;
+    bottom: 22px;
+    left: 20px;
+    width: 2px;
+    background: #dbe8df;
+}
+
+.fi-timeline-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 14px;
+    padding: 12px 0;
+}
+
+.fi-timeline-icon {
+    z-index: 1;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 4px solid #ffffff;
+    border-radius: 50%;
+    background: #dff4e4;
+    color: #16823a;
+}
+
+.fi-timeline-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.fi-timeline-title strong {
+    color: #203629;
+}
+
+.fi-timeline-title span,
+.fi-timeline-item small {
+    color: #8a958f;
+    font-size: 0.73rem;
+}
+
+.fi-timeline-item p {
+    margin: 4px 0;
+    color: #65736b;
+    font-size: 0.8rem;
+}
+
+.fi-attachment-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.fi-attachment-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #dbe7de;
+    border-radius: 14px;
+    background: #fbfdfb;
+}
+
+.fi-attachment-card img,
+.fi-file-preview {
+    width: 100%;
+    height: 145px;
+    object-fit: cover;
+    background: #eaf4ed;
+}
+
+.fi-file-preview {
+    display: grid;
+    place-items: center;
+    color: #17883c;
+}
+
+.fi-file-preview .material-symbols-outlined {
+    font-size: 48px;
+}
+
+.fi-attachment-card > div:not(.fi-file-preview) {
+    padding: 13px;
+}
+
+.fi-attachment-card strong {
+    display: block;
+    color: #203629;
+    font-size: 0.87rem;
+}
+
+.fi-attachment-card p {
+    margin: 4px 0;
+    color: #65736b;
+    font-size: 0.78rem;
+}
+
+.fi-attachment-card small {
+    color: #8b9690;
+    font-size: 0.7rem;
+}
+
+.fi-attachment-card .fi-icon-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.fi-filter-row {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) 220px;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.fi-search {
+    display: flex;
+    align-items: center;
+    border: 1px solid #cedbd2;
+    border-radius: 11px;
+    background: #ffffff;
+}
+
+.fi-search > span {
+    padding-left: 12px;
+    color: #718078;
+}
+
+.fi-search input {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.fi-table-wrapper {
+    overflow-x: auto;
+    border: 1px solid #dbe7de;
+    border-radius: 14px;
+}
+
+.fi-table {
+    width: 100%;
+    min-width: 980px;
+    border-collapse: collapse;
+}
+
+.fi-table th,
+.fi-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid #e4ebe6;
+    text-align: left;
+    vertical-align: top;
+    font-size: 0.8rem;
+}
+
+.fi-table th {
+    background: #eff5f1;
+    color: #405248;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.fi-table td {
+    color: #637269;
+}
+
+.fi-table td strong {
+    color: #24362a;
+}
+
+.fi-module-badge {
+    background: #e3f5e8;
+    color: #177737;
+}
+
+.fi-backup-settings {
+    display: grid;
+    grid-template-columns: minmax(280px, 1.4fr) 220px 220px minmax(180px, 0.7fr) auto;
+    gap: 14px;
+    align-items: end;
+}
+
+.fi-backup-settings > label {
+    display: grid;
+    gap: 8px;
+}
+
+.fi-switch-row {
+    min-height: 74px;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 13px 15px;
+    border: 1px solid #dbe6de;
+    border-radius: 13px;
+    background: #f8fbf9;
+}
+
+.fi-switch-row strong,
+.fi-switch-row span {
+    display: block;
+}
+
+.fi-switch-row strong {
+    color: #203629;
+}
+
+.fi-switch-row span {
+    margin-top: 4px;
+    color: #7a887f;
+    font-size: 0.76rem;
+}
+
+.fi-switch-row input {
+    width: 22px;
+    height: 22px;
+    accent-color: #198b3d;
+}
+
+.fi-backup-info {
+    display: grid;
+    gap: 5px;
+    min-height: 46px;
+    align-content: center;
+    padding: 8px 12px;
+    border-radius: 11px;
+    background: #f0f6f2;
+}
+
+.fi-backup-info small {
+    color: #7d8b82;
+    font-size: 0.7rem;
+}
+
+.fi-backup-info strong {
+    color: #24362a;
+    font-size: 0.78rem;
+}
+
+.fi-snapshot-card {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 15px;
+    border: 1px solid #dbe7de;
+    border-radius: 13px;
+    background: #fbfdfb;
+}
+
+.fi-snapshot-card > .material-symbols-outlined {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: #e4f5e8;
+    color: #16823a;
+}
+
+.fi-snapshot-card strong {
+    color: #24362a;
+}
+
+.fi-snapshot-card p {
+    margin: 4px 0 0;
+    color: #7d8982;
+    font-size: 0.76rem;
+}
+
+.fi-data-link {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: center;
+    gap: 16px;
+}
+
+.fi-data-link > .material-symbols-outlined {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: #e4f5e8;
+    color: #16823a;
+    font-size: 29px;
+}
+
+.fi-data-link h3 {
+    margin: 0 0 5px;
+    color: #203629;
+}
+
+.fi-data-link p {
+    margin: 0;
+    color: #78867d;
+    font-size: 0.82rem;
+}
+
+.fi-empty {
+    padding: 20px;
+    border: 1px dashed #cfdcd3;
+    border-radius: 12px;
+    color: #7a887f;
+    font-size: 0.86rem;
+    text-align: center;
+}
+
+/* DARK MODE */
+html[data-theme="dark"] .fi-layout,
+html[data-theme="dark"] .fi-content {
+    background: #06170f;
+    color: #eff7f1;
+}
+
+html[data-theme="dark"] .fi-page-header {
+    border-color: #2d7343;
+}
+
+html[data-theme="dark"] .fi-page-header h1,
+html[data-theme="dark"] .fi-section-heading h3,
+html[data-theme="dark"] .fi-season-copy h2,
+html[data-theme="dark"] .fi-crop-title-row h4,
+html[data-theme="dark"] .fi-production-main h4,
+html[data-theme="dark"] .fi-task-header h4,
+html[data-theme="dark"] .fi-timeline-title strong,
+html[data-theme="dark"] .fi-attachment-card strong,
+html[data-theme="dark"] .fi-table td strong,
+html[data-theme="dark"] .fi-switch-row strong,
+html[data-theme="dark"] .fi-backup-info strong,
+html[data-theme="dark"] .fi-snapshot-card strong,
+html[data-theme="dark"] .fi-data-link h3 {
+    color: #f4f9f5 !important;
+}
+
+html[data-theme="dark"] .fi-page-header p,
+html[data-theme="dark"] .fi-section-heading p,
+html[data-theme="dark"] .fi-season-copy > p,
+html[data-theme="dark"] .fi-crop-notes,
+html[data-theme="dark"] .fi-reasons,
+html[data-theme="dark"] .fi-production-main p,
+html[data-theme="dark"] .fi-task-header p,
+html[data-theme="dark"] .fi-task-notes,
+html[data-theme="dark"] .fi-timeline-item p,
+html[data-theme="dark"] .fi-attachment-card p,
+html[data-theme="dark"] .fi-data-link p {
+    color: #afc3b5 !important;
+}
+
+html[data-theme="dark"] .fi-tabs {
+    border-color: #294637;
+    background: rgba(9, 30, 20, 0.94);
+}
+
+html[data-theme="dark"] .fi-tabs button {
+    color: #c8d7cd;
+}
+
+html[data-theme="dark"] .fi-tabs button:hover {
+    background: #143523;
+    color: #79df94;
+}
+
+html[data-theme="dark"] .fi-tabs button.active {
+    background: #1c8d43;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .fi-card,
+html[data-theme="dark"] .fi-season-hero {
+    border-color: #294637;
+    background: #0c2016;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.24);
+}
+
+html[data-theme="dark"] .fi-season-hero {
+    background:
+        radial-gradient(circle at 92% 10%, rgba(57, 200, 95, 0.13), transparent 33%),
+        #0c2016;
+}
+
+html[data-theme="dark"] .fi-season-icon,
+html[data-theme="dark"] .fi-crop-icon,
+html[data-theme="dark"] .fi-module-icon,
+html[data-theme="dark"] .fi-data-link > .material-symbols-outlined,
+html[data-theme="dark"] .fi-snapshot-card > .material-symbols-outlined {
+    background: #173b25;
+    color: #72df8f;
+}
+
+html[data-theme="dark"] .fi-disclaimer {
+    border-color: #315440;
+    background: #102d1d;
+    color: #c0d3c6;
+}
+
+html[data-theme="dark"] .fi-form-grid label > span,
+html[data-theme="dark"] .fi-backup-settings label > span {
+    color: #d8e7dc;
+}
+
+html[data-theme="dark"] .fi-form-grid input,
+html[data-theme="dark"] .fi-form-grid select,
+html[data-theme="dark"] .fi-form-grid textarea,
+html[data-theme="dark"] .fi-filter-row input,
+html[data-theme="dark"] .fi-filter-row select,
+html[data-theme="dark"] .fi-backup-settings select,
+html[data-theme="dark"] .fi-unit-field,
+html[data-theme="dark"] .fi-search {
+    border-color: #355441;
+    background: #07170f;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .fi-form-grid input::placeholder,
+html[data-theme="dark"] .fi-form-grid textarea::placeholder,
+html[data-theme="dark"] .fi-filter-row input::placeholder {
+    color: #80998a;
+}
+
+html[data-theme="dark"] .fi-form-grid input[type="date"],
+html[data-theme="dark"] .fi-form-grid input[type="time"] {
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] .fi-unit-field > span {
+    color: #c9d9cf;
+}
+
+html[data-theme="dark"] .fi-form-divider {
+    border-color: #294637;
+    color: #eff7f1;
+}
+
+html[data-theme="dark"] .fi-secondary-button {
+    border-color: #395b46;
+    background: #102a1b;
+    color: #8ce7a3;
+}
+
+html[data-theme="dark"] .fi-secondary-button:hover {
+    background: #173823;
+}
+
+html[data-theme="dark"] .fi-crop-card,
+html[data-theme="dark"] .fi-production-card,
+html[data-theme="dark"] .fi-task-card,
+html[data-theme="dark"] .fi-attachment-card,
+html[data-theme="dark"] .fi-snapshot-card {
+    border-color: #2c4938;
+    background: #0f281b;
+}
+
+html[data-theme="dark"] .fi-crop-meta,
+html[data-theme="dark"] .fi-form-divider {
+    border-color: #2c4938;
+}
+
+html[data-theme="dark"] .fi-score-track,
+html[data-theme="dark"] .fi-achievement-track {
+    background: #243b2e;
+}
+
+html[data-theme="dark"] .fi-production-metrics > div,
+html[data-theme="dark"] .fi-backup-info {
+    background: #122f20;
+}
+
+html[data-theme="dark"] .fi-production-metrics small,
+html[data-theme="dark"] .fi-backup-info small,
+html[data-theme="dark"] .fi-timeline-title span,
+html[data-theme="dark"] .fi-timeline-item small,
+html[data-theme="dark"] .fi-attachment-card small,
+html[data-theme="dark"] .fi-snapshot-card p,
+html[data-theme="dark"] .fi-switch-row span {
+    color: #94aa9c !important;
+}
+
+html[data-theme="dark"] .fi-production-metrics strong {
+    color: #f1f8f3;
+}
+
+html[data-theme="dark"] .fi-switch-row {
+    border-color: #2e4b3a;
+    background: #10281b;
+}
+
+html[data-theme="dark"] .fi-timeline::before {
+    background: #31503d;
+}
+
+html[data-theme="dark"] .fi-timeline-icon {
+    border-color: #0c2016;
+    background: #173b25;
+    color: #72df8f;
+}
+
+html[data-theme="dark"] .fi-file-preview {
+    background: #153322;
+}
+
+html[data-theme="dark"] .fi-table-wrapper {
+    border-color: #2d4938;
+}
+
+html[data-theme="dark"] .fi-table th {
+    background: #0b1c13;
+    color: #d7e5dc;
+}
+
+html[data-theme="dark"] .fi-table td {
+    border-color: #293f33;
+    background: #0f281b;
+    color: #bdcec3;
+}
+
+html[data-theme="dark"] .fi-empty {
+    border-color: #3b5b48;
+    color: #9db1a4;
+}
+
+html[data-theme="dark"] .fi-icon-button {
+    background: #173525;
+    color: #a9ddba;
+}
+
+html[data-theme="dark"] .fi-icon-button.danger {
+    background: #3a1d20;
+    color: #ff9399;
+}
+
+@media (max-width: 1350px) {
+    .fi-recommendation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fi-production-metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .fi-backup-settings {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1050px) {
+    .fi-content,
+    .sidebar:hover ~ .fi-content {
+        margin-left: 80px;
+        padding: 22px 20px 36px;
+    }
+
+    .fi-page-header,
+    .fi-season-hero {
+        align-items: stretch;
+    }
+
+    .fi-page-header {
+        flex-direction: column;
+    }
+
+    .fi-two-column,
+    .fi-form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fi-attachment-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fi-season-icon {
+        align-self: center;
+    }
+}
+
+@media (max-width: 720px) {
+    .fi-content,
+    .sidebar:hover ~ .fi-content {
+        padding: 18px 14px 32px;
+    }
+
+    .fi-two-column,
+    .fi-form-grid,
+    .fi-form-grid.single,
+    .fi-recommendation-grid,
+    .fi-attachment-grid,
+    .fi-production-metrics,
+    .fi-backup-settings,
+    .fi-filter-row {
+        grid-template-columns: 1fr;
+    }
+
+    .fi-season-hero {
+        flex-direction: column-reverse;
+    }
+
+    .fi-data-link,
+    .fi-snapshot-card {
+        grid-template-columns: 42px 1fr;
+    }
+
+    .fi-data-link .fi-secondary-button,
+    .fi-snapshot-card .fi-secondary-button {
+        grid-column: 1 / -1;
+    }
+
+    .fi-heading-row,
+    .fi-task-header,
+    .fi-timeline-title {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .fi-tabs button span:not(.material-symbols-outlined) {
+        display: none;
+    }
+}
+
+/* =========================================================
+   CSV / EXCEL IMPORT
+========================================================= */
+.fi-import-controls {
+    display: grid;
+    grid-template-columns: minmax(180px, 0.35fr) minmax(280px, 1fr);
+    gap: 16px;
+    align-items: end;
+}
+
+.fi-import-controls > label {
+    display: grid;
+    gap: 8px;
+}
+
+.fi-import-controls > label > span {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #385347;
+}
+
+.fi-import-file input[type="file"] {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 1px solid #d5e4da;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #22372d;
+}
+
+.fi-import-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.fi-import-preview {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #e0e9e3;
+}
+
+.fi-import-preview-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.fi-import-preview-heading span {
+    color: #71847a;
+    font-size: 0.82rem;
+}
+
+.fi-disclaimer.compact {
+    margin-top: 16px;
+}
+
+html[data-theme="dark"] .fi-import-controls > label > span {
+    color: #d7e6dc;
+}
+
+html[data-theme="dark"] .fi-import-file input[type="file"] {
+    border-color: #31503b;
+    background: #07180f;
+    color: #f3f8f5;
+}
+
+html[data-theme="dark"] .fi-import-preview {
+    border-top-color: #2e4938;
+}
+
+html[data-theme="dark"] .fi-import-preview-heading span {
+    color: #aabdb1;
+}
+
+@media (max-width: 760px) {
+    .fi-import-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .fi-import-actions {
+        grid-column: auto;
+    }
+}
+
+/* =========================================================
+   FARM INTELLIGENCE SPACING
+   Keep tabs and main cards on one 8px rhythm.
+========================================================= */
+.fi-tabs + .fi-stack {
+    margin-top: 8px !important;
+}
+
+.fi-stack {
+    gap: 8px !important;
+}
+
+.fi-two-column,
+.fi-production-list,
+.fi-task-list,
+.fi-snapshot-list {
+    gap: 8px !important;
+}
+
+.fi-stack > .fi-card,
+.fi-stack > .fi-season-hero {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* =========================================================
+   TAB SPACING
+   Keep every visible tab pill exactly 8px apart.
+========================================================= */
+.fi-tabs {
+    justify-content: flex-start !important;
+    column-gap: 8px !important;
+    row-gap: 8px !important;
+}
+
+.fi-tabs button {
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    padding: 8px 10px !important;
+    border: 1px solid #e7eee9 !important;
+    background: #f8faf8 !important;
+}
+
+.fi-tabs button:hover {
+    border-color: #d8e9dc !important;
+    background: #edf8f0 !important;
+}
+
+.fi-tabs button.active {
+    border-color: #18883c !important;
+    background: #18883c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] .fi-tabs button {
+    border-color: #34463b !important;
+    background: #1e2922 !important;
+}
+
+html[data-theme="dark"] .fi-tabs button:hover {
+    border-color: #41614a !important;
+    background: #263a2d !important;
+}
+
+html[data-theme="dark"] .fi-tabs button.active {
+    border-color: #31a653 !important;
+    background: #18883c !important;
+    color: #ffffff !important;
+}
+
+
+/* Exact space from tabs to the active section */
+.fi-tabs {
+    margin-bottom: 0 !important;
+}
+
+.fi-tab-content {
+    display: block;
+    margin: 8px 0 0 !important;
+    padding: 0 !important;
+}
+
+.fi-tab-content > * {
+    margin-top: 0 !important;
+}
+
+.fi-tab-content > .fi-stack {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Recommendation score details */
+.fi-score-factors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.fi-score-factors span {
+    padding: 3px 7px;
+    border: 1px solid #e3e9e5;
+    border-radius: 999px;
+    background: #f7f9f7;
+    color: #647067;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.fi-score-factors span.positive {
+    border-color: #cce8d2;
+    background: #eff9f1;
+    color: #176b32;
+}
+
+.fi-score-factors span.negative {
+    border-color: #f1d1d1;
+    background: #fff4f4;
+    color: #a23c3c;
+}
+
+html[data-theme="dark"] .fi-score-factors span {
+    border-color: #34463b;
+    background: #1b2820;
+    color: #b8c5bc;
+}
+
+html[data-theme="dark"] .fi-score-factors span.positive {
+    border-color: #2f6540;
+    background: #173521;
+    color: #8fdaa4;
+}
+
+html[data-theme="dark"] .fi-score-factors span.negative {
+    border-color: #693e3e;
+    background: #361f1f;
+    color: #efaaaa;
+}
+
+/* Farm record indicator on crop recommendations */
+.fi-farm-record-badge {
+    width: fit-content;
+    max-width: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 7px;
+    padding: 4px 8px;
+    border: 1px solid #cfe4d4;
+    border-radius: 999px;
+    background: #f2faf4;
+    color: #1f6b36;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.fi-farm-record-badge .material-symbols-outlined {
+    font-size: 14px;
+}
+
+.fi-farm-record-badge.new {
+    border-color: #f0d6a4;
+    background: #fff8e8;
+    color: #8a5a00;
+}
+
+.fi-farm-record-badge.historical {
+    border-color: #d8dfeb;
+    background: #f5f7fb;
+    color: #4d5f7a;
+}
+
+html[data-theme="dark"] .fi-farm-record-badge {
+    border-color: #2f6540;
+    background: #173521;
+    color: #9fe0b0;
+}
+
+html[data-theme="dark"] .fi-farm-record-badge.new {
+    border-color: #715624;
+    background: #35290f;
+    color: #f4ce78;
+}
+
+html[data-theme="dark"] .fi-farm-record-badge.historical {
+    border-color: #46536a;
+    background: #242b37;
+    color: #c2cbe0;
+}
+
+/* =========================================================
+   STEP 106 — SYSTEM-WIDE VISUAL CONSISTENCY
+   Farm Intelligence now follows the same page shell, header,
+   tabs, cards, controls and table language used by the main
+   JoRoss Farm management pages.
+========================================================= */
+
+.fi-layout {
+    width: 100%;
+    min-height: 100vh;
+    background: #f6f8f6;
+    color: #333333;
+}
+
+.fi-content {
+    width: calc(100% - 80px);
+    min-height: 100vh;
+    margin-left: 80px;
+    padding: 28px 30px 40px;
+    background: #f6f8f6;
+    transition: none;
+}
+
+/* The newer pages keep their content position stable while the sidebar opens. */
+.sidebar:hover ~ .fi-content {
+    margin-left: 80px;
+}
+
+.fi-page-header {
+    position: relative;
+    min-height: 82px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 25px;
+    padding: 8px 0 18px;
+    border-bottom: 2px solid #2e7d32;
+}
+
+.fi-page-header > div:first-child {
+    min-width: 0;
+}
+
+/* Remove the Intelligence-only eyebrow so the header matches other modules. */
+.fi-eyebrow {
+    display: none !important;
+}
+
+.fi-page-header h1 {
+    margin: 0 0 6px;
+    color: #2e7d32;
+    font-size: clamp(1.5rem, 2.3vw, 2rem);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.fi-page-header p {
+    max-width: 980px;
+    margin: 0;
+    color: #666666;
+    font-size: 0.94rem;
+    line-height: 1.5;
+}
+
+/* Tabs use the same clean management-tab treatment as Alerts/Reports. */
+.fi-tabs {
+    position: static;
+    z-index: auto;
+    display: flex;
+    justify-content: flex-start !important;
+    align-items: center;
+    column-gap: 8px !important;
+    row-gap: 8px !important;
+    margin: 22px 0 0 !important;
+    padding: 0 20px;
+    min-height: 66px;
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    backdrop-filter: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    scrollbar-width: thin;
+}
+
+.fi-tabs button {
+    min-height: 48px;
+    flex: 0 0 auto !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin: 0 !important;
+    padding: 11px 12px !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #666666 !important;
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.fi-tabs button:hover {
+    border-bottom-color: #bbdfc1 !important;
+    background: transparent !important;
+    color: #166534 !important;
+}
+
+.fi-tabs button.active {
+    border-bottom-color: #16a34a !important;
+    background: transparent !important;
+    color: #166534 !important;
+}
+
+.fi-tabs .material-symbols-outlined {
+    font-size: 19px;
+}
+
+/* Preserve the user's established 8px Intelligence spacing rule. */
+.fi-tab-content {
+    display: block;
+    margin: 8px 0 0 !important;
+    padding: 0 !important;
+}
+
+.fi-stack,
+.fi-panel-stack {
+    display: grid;
+    gap: 8px !important;
+}
+
+.fi-tabs + .fi-stack,
+.fi-tabs + .fi-tab-content,
+.fi-tab-content > .fi-stack,
+.fi-tab-content > * {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.fi-two-column,
+.fi-production-list,
+.fi-task-list,
+.fi-snapshot-list {
+    gap: 8px !important;
+}
+
+/* Main content cards now match the white card system used elsewhere. */
+.fi-card {
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.fi-season-hero {
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.fi-season-copy h2,
+.fi-section-heading h3,
+.fi-data-link h3 {
+    color: #166534;
+}
+
+.fi-season-copy h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+}
+
+.fi-section-heading {
+    margin-bottom: 16px;
+}
+
+.fi-section-heading h3 {
+    margin: 0 0 5px;
+    font-size: 1.06rem;
+    font-weight: 700;
+}
+
+.fi-section-heading p,
+.fi-season-copy > p,
+.fi-data-link p {
+    color: #777777;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.fi-count-chip,
+.fi-suitability,
+.fi-task-status,
+.fi-module-badge,
+.fi-farm-record-badge {
+    min-height: 27px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 0.67rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+/* Recommendation cards keep their meaning but use the same neutral card styling. */
+.fi-recommendation-grid {
+    gap: 12px;
+}
+
+.fi-crop-card {
+    padding: 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.035);
+}
+
+.fi-crop-card.best {
+    border-color: #8fd19e;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.035);
+}
+
+.fi-crop-icon,
+.fi-module-icon,
+.fi-season-icon,
+.fi-timeline-icon {
+    border-radius: 10px;
+    background: #e8f5e9;
+    color: #166534;
+}
+
+.fi-crop-title-row h4 {
+    color: #222222;
+    font-size: 0.95rem;
+}
+
+.fi-crop-title-row p,
+.fi-crop-notes,
+.fi-reasons,
+.fi-crop-meta {
+    color: #666666;
+}
+
+/* Form controls follow the 43/44px control pattern from the main modules. */
+.fi-form-grid label > span,
+.fi-backup-settings label > span,
+.fi-import-controls > label > span {
+    color: #444444;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.fi-form-grid input,
+.fi-form-grid select,
+.fi-form-grid textarea,
+.fi-filter-row input,
+.fi-filter-row select,
+.fi-backup-settings select,
+.fi-import-file input[type="file"] {
+    width: 100%;
+    min-height: 43px;
+    padding: 0 13px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    outline: none;
+    background: #ffffff;
+    color: #333333;
+    font-family: inherit;
+    font-size: 0.8rem;
+}
+
+.fi-form-grid textarea {
+    min-height: 96px;
+    padding: 11px 13px;
+}
+
+.fi-form-grid input:focus,
+.fi-form-grid select:focus,
+.fi-form-grid textarea:focus,
+.fi-filter-row input:focus,
+.fi-filter-row select:focus,
+.fi-backup-settings select:focus,
+.fi-import-file input[type="file"]:focus {
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+}
+
+.fi-unit-field {
+    min-height: 43px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+}
+
+.fi-unit-field:focus-within {
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+}
+
+.fi-primary-button,
+.fi-secondary-button,
+.fi-complete-button {
+    min-height: 42px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 0.81rem;
+    font-weight: 600;
+}
+
+.fi-primary-button,
+.fi-complete-button {
+    border: none;
+    background: #168a2d;
+    color: #ffffff;
+}
+
+.fi-primary-button:hover,
+.fi-complete-button:hover {
+    background: #116f23;
+}
+
+.fi-secondary-button {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #166534;
+}
+
+.fi-secondary-button:hover {
+    background: #f0fdf4;
+}
+
+/* Search/filter row mirrors the standard toolbar treatment. */
+.fi-filter-row {
+    display: grid;
+    grid-template-columns: minmax(260px, 2fr) minmax(170px, 1fr);
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fafafa;
+}
+
+.fi-search {
+    position: relative;
+    min-width: 0;
+}
+
+.fi-search .material-symbols-outlined {
+    position: absolute;
+    top: 50%;
+    left: 13px;
+    color: #777777;
+    font-size: 21px;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.fi-search input {
+    padding-left: 42px !important;
+}
+
+/* Tables now use the same header, row, scroll and sticky behavior. */
+.fi-table-wrapper {
+    width: 100%;
+    max-height: 540px;
+    overflow: auto;
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.fi-table {
+    width: 100%;
+    min-width: 850px;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.fi-table th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding: 14px 15px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+    color: #555555;
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.fi-table td {
+    padding: 14px 15px;
+    border-bottom: 1px solid #eeeeee;
+    color: #444444;
+    font-size: 0.77rem;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+.fi-table tbody tr:hover {
+    background: #fbfefb;
+}
+
+.fi-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Timeline, production, task and snapshot rows use neutral white subcards. */
+.fi-production-card,
+.fi-task-card,
+.fi-snapshot-card,
+.fi-timeline-item,
+.fi-attachment-card,
+.fi-import-controls,
+.fi-backup-info {
+    border-color: #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.fi-data-link {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+}
+
+.fi-data-link > .material-symbols-outlined {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: #e8f5e9;
+    color: #166534;
+    font-size: 26px;
+}
+
+/* Avoid animated/lifting cards on this information-heavy page. */
+.fi-card,
+.fi-crop-card,
+.fi-production-card,
+.fi-task-card,
+.fi-snapshot-card {
+    transform: none !important;
+    transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.fi-card:hover,
+.fi-crop-card:hover,
+.fi-production-card:hover,
+.fi-task-card:hover,
+.fi-snapshot-card:hover {
+    transform: none !important;
+}
+
+/* Dark mode keeps the same hierarchy instead of falling back to the old custom palette. */
+html[data-theme="dark"] .fi-layout,
+html[data-theme="dark"] .fi-content {
+    background: #07110a;
+    color: #f2f7f4;
+}
+
+html[data-theme="dark"] .fi-page-header {
+    border-bottom-color: #3baa58;
+}
+
+html[data-theme="dark"] .fi-page-header h1,
+html[data-theme="dark"] .fi-section-heading h3,
+html[data-theme="dark"] .fi-season-copy h2,
+html[data-theme="dark"] .fi-data-link h3 {
+    color: #8bd49d;
+}
+
+html[data-theme="dark"] .fi-page-header p,
+html[data-theme="dark"] .fi-section-heading p,
+html[data-theme="dark"] .fi-season-copy > p,
+html[data-theme="dark"] .fi-data-link p {
+    color: #aab7ae;
+}
+
+html[data-theme="dark"] .fi-tabs,
+html[data-theme="dark"] .fi-card,
+html[data-theme="dark"] .fi-season-hero,
+html[data-theme="dark"] .fi-crop-card,
+html[data-theme="dark"] .fi-production-card,
+html[data-theme="dark"] .fi-task-card,
+html[data-theme="dark"] .fi-snapshot-card,
+html[data-theme="dark"] .fi-timeline-item,
+html[data-theme="dark"] .fi-attachment-card,
+html[data-theme="dark"] .fi-data-link,
+html[data-theme="dark"] .fi-table-wrapper {
+    border-color: #293b30;
+    background: #101a13;
+    box-shadow: none;
+}
+
+html[data-theme="dark"] .fi-tabs button {
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    background: transparent !important;
+    color: #aebbb2 !important;
+}
+
+html[data-theme="dark"] .fi-tabs button:hover {
+    border-bottom-color: #527c5d !important;
+    background: transparent !important;
+    color: #9ddcaf !important;
+}
+
+html[data-theme="dark"] .fi-tabs button.active {
+    border-bottom-color: #4fc46e !important;
+    background: transparent !important;
+    color: #9ddcaf !important;
+}
+
+html[data-theme="dark"] .fi-filter-row {
+    border-color: #293b30;
+    background: #0c160f;
+}
+
+html[data-theme="dark"] .fi-form-grid input,
+html[data-theme="dark"] .fi-form-grid select,
+html[data-theme="dark"] .fi-form-grid textarea,
+html[data-theme="dark"] .fi-filter-row input,
+html[data-theme="dark"] .fi-filter-row select,
+html[data-theme="dark"] .fi-backup-settings select,
+html[data-theme="dark"] .fi-import-file input[type="file"],
+html[data-theme="dark"] .fi-unit-field {
+    border-color: #33483a;
+    background: #0b160e;
+    color: #eef6f0;
+}
+
+html[data-theme="dark"] .fi-table th {
+    border-bottom-color: #2b3c31;
+    background: #111d15;
+    color: #c6d2c9;
+}
+
+html[data-theme="dark"] .fi-table td {
+    border-bottom-color: #25362b;
+    color: #dbe5de;
+}
+
+html[data-theme="dark"] .fi-table tbody tr:hover {
+    background: #132118;
+}
+
+html[data-theme="dark"] .fi-secondary-button {
+    border-color: #3a5041;
+    background: #111d15;
+    color: #9ddcaf;
+}
+
+html[data-theme="dark"] .fi-secondary-button:hover {
+    background: #18271c;
+}
+
+@media (max-width: 1100px) {
+    .fi-content {
+        width: calc(100% - 80px);
+        padding: 24px 22px 36px;
+    }
+
+    .fi-recommendation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fi-two-column {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .fi-content {
+        width: 100%;
+        margin-left: 0;
+        padding: 20px 16px 32px;
+    }
+
+    .sidebar:hover ~ .fi-content {
+        margin-left: 0;
+    }
+
+    .fi-page-header {
+        align-items: flex-start;
+    }
+
+    .fi-tabs {
+        margin-top: 18px !important;
+        padding: 0 12px;
+    }
+
+    .fi-recommendation-grid,
+    .fi-form-grid,
+    .fi-form-grid.single,
+    .fi-filter-row {
+        grid-template-columns: 1fr;
+    }
+
+    .fi-data-link {
+        grid-template-columns: 1fr;
+    }
+
+    .fi-card {
+        padding: 16px;
+    }
+}
+
+/* =========================================================
+   PRODUCTION TRENDS & SEASONAL ANALYSIS
+========================================================= */
+.fi-trends-heading {
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.fi-trends-period {
+    display: grid;
+    gap: 6px;
+    min-width: 170px;
+    color: #4b5563;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.fi-trends-period select {
+    min-height: 40px;
+    padding: 0 11px;
+    border: 1px solid #dfe4e8;
+    border-radius: 8px;
+    background: #fff;
+    color: #111827;
+    font: inherit;
+}
+
+.fi-trend-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.fi-trend-kpis article {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.fi-trend-kpis article > .material-symbols-outlined {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: #f3f7f3;
+    color: #006400;
+    font-size: 20px;
+}
+
+.fi-trend-kpis small,
+.fi-factor-grid small {
+    display: block;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.fi-trend-kpis strong {
+    display: block;
+    margin: 3px 0;
+    color: #111827;
+    font-size: 18px;
+}
+
+.fi-trend-kpis p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.fi-trend-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.fi-trend-chart-card {
+    min-width: 0;
+}
+
+.fi-trend-chart-canvas {
+    position: relative;
+    height: 300px;
+    margin-top: 14px;
+}
+
+.fi-trend-chart-canvas.large {
+    height: 330px;
+}
+
+.fi-trend-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+
+.fi-trend-table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.fi-trend-table th,
+.fi-trend-table td {
+    padding: 11px 12px;
+    border-bottom: 1px solid #eef0f2;
+    text-align: left;
+    font-size: 13px;
+    vertical-align: top;
+}
+
+.fi-trend-table th {
+    background: #f8fafc;
+    color: #4b5563;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.fi-trend-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.fi-factor-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.fi-factor-grid article {
+    padding: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.fi-factor-grid strong {
+    display: block;
+    margin-top: 4px;
+    color: #111827;
+    font-size: 15px;
+}
+
+.fi-factor-grid article > span {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.fi-factor-grid p {
+    margin: 10px 0 0;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.fi-trends-state {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 90px;
+    color: #4b5563;
+}
+
+.fi-trends-state.error {
+    color: #991b1b;
+}
+
+.fi-trend-empty {
+    display: grid;
+    place-items: center;
+    min-height: 120px;
+    color: #6b7280;
+    text-align: center !important;
+}
+
+@media (max-width: 1100px) {
+    .fi-trend-kpis,
+    .fi-factor-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fi-trend-chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .fi-trends-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .fi-trend-kpis,
+    .fi-factor-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.fi-trends-heading {
+    display: flex;
+    justify-content: space-between;
+}
+
+html[data-theme="dark"] .fi-trend-kpis article,
+html[data-theme="dark"] .fi-factor-grid article,
+html[data-theme="dark"] .fi-trend-table,
+html[data-theme="dark"] .fi-trends-period select {
+    background: #17241c;
+    border-color: #294637;
+    color: #f4f9f5;
+}
+
+html[data-theme="dark"] .fi-trend-kpis strong,
+html[data-theme="dark"] .fi-factor-grid strong,
+html[data-theme="dark"] .fi-trend-table td strong {
+    color: #f4f9f5;
+}
+
+html[data-theme="dark"] .fi-trend-kpis small,
+html[data-theme="dark"] .fi-trend-kpis p,
+html[data-theme="dark"] .fi-factor-grid small,
+html[data-theme="dark"] .fi-factor-grid p,
+html[data-theme="dark"] .fi-trends-period,
+html[data-theme="dark"] .fi-trend-table td {
+    color: #afc3b5;
+}
+
+html[data-theme="dark"] .fi-trend-table th {
+    background: #1d3024;
+    color: #d5e4d9;
+}
+
+html[data-theme="dark"] .fi-factor-grid article > span {
+    background: #24372b;
+    color: #d5e4d9;
+}
+
+
+.fi-decision-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    background:
+        radial-gradient(circle at 92% 18%, rgba(22, 130, 58, 0.10), transparent 30%),
+        #ffffff;
+}
+
+.fi-decision-hero-copy {
+    min-width: 0;
+    flex: 1;
+}
+
+.fi-decision-hero-copy h2 {
+    margin: 0;
+    color: #163b25;
+    font-size: 1.38rem;
+}
+
+.fi-decision-hero-copy > p {
+    margin: 6px 0 0;
+    color: #68776e;
+    font-size: 0.88rem;
+}
+
+.fi-decision-status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.fi-decision-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.fi-decision-status.high {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.fi-decision-status.medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.fi-decision-status.low {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.fi-decision-period-copy {
+    margin-top: 8px;
+    color: #87938b;
+    font-size: 0.76rem;
+}
+
+.fi-overview-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.fi-overview-kpi {
+    display: grid;
+    gap: 5px;
+}
+
+.fi-overview-kpi small {
+    color: #77857d;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.fi-overview-kpi strong {
+    color: #163b25;
+    font-size: 1.22rem;
+}
+
+.fi-overview-kpi p {
+    margin: 0;
+    color: #8a968f;
+    font-size: 0.74rem;
+}
+
+.fi-overview-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: 8px;
+}
+
+.fi-risk-list,
+.fi-readiness-list,
+.fi-variance-list {
+    display: grid;
+    gap: 8px;
+}
+
+.fi-risk-item {
+    padding: 10px 12px;
+    border: 1px solid #e3e9e5;
+    border-left-width: 4px;
+    border-radius: 10px;
+    background: #fbfcfb;
+}
+
+.fi-risk-item.high { border-left-color: #dc2626; }
+.fi-risk-item.medium { border-left-color: #d97706; }
+.fi-risk-item.low { border-left-color: #16a34a; }
+
+.fi-risk-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fi-risk-title-row > span {
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #eef3ef;
+    color: #536259;
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.fi-risk-title-row strong {
+    color: #24372b;
+    font-size: 0.82rem;
+}
+
+.fi-risk-item p {
+    margin: 6px 0 3px;
+    color: #526159;
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.fi-risk-item small {
+    color: #7a877f;
+    font-size: 0.74rem;
+}
+
+.fi-readiness-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.fi-readiness-summary strong {
+    color: #16823a;
+    font-size: 1.35rem;
+}
+
+.fi-readiness-summary span {
+    color: #6e7b73;
+    font-size: 0.8rem;
+}
+
+.fi-readiness-list > div {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 8px 0;
+    border-bottom: 1px solid #edf1ee;
+}
+
+.fi-readiness-list > div:last-child {
+    border-bottom: 0;
+}
+
+.fi-readiness-list .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.fi-readiness-list .ready { color: #16823a; }
+.fi-readiness-list .missing { color: #d97706; }
+
+.fi-readiness-list strong,
+.fi-readiness-list small {
+    display: block;
+}
+
+.fi-readiness-list strong {
+    color: #34473b;
+    font-size: 0.79rem;
+}
+
+.fi-readiness-list small {
+    margin-top: 2px;
+    color: #849087;
+    font-size: 0.72rem;
+}
+
+.fi-data-quality-note {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 9px 10px;
+    border-radius: 9px;
+    background: #fff8e6;
+    color: #8a5b0b;
+}
+
+.fi-data-quality-note .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.fi-data-quality-note p {
+    margin: 0;
+    font-size: 0.76rem;
+    line-height: 1.45;
+}
+
+.fi-variance-list > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid #edf1ee;
+}
+
+.fi-variance-list > div:last-child {
+    border-bottom: 0;
+}
+
+.fi-variance-list strong {
+    color: #34473b;
+    font-size: 0.8rem;
+}
+
+.fi-variance-list span {
+    color: #16823a;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.fi-variance-list small {
+    grid-column: 1 / -1;
+    color: #849087;
+    font-size: 0.72rem;
+}
+
+.fi-action-list {
+    margin: 0;
+    padding-left: 22px;
+    color: #526159;
+    font-size: 0.81rem;
+    line-height: 1.5;
+}
+
+.fi-action-list li + li {
+    margin-top: 7px;
+}
+
+.fi-findings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.fi-findings-grid article {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 10px 11px;
+    border: 1px solid #e3ebe5;
+    border-radius: 10px;
+    background: #fbfdfb;
+}
+
+.fi-findings-grid .material-symbols-outlined {
+    color: #16823a;
+    font-size: 20px;
+}
+
+.fi-findings-grid p {
+    margin: 0;
+    color: #57665d;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.fi-evidence-line {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 5px;
+    margin-top: 9px;
+    padding-top: 9px;
+    border-top: 1px solid #e6eee8;
+    color: #557061;
+}
+
+.fi-evidence-line .material-symbols-outlined {
+    color: #16823a;
+    font-size: 17px;
+}
+
+.fi-evidence-line > span:not(.material-symbols-outlined) {
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.fi-evidence-line small {
+    color: #849087;
+    font-size: 0.68rem;
+    text-align: right;
+}
+
+@media (max-width: 1180px) {
+    .fi-overview-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fi-overview-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .fi-decision-hero {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .fi-overview-kpis,
+    .fi-findings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .fi-evidence-line {
+        grid-template-columns: auto 1fr;
+    }
+
+    .fi-evidence-line small {
+        grid-column: 1 / -1;
+        text-align: left;
+    }
+}
+
+.fi-variance-assessment.positive { color: #16823a !important; }
+.fi-variance-assessment.negative { color: #b91c1c !important; }
+.fi-variance-assessment.on_target,
+.fi-variance-assessment.neutral { color: #526159 !important; }
+
+.fi-trend-insight-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.fi-trend-insight {
+    display: grid;
+    gap: 5px;
+}
+
+.fi-trend-insight small {
+    color: #77857d;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.fi-trend-insight strong {
+    color: #163b25;
+    font-size: 0.96rem;
+}
+
+.fi-trend-insight p {
+    margin: 0;
+    color: #849087;
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+@media (max-width: 1180px) {
+    .fi-trend-insight-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .fi-trend-insight-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+   FINAL FARM INTELLIGENCE STABILIZATION
+   Focused navigation, system-consistent active states, and
+   bounded information regions for large live datasets.
+========================================================= */
+
+/* Four intelligence tabs fit naturally; do not use a horizontal scroller. */
+.fi-tabs {
+    flex-wrap: wrap !important;
+    overflow: visible !important;
+    scrollbar-width: none;
+    padding: 8px 12px !important;
+    min-height: 64px;
+    gap: 8px !important;
+}
+
+.fi-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.fi-tabs button {
+    min-height: 44px;
+    padding: 9px 13px !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    color: #59665e !important;
+}
+
+.fi-tabs button:hover {
+    border-color: #d5ead9 !important;
+    background: #f2faf4 !important;
+    color: #166534 !important;
+}
+
+.fi-tabs button.active {
+    border-color: #bfe3c7 !important;
+    background: #e8f5e9 !important;
+    color: #166534 !important;
+    box-shadow: inset 0 -2px 0 #22a447;
+}
+
+.fi-tabs button.active .material-symbols-outlined {
+    color: #16823a;
+}
+
+.fi-link-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* Farm-wide sales/reproduction signals use small, readable system cards. */
+.fi-signal-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.fi-signal-grid.compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.fi-signal-grid > article {
+    min-width: 0;
+    padding: 12px 13px;
+    border: 1px solid #e3ebe5;
+    border-radius: 9px;
+    background: #fbfdfb;
+}
+
+.fi-signal-grid small,
+.fi-signal-grid strong {
+    display: block;
+}
+
+.fi-signal-grid small {
+    color: #77857d;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.fi-signal-grid strong {
+    margin-top: 4px;
+    color: #163b25;
+    font-size: 1rem;
+    line-height: 1.25;
+}
+
+/* Long live-data sections remain usable without stretching the page forever. */
+.fi-scroll-region {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.fi-risk-scroll {
+    max-height: 430px;
+}
+
+.fi-readiness-scroll {
+    max-height: 330px;
+}
+
+.fi-variance-scroll {
+    max-height: 330px;
+}
+
+.fi-action-scroll {
+    max-height: 330px;
+    display: grid;
+    gap: 8px;
+}
+
+.fi-findings-scroll {
+    max-height: 370px;
+}
+
+.fi-action-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 11px;
+    border: 1px solid #e3ebe5;
+    border-radius: 9px;
+    background: #fbfdfb;
+}
+
+.fi-action-item strong {
+    color: #33503e;
+    font-size: 0.72rem;
+}
+
+.fi-action-item p {
+    margin: 3px 0 0;
+    color: #59685f;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.fi-action-item a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid #cfe6d5;
+    border-radius: 7px;
+    background: #eef8f0;
+    color: #166534;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.fi-action-item a:hover {
+    background: #e3f4e7;
+}
+
+/* Recommendation cards keep a consistent grid even with long evidence text. */
+.fi-recommendation-grid .fi-crop-card {
+    max-height: 540px;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+}
+
+/* Tables with many batches/logs keep their headers visible. */
+.fi-growth-scroll {
+    max-height: 520px;
+    overflow: auto;
+    scrollbar-gutter: stable;
+}
+
+.fi-growth-table {
+    min-width: 1120px;
+}
+
+.fi-growth-scroll .fi-trend-table th,
+.fi-comparison-scroll .fi-trend-table th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #fafafa;
+}
+
+.fi-comparison-scroll {
+    max-height: 430px;
+    overflow: auto;
+    scrollbar-gutter: stable;
+}
+
+.fi-table-wrapper {
+    max-height: 520px;
+}
+
+.fi-trend-kpis-eight {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 1180px) {
+    .fi-signal-grid,
+    .fi-signal-grid.compact,
+    .fi-trend-kpis-eight {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .fi-tabs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .fi-tabs button {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .fi-signal-grid,
+    .fi-signal-grid.compact,
+    .fi-trend-kpis-eight {
+        grid-template-columns: 1fr;
+    }
+
+    .fi-action-item {
+        grid-template-columns: 1fr;
+    }
+
+    .fi-action-item a {
+        justify-self: start;
+    }
+}
+
+html[data-theme="dark"] .fi-tabs button {
+    border-color: transparent !important;
+    background: #0f1912 !important;
+    color: #b8c4bb !important;
+}
+
+html[data-theme="dark"] .fi-tabs button:hover,
+html[data-theme="dark"] .fi-tabs button.active {
+    border-color: #315f3d !important;
+    background: #16301d !important;
+    color: #a7e5b6 !important;
+}
+
+html[data-theme="dark"] .fi-signal-grid > article,
+html[data-theme="dark"] .fi-action-item {
+    border-color: #2a3d30;
+    background: #0f1912;
+}
+
+html[data-theme="dark"] .fi-signal-grid strong,
+html[data-theme="dark"] .fi-action-item strong {
+    color: #d9eadf;
+}
+
+html[data-theme="dark"] .fi-action-item p,
+html[data-theme="dark"] .fi-signal-grid small {
+    color: #9eada3;
+}
+
+/* =========================================================
+   DECISION OVERVIEW FINAL UI POLISH
+   Keep every overview section on the same 8px rhythm and add
+   restrained system-color accents to compact KPI/signal text.
+========================================================= */
+.fi-overview-panel {
+    gap: 8px !important;
+}
+
+.fi-overview-panel > *,
+.fi-overview-panel > .fi-card,
+.fi-overview-panel > .fi-overview-kpis,
+.fi-overview-panel > .fi-overview-grid {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.fi-overview-kpis {
+    column-gap: 8px !important;
+    row-gap: 8px !important;
+    align-items: stretch;
+}
+
+.fi-overview-kpi {
+    min-height: 96px;
+    margin: 0 !important;
+    align-content: center;
+}
+
+.fi-overview-grid {
+    column-gap: 8px !important;
+    row-gap: 8px !important;
+    align-items: stretch;
+}
+
+.fi-overview-grid > .fi-card {
+    height: 100%;
+    margin: 0 !important;
+}
+
+.fi-signal-grid,
+.fi-signal-grid.compact {
+    column-gap: 8px !important;
+    row-gap: 8px !important;
+}
+
+/* Compact overview KPI accents — text remains readable and system-consistent. */
+.fi-overview-kpi:nth-child(8n + 1) small,
+.fi-overview-kpi:nth-child(8n + 1) strong { color: #166534; }
+
+.fi-overview-kpi:nth-child(8n + 2) small,
+.fi-overview-kpi:nth-child(8n + 2) strong { color: #0f766e; }
+
+.fi-overview-kpi:nth-child(8n + 3) small,
+.fi-overview-kpi:nth-child(8n + 3) strong { color: #1d4ed8; }
+
+.fi-overview-kpi:nth-child(8n + 4) small,
+.fi-overview-kpi:nth-child(8n + 4) strong { color: #7e22ce; }
+
+.fi-overview-kpi:nth-child(8n + 5) small,
+.fi-overview-kpi:nth-child(8n + 5) strong { color: #6d28d9; }
+
+.fi-overview-kpi:nth-child(8n + 6) small,
+.fi-overview-kpi:nth-child(8n + 6) strong { color: #0e7490; }
+
+.fi-overview-kpi:nth-child(8n + 7) small,
+.fi-overview-kpi:nth-child(8n + 7) strong { color: #b45309; }
+
+.fi-overview-kpi:nth-child(8n + 8) small,
+.fi-overview-kpi:nth-child(8n + 8) strong { color: #1d4ed8; }
+
+/* Production & Sales signal cards use a softer version of the same palette. */
+.fi-signal-grid > article:nth-child(4n + 1) small { color: #166534; }
+.fi-signal-grid > article:nth-child(4n + 2) small { color: #1d4ed8; }
+.fi-signal-grid > article:nth-child(4n + 3) small { color: #6d28d9; }
+.fi-signal-grid > article:nth-child(4n + 4) small { color: #0e7490; }
+
+.fi-signal-grid > article:nth-child(4n + 1) strong { color: #14532d; }
+.fi-signal-grid > article:nth-child(4n + 2) strong { color: #1e40af; }
+.fi-signal-grid > article:nth-child(4n + 3) strong { color: #5b21b6; }
+.fi-signal-grid > article:nth-child(4n + 4) strong { color: #155e75; }
+
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 1) small,
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 1) strong { color: #86efac; }
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 2) small,
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 2) strong { color: #5eead4; }
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 3) small,
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 3) strong { color: #93c5fd; }
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 4) small,
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 4) strong,
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 5) small,
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 5) strong { color: #d8b4fe; }
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 6) small,
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 6) strong { color: #67e8f9; }
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 7) small,
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 7) strong { color: #fcd34d; }
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 8) small,
+html[data-theme="dark"] .fi-overview-kpi:nth-child(8n + 8) strong { color: #93c5fd; }
+
+/* =========================================================
+   TITLE-ONLY KPI COLOR ACCENTS
+   Keep accent colors on compact-card labels only. Numeric
+   values remain in the system's standard value color.
+========================================================= */
+.fi-overview-kpi strong,
+.fi-signal-grid > article strong {
+    color: #163b25 !important;
+}
+
+html[data-theme="dark"] .fi-overview-kpi strong,
+html[data-theme="dark"] .fi-signal-grid > article strong {
+    color: #d9eadf !important;
+}
+
+/* =========================================================
+   TRENDS & SEASONAL ANALYSIS VISUAL POLISH
+   Keep the page on the same 8px rhythm and give trend charts
+   stronger system-consistent visual hierarchy.
+========================================================= */
+.fi-trends-panel {
+    gap: 8px !important;
+}
+
+.fi-trends-panel > *,
+.fi-trends-panel > .fi-card,
+.fi-trends-panel > .fi-trend-chart-grid,
+.fi-trends-panel > .fi-trend-insight-grid {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.fi-trend-kpis,
+.fi-trend-kpis-eight,
+.fi-trend-insight-grid,
+.fi-trend-chart-grid,
+.fi-factor-grid {
+    column-gap: 8px !important;
+    row-gap: 8px !important;
+    align-items: stretch;
+}
+
+.fi-trend-kpis {
+    margin-top: 14px;
+}
+
+.fi-trend-kpis article {
+    min-height: 108px;
+    height: 100%;
+    margin: 0 !important;
+    border-color: #dfe8e2;
+    background: #ffffff;
+}
+
+.fi-trend-kpis article > .material-symbols-outlined {
+    background: #edf8f0;
+    color: #167836;
+}
+
+
+.fi-trend-kpis article:nth-child(4n + 1) small { color: #166534; }
+.fi-trend-kpis article:nth-child(4n + 2) small { color: #0e7490; }
+.fi-trend-kpis article:nth-child(4n + 3) small { color: #1d4ed8; }
+.fi-trend-kpis article:nth-child(4n + 4) small { color: #6d28d9; }
+
+.fi-trend-insight {
+    min-height: 118px;
+    height: 100%;
+    align-content: start;
+    margin: 0 !important;
+}
+
+.fi-trend-chart-grid > .fi-trend-chart-card {
+    height: 100%;
+}
+
+.fi-trend-chart-card {
+    margin: 0 !important;
+    border-color: #dfe8e2;
+}
+
+.fi-trend-chart-card .fi-section-heading h3 {
+    color: #163b25;
+}
+
+.fi-trend-chart-canvas {
+    min-height: 300px;
+    margin-top: 10px;
+    padding: 4px 2px 0;
+}
+
+.fi-trend-chart-canvas.large {
+    min-height: 330px;
+}
+
+.fi-trend-table-wrap,
+.fi-factor-grid {
+    margin-top: 10px;
+}
+
+/* Subtle accent strip makes chart cards feel like the rest of the system. */
+.fi-trend-chart-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.fi-trend-chart-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: #2e7d32;
+    opacity: 0.9;
+}
+
+.fi-trend-chart-grid .fi-trend-chart-card:nth-child(2)::before {
+    background: #7e57c2;
+}
+
+.fi-trend-sales-card::before {
+    background: #00838f;
+}
+
+.fi-trend-production-card::before {
+    background: #ef8f00;
+}
+
+html[data-theme="dark"] .fi-trend-kpis article,
+html[data-theme="dark"] .fi-trend-chart-card {
+    border-color: #294637;
+    background: #17241c;
+}
+
+html[data-theme="dark"] .fi-trend-kpis article > .material-symbols-outlined {
+    background: #16301d;
+    color: #86efac;
+}
+
+html[data-theme="dark"] .fi-trend-chart-card .fi-section-heading h3 {
+    color: #d9eadf;
+}
+
+
+/* =========================================================
+   Audit Log header/layout polish
+   Keeps the Audit tab aligned with the rest of Farm Intelligence.
+   ========================================================= */
+.fi-tabs + .fi-tab-content {
+    margin-top: 8px !important;
+}
+
+.fi-audit-panel {
+    display: grid;
+    gap: 18px;
+    padding: 22px 24px 24px;
+}
+
+.fi-audit-panel > .fi-audit-heading {
+    margin: 0;
+    padding: 0;
+}
+
+.fi-audit-heading h3 {
+    margin: 0;
+    color: #163b25;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.fi-audit-heading p {
+    margin: 6px 0 0;
+    color: #77857d;
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.fi-audit-panel > .fi-audit-filter-row {
+    margin: 0;
+    padding: 14px;
+    gap: 12px;
+}
+
+.fi-audit-panel > .fi-audit-table-wrapper {
+    margin: 0;
+}
+
+@media (max-width: 760px) {
+    .fi-audit-panel {
+        gap: 14px;
+        padding: 18px 16px;
+    }
+
+    .fi-audit-panel > .fi-audit-filter-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+html[data-theme="dark"] .fi-audit-heading h3 {
+    color: #d9f5e1;
+}
+
+html[data-theme="dark"] .fi-audit-heading p {
+    color: #a9b8ae;
+}

@@ -1,0 +1,4517 @@
+/* =========================================================
+   GLOBAL THEME TOKENS
+   This file is loaded once in main.jsx and affects every
+   page reached from the shared Sidebar.
+========================================================= */
+
+:root {
+    --theme-page-bg: #f6f8f6;
+    --theme-surface: #ffffff;
+    --theme-surface-soft: #f8faf8;
+    --theme-surface-raised: #ffffff;
+    --theme-text: #26322b;
+    --theme-text-muted: #66736b;
+    --theme-text-soft: #89938d;
+    --theme-border: #e3e9e5;
+    --theme-input-bg: #ffffff;
+    --theme-hover-bg: #eff8f1;
+    --theme-green: #2e7d32;
+    --theme-green-bright: #16a34a;
+    --theme-shadow:
+        0 4px 14px
+        rgba(0, 0, 0, 0.07);
+
+    /* Shared page sizing */
+    --ui-page-pad-x: 30px;
+    --ui-page-pad-top: 28px;
+    --ui-page-pad-bottom: 40px;
+    --ui-header-min-height: 82px;
+    --ui-page-title-size: clamp(1.5rem, 2.3vw, 2rem);
+    --ui-page-subtitle-size: 0.94rem;
+    --ui-section-title-size: 1.05rem;
+    --ui-body-size: 0.88rem;
+    --ui-small-size: 0.78rem;
+    --ui-card-radius: 16px;
+    --ui-card-padding: 20px;
+    --ui-card-gap: 12px;
+    --ui-control-height: 44px;
+}
+
+html[data-theme="dark"] {
+    --theme-page-bg: #08130e;
+    --theme-surface: #132119;
+    --theme-surface-soft: #0f1b14;
+    --theme-surface-raised: #18281e;
+    --theme-text: #f2f7f4;
+    --theme-text-muted: #b7c5bc;
+    --theme-text-soft: #8fa097;
+    --theme-border: #2d4335;
+    --theme-input-bg: #0d1812;
+    --theme-hover-bg: #1c3023;
+    --theme-green: #72dd8d;
+    --theme-green-bright: #34c759;
+    --theme-shadow:
+        0 5px 18px
+        rgba(0, 0, 0, 0.36);
+
+    /* Override the variables used by the original page CSS. */
+    --bg-light: var(--theme-page-bg);
+    --card-bg: var(--theme-surface);
+    --white: var(--theme-surface);
+    --text-dark: var(--theme-text);
+    --text-muted: var(--theme-text-muted);
+    --border: var(--theme-border);
+    --border-color: var(--theme-border);
+    --secondary: var(--theme-green);
+    --accent-green: var(--theme-green);
+}
+
+html,
+body,
+#root {
+    min-height: 100%;
+}
+
+html {
+    background: var(--theme-page-bg);
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+body {
+    background: var(--theme-page-bg);
+    color: var(--theme-text);
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+html[data-theme="dark"] ::selection {
+    background: #1d7a40;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #08130e;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    border: 2px solid #08130e;
+    border-radius: 999px;
+
+    background: #405a49;
+}
+
+/* =========================================================
+   ALL SIDEBAR-LINKED PAGE BACKGROUNDS
+========================================================= */
+
+html[data-theme="dark"] :is(
+    .dashboard-layout,
+    .page-content,
+    .crops-page-layout,
+    .crops-page-content,
+    .livestock-page-layout,
+    .livestock-page-content,
+    .inventory-page-layout,
+    .inventory-page-content,
+    .alerts-page-layout,
+    .alerts-page-content,
+    .reports-page-layout,
+    .reports-page-content,
+    .settings-page-layout,
+    .settings-page-content
+) {
+    background: var(--theme-page-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+/* =========================================================
+   PAGE HEADERS AND GENERAL TEXT
+========================================================= */
+
+html[data-theme="dark"] main :is(h1, h2, h3, h4, h5, h6) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] main :is(p, small, label) {
+    color: var(--theme-text-muted);
+}
+
+html[data-theme="dark"] :is(
+    .welcome-text h1,
+    .settings-page-heading h1,
+    .crops-page-heading h1,
+    .livestock-page-heading h1,
+    .inventory-page-heading h1,
+    .alerts-page-heading h1,
+    .reports-page-heading h1
+) {
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] :is(
+    .dashboard-header,
+    .settings-page-header,
+    .crops-page-header,
+    .livestock-page-header,
+    .inventory-page-header,
+    .alerts-page-header,
+    .reports-page-header
+) {
+    border-bottom-color: #34a853 !important;
+}
+
+/* =========================================================
+   MAIN SURFACES, CARDS, TABLES, DROPDOWNS AND MODALS
+========================================================= */
+
+html[data-theme="dark"] :is(
+    .summary-card,
+    .dashboard-card,
+    .notification-dropdown,
+    .profile-badge,
+    .profile-dropdown,
+    .mini-calendar,
+    .event-item,
+    .activity-item,
+    .task-item,
+    .inventory-item,
+    .recommendation-card,
+    .recommendation-box,
+    .weather-grid,
+    .farm-tips-banner,
+    .activity-table-card,
+    .form-card,
+    .fc-modal,
+    .fc-upcoming-item,
+    .modal-content,
+    .settings-page-summary-card,
+    .settings-page-main-card,
+    .settings-page-account-card,
+    .settings-page-action-card,
+    .settings-page-activity-card,
+    .settings-page-role-card,
+    .settings-page-data-card,
+    .settings-page-toggle-card,
+    .settings-page-frequency-card,
+    .settings-page-archive-card,
+    .settings-page-profile-button,
+    .settings-page-profile-dropdown,
+    .settings-page-password-modal,
+    .crops-page-summary-card,
+    .crops-page-management-card,
+    .crops-page-table-card,
+    .crops-page-chart-card,
+    .crops-page-analytics-card,
+    .crops-page-details-card,
+    .crops-page-history-card,
+    .crops-page-profile-button,
+    .crops-page-profile-dropdown,
+    .livestock-page-summary-card,
+    .livestock-page-management-card,
+    .livestock-page-table-card,
+    .livestock-page-chart-card,
+    .livestock-page-analytics-card,
+    .livestock-page-details-card,
+    .livestock-page-profile-button,
+    .livestock-page-profile-dropdown,
+    .inventory-page-summary-card,
+    .inventory-page-management-card,
+    .inventory-page-table-card,
+    .inventory-page-chart-card,
+    .inventory-page-analytics-card,
+    .inventory-page-details-card,
+    .inventory-page-profile-button,
+    .inventory-page-profile-dropdown,
+    .alerts-page-summary-card,
+    .alerts-page-management-card,
+    .alerts-page-profile-button,
+    .alerts-page-profile-dropdown,
+    .reports-page-summary-card,
+    .reports-page-management-card,
+    .reports-page-chart-card,
+    .reports-page-table-card,
+    .reports-page-profile-button,
+    .reports-page-profile-dropdown,
+    .alert-settings-modal
+) {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+
+    box-shadow: var(--theme-shadow) !important;
+}
+
+html[data-theme="dark"] :is(
+    .settings-page-section-menu,
+    .settings-page-fields-card,
+    .settings-page-backup-info,
+    .alert-settings-tabs,
+    .alert-settings-fields-card,
+    .reports-page-filter-row,
+    .alerts-page-filter-row,
+    .crops-page-filter-row,
+    .livestock-page-filter-row,
+    .inventory-page-filter-row,
+    .reports-page-table-heading,
+    .alerts-page-record-heading
+) {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-surface-soft) !important;
+}
+
+/* Catch every page-specific modal without changing the page design. */
+html[data-theme="dark"] [class*="-page-"][class$="-modal"] {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+
+    box-shadow: var(--theme-shadow) !important;
+}
+
+html[data-theme="dark"] [class*="-page-modal-header"],
+html[data-theme="dark"] [class*="-page-details-header"],
+html[data-theme="dark"] [class*="-page-form-footer"],
+html[data-theme="dark"] [class*="-page-details-footer"] {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-surface) !important;
+}
+
+/* =========================================================
+   FIX THE UNREADABLE DASHBOARD ITEMS SHOWN IN THE SCREENSHOT
+========================================================= */
+
+html[data-theme="dark"] :is(
+    .event-item,
+    .activity-item,
+    .task-item,
+    .inventory-item,
+    .fc-upcoming-item
+) {
+    border: 1px solid var(--theme-border) !important;
+
+    background: var(--theme-surface-raised) !important;
+}
+
+html[data-theme="dark"] :is(
+    .event-item strong,
+    .activity-info strong,
+    .task-item strong,
+    .task-item span,
+    .inventory-item strong,
+    .fc-upcoming-item strong
+) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .event-item p,
+    .event-item small,
+    .activity-info p,
+    .activity-date,
+    .activity-date small,
+    .task-item small,
+    .inventory-item p,
+    .inventory-item small,
+    .fc-upcoming-item p,
+    .fc-upcoming-item small
+) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .mini-calendar {
+    background: var(--theme-surface-raised) !important;
+}
+
+html[data-theme="dark"] :is(
+    .calendar-month h4,
+    .calendar-days span,
+    .event-header h3
+) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .calendar-weekdays,
+    .calendar-month .material-symbols-outlined,
+    .event-header div span,
+    .event-header .material-symbols-outlined
+) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .calendar-days span:hover {
+    background: var(--theme-hover-bg) !important;
+}
+
+html[data-theme="dark"] .calendar-days .inactive {
+    color: #65776b !important;
+}
+
+html[data-theme="dark"] .calendar-days .active-day {
+    background: #2f8f48 !important;
+    color: #ffffff !important;
+}
+
+/* =========================================================
+   PROFILE AND NOTIFICATION CONTROLS
+========================================================= */
+
+html[data-theme="dark"] :is(
+    .notification-btn,
+    .settings-page-notification-button,
+    .crops-page-notification-button,
+    .livestock-page-notification-button,
+    .inventory-page-notification-button,
+    .alerts-page-notification-button,
+    .reports-page-notification-button
+) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .notification-btn,
+    .settings-page-notification-button,
+    .crops-page-notification-button,
+    .livestock-page-notification-button,
+    .inventory-page-notification-button,
+    .alerts-page-notification-button,
+    .reports-page-notification-button
+):hover {
+    background: var(--theme-hover-bg) !important;
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] :is(
+    .profile-avatar,
+    .settings-page-profile-avatar,
+    .crops-page-profile-avatar,
+    .livestock-page-profile-avatar,
+    .inventory-page-profile-avatar,
+    .alerts-page-profile-avatar,
+    .reports-page-profile-avatar
+) {
+    background: #2a4031 !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .profile-info .name,
+    .dropdown-header h3,
+    .notification-content strong,
+    [class*="-page-profile-text"] strong,
+    [class*="-page-profile-dropdown-user"] strong
+) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .profile-info .role,
+    .dropdown-header p,
+    .notification-content p,
+    .notification-time,
+    [class*="-page-profile-text"] small,
+    [class*="-page-profile-dropdown-user"] small
+) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] :is(
+    .notification-item,
+    .dropdown-item,
+    .settings-page-profile-dropdown > button,
+    .crops-page-profile-dropdown > button,
+    .livestock-page-profile-dropdown > button,
+    .inventory-page-profile-dropdown > button,
+    .alerts-page-profile-dropdown > button,
+    .reports-page-profile-dropdown > button
+) {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .notification-item.unread,
+    .dropdown-item:hover,
+    .settings-page-profile-dropdown > button:hover,
+    .crops-page-profile-dropdown > button:hover,
+    .livestock-page-profile-dropdown > button:hover,
+    .inventory-page-profile-dropdown > button:hover,
+    .alerts-page-profile-dropdown > button:hover,
+    .reports-page-profile-dropdown > button:hover
+) {
+    background: var(--theme-hover-bg) !important;
+}
+
+/* =========================================================
+   INPUTS, SELECTS, TEXTAREAS AND WHITE FILTER BUTTONS
+========================================================= */
+
+html[data-theme="dark"] :is(input, select, textarea) {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-input-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(input, textarea)::placeholder {
+    color: #77897e !important;
+}
+
+html[data-theme="dark"] select option {
+    background: var(--theme-input-bg);
+    color: var(--theme-text);
+}
+
+html[data-theme="dark"] :is(
+    .month-filter,
+    .filter-dropdown,
+    .filter-item,
+    .btn-add,
+    .reports-page-print-button,
+    .reports-page-export-button,
+    .reports-page-reset-button,
+    .alerts-page-settings-button,
+    .alerts-page-reset-button,
+    .settings-page-cancel-button,
+    .alert-settings-cancel,
+    .reports-page-cancel-button,
+    [class*="-page-cancel-button"]
+) {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .month-filter,
+    .filter-item,
+    .btn-add,
+    .reports-page-print-button,
+    .reports-page-export-button,
+    .reports-page-reset-button,
+    .alerts-page-settings-button,
+    .alerts-page-reset-button,
+    .settings-page-cancel-button,
+    .alert-settings-cancel,
+    .reports-page-cancel-button,
+    [class*="-page-cancel-button"]
+):hover {
+    background: var(--theme-hover-bg) !important;
+}
+
+/* =========================================================
+   TABLES
+========================================================= */
+
+html[data-theme="dark"] table {
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] table th {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-surface-soft) !important;
+    color: #d6e2da !important;
+}
+
+html[data-theme="dark"] table td {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-surface) !important;
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] table td strong {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] table tbody tr:hover td {
+    background: var(--theme-hover-bg) !important;
+}
+
+/* =========================================================
+   PRIMARY ACTION BUTTONS
+========================================================= */
+
+html[data-theme="dark"] :is(
+    .btn-green,
+    .settings-page-primary-button,
+    .settings-page-save-button,
+    .reports-page-generate-button,
+    .reports-page-save-button,
+    .reports-page-details-footer button.primary,
+    .alerts-page-add-button,
+    .alerts-page-save-button,
+    .alert-settings-save,
+    [class*="-page-add-button"],
+    [class*="-page-save-button"]
+) {
+    border-color: #1f8a43 !important;
+
+    background: #1f8a43 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] :is(
+    .btn-green,
+    .settings-page-primary-button,
+    .settings-page-save-button,
+    .reports-page-generate-button,
+    .reports-page-save-button,
+    .reports-page-details-footer button.primary,
+    .alerts-page-add-button,
+    .alerts-page-save-button,
+    .alert-settings-save,
+    [class*="-page-add-button"],
+    [class*="-page-save-button"]
+):hover {
+    background: #29a451 !important;
+}
+
+/* =========================================================
+   SETTINGS-SPECIFIC READABILITY
+========================================================= */
+
+html[data-theme="dark"] .settings-page-section-menu > button {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .settings-page-section-menu > button:hover {
+    background: var(--theme-hover-bg) !important;
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] .settings-page-section-menu > button.active {
+    background: #1f7a3c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] :is(
+    .settings-page-permission-item,
+    .settings-page-details-grid > div,
+    .reports-page-details-grid > div
+) {
+    border-color: var(--theme-border) !important;
+
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+/* =========================================================
+   CHARTS
+   CSS cannot change Chart.js tick settings directly, but this
+   makes dark labels and grid lines more visible without changing
+   the dataset colors.
+========================================================= */
+
+html[data-theme="dark"] canvas {
+    filter:
+        brightness(1.28)
+        saturate(1.08);
+}
+
+/* =========================================================
+   ACCESSIBILITY AND SAFETY
+========================================================= */
+
+html[data-theme="dark"] button:disabled {
+    opacity: 0.45;
+}
+
+html[data-theme="dark"] :focus-visible {
+    outline-color: #72dd8d;
+}
+
+/* =========================================================
+   CROPS AND LIVESTOCK DARK-MODE CONSISTENCY FIX
+   These rules are intentionally placed last so they override
+   older page CSS that still uses hard-coded white backgrounds.
+========================================================= */
+
+/* Always darken the actual page workspace, even when a page uses
+   generic class names such as page-content or main-content. */
+html[data-theme="dark"] main,
+html[data-theme="dark"] [class="page-content"],
+html[data-theme="dark"] [class*="page-content"],
+html[data-theme="dark"] [class*="main-content"],
+html[data-theme="dark"] [class*="content-area"] {
+    background: var(--theme-page-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Crop and livestock page containers. */
+html[data-theme="dark"] :is(
+    .crops-layout,
+    .crops-content,
+    .crop-page,
+    .crop-page-content,
+    .crops-page-layout,
+    .crops-page-content,
+    .livestock-layout,
+    .livestock-content,
+    .livestock-page,
+    .livestock-page-content,
+    .livestock-page-layout
+) {
+    background: var(--theme-page-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Cards and large panels used by both pages. */
+html[data-theme="dark"] main :is(
+    [class*="summary-card"],
+    [class*="stat-card"],
+    [class*="stats-card"],
+    [class*="metric-card"],
+    [class*="management-card"],
+    [class*="table-card"],
+    [class*="overview-card"],
+    [class*="chart-card"],
+    [class*="analytics-card"],
+    [class*="details-card"],
+    [class*="history-card"],
+    [class*="record-card"],
+    [class*="info-card"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+    box-shadow: var(--theme-shadow) !important;
+}
+
+/* Search and filter bars that were still white in the screenshots. */
+html[data-theme="dark"] main :is(
+    [class*="filter-row"],
+    [class*="filter-section"],
+    [class*="filters-container"],
+    [class*="filter-container"],
+    [class*="search-filter"],
+    [class*="toolbar"],
+    [class*="action-bar"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+    box-shadow: var(--theme-shadow) !important;
+}
+
+/* Page section titles and record-count labels. */
+html[data-theme="dark"] main :is(
+    [class*="section-heading"],
+    [class*="table-heading"],
+    [class*="record-heading"],
+    [class*="overview-heading"],
+    [class*="header-title"]
+) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] main :is(
+    [class*="section-heading"],
+    [class*="table-heading"],
+    [class*="record-heading"],
+    [class*="overview-heading"]
+) :is(p, small, span:not(.material-symbols-outlined)) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Summary-card labels and values. */
+html[data-theme="dark"] main :is(
+    [class*="summary-card"],
+    [class*="stat-card"],
+    [class*="metric-card"]
+) :is(h2, h3, h4, strong) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] main :is(
+    [class*="summary-card"],
+    [class*="stat-card"],
+    [class*="metric-card"]
+) :is(p, small, label) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Preserve the soft-green icon box while making its icon readable. */
+html[data-theme="dark"] main :is(
+    [class*="summary-icon"],
+    [class*="stat-icon"],
+    [class*="metric-icon"],
+    [class*="category-icon"],
+    [class*="animal-icon"],
+    [class*="crop-icon"]
+) {
+    border-color: #355440 !important;
+    background: #20382a !important;
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] main :is(
+    [class*="summary-icon"],
+    [class*="stat-icon"],
+    [class*="metric-icon"],
+    [class*="category-icon"],
+    [class*="animal-icon"],
+    [class*="crop-icon"]
+) .material-symbols-outlined {
+    color: inherit !important;
+}
+
+/* Inputs and dropdowns inside crop/livestock filters. */
+html[data-theme="dark"] main :is(
+    input[type="text"],
+    input[type="search"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea
+) {
+    border-color: #365040 !important;
+    background: #0c1a12 !important;
+    color: #eef6f1 !important;
+}
+
+html[data-theme="dark"] main :is(
+    input[type="text"],
+    input[type="search"],
+    input[type="date"],
+    input[type="number"],
+    textarea
+)::placeholder {
+    color: #91a49a !important;
+    opacity: 1;
+}
+
+html[data-theme="dark"] main input[type="date"] {
+    color-scheme: dark;
+}
+
+/* Secondary actions such as Clear, Export and Add Yield. */
+html[data-theme="dark"] main :is(
+    button[class*="clear"],
+    button[class*="reset"],
+    button[class*="export"],
+    button[class*="update"],
+    button[class*="yield"],
+    button[class*="outline"],
+    button[class*="secondary"]
+) {
+    border-color: #3a5645 !important;
+    background: var(--theme-surface-raised) !important;
+    color: #dce9e0 !important;
+}
+
+html[data-theme="dark"] main :is(
+    button[class*="clear"],
+    button[class*="reset"],
+    button[class*="export"],
+    button[class*="update"],
+    button[class*="yield"],
+    button[class*="outline"],
+    button[class*="secondary"]
+):hover {
+    background: var(--theme-hover-bg) !important;
+    color: #72dd8d !important;
+}
+
+/* Primary Add Crop and Add Livestock buttons. */
+html[data-theme="dark"] main :is(
+    button[class*="add-crop"],
+    button[class*="add-livestock"],
+    button[class*="add-button"],
+    .btn-add
+) {
+    border-color: #239647 !important;
+    background: #1f8a43 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] main :is(
+    button[class*="add-crop"],
+    button[class*="add-livestock"],
+    button[class*="add-button"],
+    .btn-add
+):hover {
+    background: #29a451 !important;
+}
+
+/* Tables: use one dark surface with clear row separation. */
+html[data-theme="dark"] main table,
+html[data-theme="dark"] main thead,
+html[data-theme="dark"] main tbody,
+html[data-theme="dark"] main tr {
+    background: var(--theme-surface) !important;
+}
+
+html[data-theme="dark"] main table th {
+    border-color: #355040 !important;
+    background: #0f1d15 !important;
+    color: #eef6f1 !important;
+}
+
+html[data-theme="dark"] main table td {
+    border-color: #2f4638 !important;
+    background: #132119 !important;
+    color: #d5e2d9 !important;
+}
+
+html[data-theme="dark"] main table tbody tr:nth-child(even) td {
+    background: #15251b !important;
+}
+
+html[data-theme="dark"] main table tbody tr:hover td {
+    background: #1d3325 !important;
+}
+
+html[data-theme="dark"] main table td :is(strong, b) {
+    color: #f4f8f5 !important;
+}
+
+html[data-theme="dark"] main table td :is(p, small) {
+    color: #aec0b5 !important;
+}
+
+/* Progress tracks remain visible against the dark table. */
+html[data-theme="dark"] main :is(
+    [class*="progress-track"],
+    [class*="progress-bar"],
+    [class*="growth-track"]
+) {
+    background: #32483a !important;
+}
+
+/* Keep status badges intentionally light and readable. */
+html[data-theme="dark"] main :is(
+    [class*="status-badge"],
+    [class*="health-badge"],
+    [class*="growth-badge"],
+    [class*="status-pill"],
+    [class*="health-status"]
+) {
+    color: #102316 !important;
+}
+
+/* Action icon buttons should not become large dark blocks. */
+html[data-theme="dark"] main :is(
+    [class*="row-actions"],
+    [class*="table-actions"],
+    [class*="action-buttons"]
+) button {
+    border-color: #355040 !important;
+}
+
+html[data-theme="dark"] main :is(
+    [class*="row-actions"],
+    [class*="table-actions"],
+    [class*="action-buttons"]
+) button:not([class*="delete"]):not([class*="archive"]) {
+    background: #eaf8ee !important;
+    color: #167237 !important;
+}
+
+html[data-theme="dark"] main :is(
+    [class*="row-actions"],
+    [class*="table-actions"],
+    [class*="action-buttons"]
+) button:is([class*="delete"], [class*="archive"]) {
+    background: #fff0f2 !important;
+    color: #d92d3a !important;
+}
+
+/* Profile control consistency on crop and livestock pages. */
+html[data-theme="dark"] main :is(
+    .profile-badge,
+    button[class*="profile-button"],
+    [class*="profile-dropdown"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] main :is(
+    .profile-badge,
+    button[class*="profile-button"]
+) :is(strong, .name) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] main :is(
+    .profile-badge,
+    button[class*="profile-button"]
+) :is(small, .role) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Modals opened from Crop and Livestock pages. */
+html[data-theme="dark"] :is(
+    [class*="crop"][class*="modal"],
+    [class*="livestock"][class*="modal"],
+    [class*="animal"][class*="modal"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    [class*="crop"][class*="modal"],
+    [class*="livestock"][class*="modal"],
+    [class*="animal"][class*="modal"]
+) :is(h1, h2, h3, h4, strong, label) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    [class*="crop"][class*="modal"],
+    [class*="livestock"][class*="modal"],
+    [class*="animal"][class*="modal"]
+) :is(p, small) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* =========================================================
+   INVENTORY ANALYTICS DARK-MODE CONSISTENCY FIX
+   Placed last so it overrides older Inventory.css rules that
+   still use hard-coded white backgrounds and pale text.
+========================================================= */
+
+/* Inventory page workspace and analytics sections. */
+html[data-theme="dark"] :is(
+    .inventory-layout,
+    .inventory-content,
+    .inventory-page,
+    .inventory-page-layout,
+    .inventory-page-content,
+    main[class*="inventory"],
+    [class*="inventory"][class*="content"]
+) {
+    background: var(--theme-page-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Main Inventory analytics panels, including cards whose names
+   do not use the older inventory-page-* naming pattern. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="inventory"][class*="card"],
+    [class*="inventory"][class*="panel"],
+    [class*="stock"][class*="card"],
+    [class*="stock"][class*="panel"],
+    [class*="health"][class*="card"],
+    [class*="health"][class*="panel"],
+    [class*="expiration"][class*="card"],
+    [class*="expiration"][class*="panel"],
+    [class*="supplier"][class*="card"],
+    [class*="supplier"][class*="panel"],
+    [class*="analytics"][class*="card"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+    box-shadow: var(--theme-shadow) !important;
+}
+
+/* Inventory Health's four white statistic boxes. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="health-stat"],
+    [class*="health-metric"],
+    [class*="health-item"],
+    [class*="inventory-stat"],
+    [class*="inventory-metric"],
+    [class*="summary-item"],
+    [class*="stat-box"],
+    [class*="metric-box"]
+) {
+    border-color: #314a39 !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="health-stat"],
+    [class*="health-metric"],
+    [class*="health-item"],
+    [class*="inventory-stat"],
+    [class*="inventory-metric"],
+    [class*="summary-item"],
+    [class*="stat-box"],
+    [class*="metric-box"]
+) :is(h2, h3, h4, strong, b) {
+    color: #f4f8f5 !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="health-stat"],
+    [class*="health-metric"],
+    [class*="health-item"],
+    [class*="inventory-stat"],
+    [class*="inventory-metric"],
+    [class*="summary-item"],
+    [class*="stat-box"],
+    [class*="metric-box"]
+) :is(p, small, span:not(.material-symbols-outlined)) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Section headers such as Low-Stock Alerts, Expiration Monitoring,
+   Supplier Performance and their descriptions/counters. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="low-stock"],
+    [class*="lowstock"],
+    [class*="expiration"],
+    [class*="supplier"],
+    [class*="stock-alert"],
+    [class*="inventory-health"]
+) :is(h2, h3, h4, strong) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="low-stock"],
+    [class*="lowstock"],
+    [class*="expiration"],
+    [class*="supplier"],
+    [class*="stock-alert"],
+    [class*="inventory-health"]
+) :is(p, small, label) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Low-stock and expiration record rows that remained pale gray/white. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="low-stock-item"],
+    [class*="lowstock-item"],
+    [class*="stock-alert-item"],
+    [class*="expiration-item"],
+    [class*="expiry-item"],
+    [class*="monitoring-item"],
+    [class*="inventory-alert-item"],
+    [class*="inventory-record-item"]
+) {
+    border-color: #2f4638 !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="low-stock-item"],
+    [class*="lowstock-item"],
+    [class*="stock-alert-item"],
+    [class*="expiration-item"],
+    [class*="expiry-item"],
+    [class*="monitoring-item"],
+    [class*="inventory-alert-item"],
+    [class*="inventory-record-item"]
+) :is(h3, h4, strong, b) {
+    color: #f3f8f5 !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="low-stock-item"],
+    [class*="lowstock-item"],
+    [class*="stock-alert-item"],
+    [class*="expiration-item"],
+    [class*="expiry-item"],
+    [class*="monitoring-item"],
+    [class*="inventory-alert-item"],
+    [class*="inventory-record-item"]
+) :is(p, small) {
+    color: #aebeb4 !important;
+}
+
+/* Small quantity boxes inside low-stock records. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="stock-detail"],
+    [class*="quantity-detail"],
+    [class*="quantity-box"],
+    [class*="stock-value"],
+    [class*="detail-box"],
+    [class*="alert-detail"]
+) {
+    border-color: #314a39 !important;
+    background: #0f1b14 !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="stock-detail"],
+    [class*="quantity-detail"],
+    [class*="quantity-box"],
+    [class*="stock-value"],
+    [class*="detail-box"],
+    [class*="alert-detail"]
+) :is(strong, b) {
+    color: #f3f8f5 !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="stock-detail"],
+    [class*="quantity-detail"],
+    [class*="quantity-box"],
+    [class*="stock-value"],
+    [class*="detail-box"],
+    [class*="alert-detail"]
+) :is(span, small, p, label) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Restocking/review warning callout: use a dark amber surface instead
+   of the bright cream background visible in the screenshot. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="health-alert"],
+    [class*="attention-alert"],
+    [class*="inventory-warning"],
+    [class*="restock-warning"],
+    [class*="review-warning"],
+    [class*="attention-message"]
+) {
+    border-color: #b06a13 !important;
+    background: #30220f !important;
+    color: #ffd596 !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="health-alert"],
+    [class*="attention-alert"],
+    [class*="inventory-warning"],
+    [class*="restock-warning"],
+    [class*="review-warning"],
+    [class*="attention-message"]
+) :is(p, span, strong, .material-symbols-outlined) {
+    color: #ffd596 !important;
+}
+
+/* Supplier Performance heading and table should share one surface. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="supplier-header"],
+    [class*="supplier-heading"],
+    [class*="supplier-card-header"],
+    [class*="supplier-table-header"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="supplier-header"],
+    [class*="supplier-heading"],
+    [class*="supplier-card-header"],
+    [class*="supplier-table-header"]
+) :is(h2, h3, h4, strong) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="supplier-header"],
+    [class*="supplier-heading"],
+    [class*="supplier-card-header"],
+    [class*="supplier-table-header"]
+) :is(p, small, span:not(.material-symbols-outlined)) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Inventory status pills remain intentionally colored and readable. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="status-badge"],
+    [class*="status-pill"],
+    [class*="performance-badge"],
+    [class*="expiry-status"],
+    [class*="stock-status"]
+) {
+    box-shadow: none !important;
+}
+
+/* Inventory icon boxes use a dark-green neutral background instead of
+   bright white, while red/yellow warning icons keep their meaning. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page,
+    main
+) :is(
+    [class*="inventory-icon"],
+    [class*="health-icon"],
+    [class*="supplier-icon"],
+    [class*="expiration-icon"],
+    [class*="stock-icon"]
+):not([class*="danger"]):not([class*="warning"]):not([class*="out"]):not([class*="low"]) {
+    border-color: #355440 !important;
+    background: #20382a !important;
+    color: #72dd8d !important;
+}
+
+/* Final fallback for unnamed white blocks inside the Inventory analytics
+   area. It avoids badges, buttons, inputs and table cells. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page
+) :is(section, article, div)[class*="card"]:not([class*="status"]):not([class*="badge"]):not(.records-table-surface),
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page
+) :is(section, article, div)[class*="item"]:not([class*="status"]):not([class*="badge"]):not([class*="icon"]) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Keep all Inventory analytics titles and values readable even when their
+   page CSS uses very pale hard-coded colors. */
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page
+) :is(h1, h2, h3, h4, h5, strong, b) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-page-content,
+    .inventory-content,
+    .inventory-page
+) :is(p, small, label) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* =========================================================
+   DASHBOARD MODALS — FINAL DARK MODE CONSISTENCY FIX
+   These rules are intentionally placed at the end of this
+   file so they override the hard-coded white backgrounds in
+   Dashboard.css without changing the light-mode design.
+========================================================= */
+
+/* Main modal shells: Farm Activity, Upcoming Tasks,
+   Add Activity, Add Farm Event and View Calendar. */
+html[data-theme="dark"] body :is(
+    .modal .modal-content,
+    .modal-overlay .event-modal,
+    .modal-overlay .add-activity-modal,
+    .fc-overlay .fc-modal,
+    [class*="activity"][class*="modal"],
+    [class*="task"][class*="modal"],
+    [class*="event"][class*="modal"],
+    [class*="calendar"][class*="modal"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.58) !important;
+}
+
+/* Modal headers and fixed top areas. */
+html[data-theme="dark"] body :is(
+    .modal .modal-header,
+    .modal .modal-top,
+    .modal-overlay .modal-header,
+    .fc-overlay .fc-header,
+    [class*="activity"][class*="modal"] [class*="header"],
+    [class*="task"][class*="modal"] [class*="header"],
+    [class*="event"][class*="modal"] [class*="header"],
+    [class*="calendar"][class*="modal"] [class*="header"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .modal .modal-header,
+    .modal-overlay .modal-header,
+    .fc-overlay .fc-header,
+    [class*="activity"][class*="modal"] [class*="header"],
+    [class*="task"][class*="modal"] [class*="header"],
+    [class*="event"][class*="modal"] [class*="header"],
+    [class*="calendar"][class*="modal"] [class*="header"]
+) :is(h1, h2, h3, h4, strong) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .modal .modal-header,
+    .modal-overlay .modal-header,
+    .fc-overlay .fc-header,
+    [class*="activity"][class*="modal"] [class*="header"],
+    [class*="task"][class*="modal"] [class*="header"],
+    [class*="event"][class*="modal"] [class*="header"],
+    [class*="calendar"][class*="modal"] [class*="header"]
+) :is(p, small) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Modal body, form and scroll areas. */
+html[data-theme="dark"] body :is(
+    .modal .modal-body,
+    .modal .activity-scroll,
+    .modal-overlay #eventForm,
+    .modal-overlay form,
+    .fc-overlay .fc-content,
+    [class*="activity"][class*="modal"] [class*="body"],
+    [class*="activity"][class*="modal"] [class*="content"],
+    [class*="task"][class*="modal"] [class*="body"],
+    [class*="task"][class*="modal"] [class*="content"],
+    [class*="event"][class*="modal"] [class*="body"],
+    [class*="event"][class*="modal"] [class*="content"],
+    [class*="calendar"][class*="modal"] [class*="body"],
+    [class*="calendar"][class*="modal"] [class*="content"]
+) {
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Farm Activity filters and table wrapper. */
+html[data-theme="dark"] body :is(
+    .modal .filter-box,
+    .modal .activity-table-card,
+    [class*="activity"][class*="modal"] [class*="filter"],
+    [class*="activity"][class*="modal"] [class*="table-card"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+    box-shadow: var(--theme-shadow) !important;
+}
+
+/* Upcoming Tasks list rows. */
+html[data-theme="dark"] body :is(
+    [class*="task"][class*="modal"] [class*="task-item"],
+    [class*="task"][class*="modal"] [class*="task-row"],
+    [class*="upcoming"][class*="modal"] [class*="item"],
+    .modal [class*="task-item"],
+    .modal [class*="task-row"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="task"][class*="modal"] [class*="task-item"],
+    [class*="task"][class*="modal"] [class*="task-row"],
+    [class*="upcoming"][class*="modal"] [class*="item"],
+    .modal [class*="task-item"],
+    .modal [class*="task-row"]
+) :is(h3, h4, strong, b, span:not([class*="status"]):not(.material-symbols-outlined)) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="task"][class*="modal"] [class*="task-item"],
+    [class*="task"][class*="modal"] [class*="task-row"],
+    [class*="upcoming"][class*="modal"] [class*="item"],
+    .modal [class*="task-item"],
+    .modal [class*="task-row"]
+) :is(p, small, time) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Add Farm Event and Add Activity forms. */
+html[data-theme="dark"] body :is(
+    .event-modal .form-group,
+    .add-activity-modal .form-group,
+    .add-activity-modal .form-card,
+    .add-activity-modal .form-section,
+    [class*="event"][class*="modal"] [class*="form"],
+    [class*="activity"][class*="modal"] [class*="form-card"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .event-modal,
+    .add-activity-modal,
+    [class*="event"][class*="modal"],
+    [class*="activity"][class*="modal"]
+) :is(label, .switch-text) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .event-modal,
+    .add-activity-modal,
+    .modal-content,
+    [class*="activity"][class*="modal"],
+    [class*="task"][class*="modal"],
+    [class*="event"][class*="modal"]
+) :is(input, select, textarea) {
+    border-color: #36503f !important;
+    background: var(--theme-input-bg) !important;
+    color: var(--theme-text) !important;
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] body :is(
+    .event-modal,
+    .add-activity-modal,
+    .modal-content,
+    [class*="activity"][class*="modal"],
+    [class*="task"][class*="modal"],
+    [class*="event"][class*="modal"]
+) :is(input, textarea)::placeholder {
+    color: #87998d !important;
+    opacity: 1;
+}
+
+/* Event type choice area and inactive pills. */
+html[data-theme="dark"] body .event-modal .event-type-container {
+    border-color: var(--theme-border) !important;
+    background: transparent !important;
+}
+
+html[data-theme="dark"] body .event-modal .event-type {
+    border: 1px solid #3d694a !important;
+    background: #1b3022 !important;
+    color: #a7e8b7 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="dark"] body .event-modal .event-type:hover {
+    background: #25452f !important;
+}
+
+html[data-theme="dark"] body .event-modal .event-type.active {
+    border-color: #34c759 !important;
+    outline: none !important;
+    background: #15913a !important;
+    color: #ffffff !important;
+}
+
+/* Farm Calendar: toolbar, calendar grid and cards. */
+html[data-theme="dark"] body :is(
+    .fc-overlay .fc-toolbar,
+    .fc-overlay .fc-left,
+    .fc-overlay .fc-right,
+    .fc-overlay .fc-card,
+    .fc-overlay .fc-summary-box,
+    .fc-overlay .fc-weekday,
+    .fc-overlay .fc-day,
+    .fc-overlay .fc-upcoming-item,
+    .fc-overlay .fc-event-card
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-toolbar {
+    background: var(--theme-surface) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay :is(
+    .fc-btn,
+    .fc-view-buttons,
+    .fc-view-buttons button
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-input-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-view-buttons .active {
+    background: #15913a !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day:hover {
+    background: var(--theme-hover-bg) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day.selected {
+    background: #21492e !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day.muted {
+    background: #101b14 !important;
+    color: #708177 !important;
+}
+
+html[data-theme="dark"] body .fc-overlay :is(
+    h1, h2, h3, h4, h5, strong, b, .fc-date
+) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay :is(
+    p, small, label, .fc-empty
+) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Modal footer areas and secondary buttons. */
+html[data-theme="dark"] body :is(
+    .modal-footer,
+    .modal-buttons,
+    [class*="modal"] [class*="footer"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .btn-cancel,
+    [class*="modal"] button[class*="cancel"]
+) {
+    border-color: #46614f !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Close controls must remain clearly visible. */
+html[data-theme="dark"] body :is(
+    .close,
+    .close-modal,
+    .fc-close,
+    [class*="modal"] button[aria-label*="Close" i]
+) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .close,
+    .close-modal,
+    .fc-close,
+    [class*="modal"] button[aria-label*="Close" i]
+) .material-symbols-outlined {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .close-modal,
+    .fc-close,
+    [class*="modal"] button[aria-label*="Close" i]
+):hover {
+    background: var(--theme-hover-bg) !important;
+}
+
+/* Activity and task tables inside modals. */
+html[data-theme="dark"] body :is(
+    .modal-content,
+    [class*="activity"][class*="modal"],
+    [class*="task"][class*="modal"]
+) table {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .modal-content,
+    [class*="activity"][class*="modal"],
+    [class*="task"][class*="modal"]
+) :is(thead, th) {
+    border-color: var(--theme-border) !important;
+    background: #0d1d13 !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .modal-content,
+    [class*="activity"][class*="modal"],
+    [class*="task"][class*="modal"]
+) :is(tbody, tr, td) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] body :is(
+    .modal-content,
+    [class*="activity"][class*="modal"],
+    [class*="task"][class*="modal"]
+) tbody tr:hover td {
+    background: var(--theme-hover-bg) !important;
+}
+
+/* Remove the last visible white strip around full-screen dialogs. */
+html[data-theme="dark"] body :is(
+    .modal,
+    .modal-overlay,
+    .fc-overlay
+) {
+    color: var(--theme-text) !important;
+}
+
+/* =========================================================
+   CROPS MODALS — FINAL DARK-MODE CONSISTENCY FIX
+   Covers Add Crop, Add Yield Record, Update Crop Growth,
+   Crop Details, care records, history, and archive dialogs.
+   These rules are placed last so they override hard-coded
+   white cards and pale text from the crop modal CSS files.
+========================================================= */
+
+/* Darken crop-related overlays, including modals that use a
+   generic overlay class but contain crop/yield/growth content. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="overlay"],
+    [class*="yield"][class*="overlay"],
+    [class*="growth"][class*="overlay"],
+    [class*="harvest"][class*="overlay"],
+    .modal-overlay:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) {
+    background: rgba(1, 8, 4, 0.82) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Main modal shells. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [class*="crop"][class*="drawer"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.58) !important;
+}
+
+/* Modal headers and fixed footer areas. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="header"],
+    [class*="footer"],
+    [class*="modal-top"]
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+/* Modal body, form, and scrollable content. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="body"],
+    [class*="content"],
+    [class*="scroll"],
+    form
+) {
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+/* White section cards visible in Add Crop, Yield, Growth,
+   and Crop Details dialogs. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    section,
+    article,
+    div
+):is(
+    [class$="-section"],
+    [class*="-section-"],
+    [class$="-card"],
+    [class*="-card-"],
+    [class$="-panel"],
+    [class*="-panel-"],
+    [class$="-box"],
+    [class*="-box-"],
+    [class*="overview"],
+    [class*="care-details"],
+    [class*="care-grid"],
+    [class*="info-grid"],
+    [class*="details-grid"],
+    [class*="summary-grid"],
+    [class*="metric-grid"],
+    [class*="history-card"],
+    [class*="record-card"]
+):not([class*="badge"]):not([class*="status"]):not([class*="icon"]):not([class*="button"]) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+    box-shadow: none !important;
+}
+
+/* Direct children of information, summary, care and details grids
+   are the small white statistic boxes visible in the screenshots. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="info-grid"],
+    [class*="summary-grid"],
+    [class*="details-grid"],
+    [class*="care-grid"],
+    [class*="metric-grid"],
+    [class*="stats-grid"]
+) > * {
+    border-color: var(--theme-border) !important;
+    background: #0f1b14 !important;
+    color: var(--theme-text) !important;
+    box-shadow: none !important;
+}
+
+/* Form labels and all important text. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(h1, h2, h3, h4, h5, strong, b, label) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(p, small, time) {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Inputs, selects and textareas. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(input, select, textarea) {
+    border-color: #365040 !important;
+    background: #0c1a12 !important;
+    color: #eef6f1 !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(input, textarea)::placeholder {
+    color: #91a49a !important;
+    opacity: 1 !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(input, select, textarea):focus {
+    border-color: #55c978 !important;
+    box-shadow: 0 0 0 3px rgba(85, 201, 120, 0.16) !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(input, select, textarea):disabled,
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(input, textarea)[readonly] {
+    border-color: #2e4436 !important;
+    background: #132219 !important;
+    color: var(--theme-text-muted) !important;
+    opacity: 1 !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) input:is([type="date"], [type="time"]) {
+    color-scheme: dark;
+}
+
+/* Section icons and crop detail icons. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="section-icon"],
+    [class*="main-icon"],
+    [class*="detail-icon"],
+    [class*="info-icon"],
+    [class*="care-icon"],
+    [class*="summary-icon"],
+    [class*="header-icon"]
+) {
+    border-color: #355440 !important;
+    background: #20382a !important;
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="section-icon"],
+    [class*="main-icon"],
+    [class*="detail-icon"],
+    [class*="info-icon"],
+    [class*="care-icon"],
+    [class*="summary-icon"],
+    [class*="header-icon"]
+) .material-symbols-outlined {
+    color: inherit !important;
+}
+
+/* Growth and yield information cards. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="field-area"],
+    [class*="yield-per"],
+    [class*="current-status"],
+    [class*="info-item"],
+    [class*="summary-item"],
+    [class*="detail-item"],
+    [class*="care-item"],
+    [class*="metric-item"],
+    [class*="stat-item"]
+) {
+    border-color: var(--theme-border) !important;
+    background: #0f1b14 !important;
+    color: var(--theme-text) !important;
+}
+
+/* Growth progress card and track. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="progress-card"],
+    [class*="growth-progress"],
+    [class*="progress-section"]
+) {
+    border-color: #315540 !important;
+    background: #14271b !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="progress-track"],
+    [class*="growth-track"],
+    [class*="progress-bar"]:not([class*="fill"])
+) {
+    background: #34483b !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="progress-fill"],
+    [class*="growth-fill"],
+    [class*="progress-value"]
+) {
+    color: #7ee39a !important;
+}
+
+/* Tables, history entries and pest/disease records inside Crop Details. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) table {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(thead, th) {
+    border-color: var(--theme-border) !important;
+    background: #0d1d13 !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(tbody, tr, td, [class*="history-item"], [class*="record-item"]) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text-muted) !important;
+}
+
+/* Buttons and close controls. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    button[class*="cancel"],
+    button[class*="close"]:not([class*="save"]),
+    button[class*="secondary"]
+) {
+    border-color: #3a5645 !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    button[class*="save"],
+    button[class*="submit"],
+    button[class*="primary"],
+    button[type="submit"]
+) {
+    border-color: #24994a !important;
+    background: #1f8a43 !important;
+    color: #ffffff !important;
+}
+
+/* Preserve semantic light badges while keeping their labels readable. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="status-badge"],
+    [class*="status-pill"],
+    [class*="growth-badge"],
+    [class*="quality-badge"]
+) {
+    color: #15301d !important;
+    box-shadow: none !important;
+}
+
+/* Crop modal scrollbars. */
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="body"],
+    [class*="content"],
+    [class*="scroll"],
+    form
+)::-webkit-scrollbar-track {
+    background: #0a1510 !important;
+}
+
+html[data-theme="dark"] body :is(
+    [class*="crop"][class*="modal"],
+    [class*="yield"][class*="modal"],
+    [class*="growth"][class*="modal"],
+    [class*="harvest"][class*="modal"],
+    [class*="crop"][class*="details"],
+    [role="dialog"]:has(
+        [class*="crop"],
+        [class*="yield"],
+        [class*="growth"],
+        [class*="harvest"]
+    )
+) :is(
+    [class*="body"],
+    [class*="content"],
+    [class*="scroll"],
+    form
+)::-webkit-scrollbar-thumb {
+    border: 2px solid #0a1510 !important;
+    background: #405a49 !important;
+}
+
+/* =========================================================
+   ALERTS, REPORTS, AND INVENTORY MODALS
+   FINAL DARK-MODE CONSISTENCY FIX
+   These rules are intentionally placed at the end so they
+   override hard-coded white backgrounds in component CSS.
+========================================================= */
+
+/* ---------------------------------------------------------
+   SHARED MODAL SURFACES
+--------------------------------------------------------- */
+
+html[data-theme="dark"] :is(
+    .alerts-page-modal,
+    .alert-settings-modal,
+    .reports-page-form-modal,
+    .reports-page-details-modal,
+    .inventory-form-modal,
+    .inventory-details-modal
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-modal-header,
+    .alert-settings-header,
+    .reports-page-modal-header,
+    .reports-page-details-header,
+    .inventory-modal-header,
+    .inventory-details-header
+) {
+    border-color: #2f9b52 !important;
+    background: #102117 !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-modal-header,
+    .alert-settings-header,
+    .reports-page-modal-header,
+    .reports-page-details-header,
+    .inventory-modal-header,
+    .inventory-details-header
+) :is(h1, h2, h3, strong) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-modal-header,
+    .alert-settings-header,
+    .reports-page-modal-header,
+    .reports-page-details-header,
+    .inventory-modal-header,
+    .inventory-details-header
+) :is(p, small) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-modal-header,
+    .alert-settings-header,
+    .reports-page-modal-header,
+    .reports-page-details-header,
+    .inventory-modal-header,
+    .inventory-details-header
+) > button {
+    border-color: transparent !important;
+    background: transparent !important;
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-modal-header,
+    .alert-settings-header,
+    .reports-page-modal-header,
+    .reports-page-details-header,
+    .inventory-modal-header,
+    .inventory-details-header
+) > button:hover {
+    background: var(--theme-hover-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-modal-form,
+    .alert-settings-layout,
+    .alert-settings-body,
+    .reports-page-modal-form,
+    .reports-page-details-body,
+    .inventory-modal-form,
+    .inventory-details-body
+) {
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-form-footer,
+    .alert-settings-footer,
+    .reports-page-form-footer,
+    .reports-page-details-footer,
+    .inventory-form-footer,
+    .inventory-details-footer
+) {
+    border-color: var(--theme-border) !important;
+    background: #102117 !important;
+    color: var(--theme-text) !important;
+}
+
+/* ---------------------------------------------------------
+   ALERTS — ADD/EDIT ALERT AND ALERT SETTINGS
+--------------------------------------------------------- */
+
+html[data-theme="dark"] :is(
+    .alerts-page-form-section,
+    .alert-settings-toggle-card,
+    .alert-settings-fields-card
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="dark"] .alerts-page-form-section-heading > .material-symbols-outlined,
+html[data-theme="dark"] .alert-settings-section-heading > .material-symbols-outlined,
+html[data-theme="dark"] .alert-settings-toggle-icon {
+    border-color: #355440 !important;
+    background: #20382a !important;
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-form-section-heading,
+    .alert-settings-section-heading,
+    .alert-settings-toggle-content
+) :is(h2, h3, h4, strong) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-form-section-heading,
+    .alert-settings-section-heading,
+    .alert-settings-toggle-content
+) :is(p, small) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-form-group,
+    .alert-settings-field
+) label {
+    color: #dce7e0 !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-form-group,
+    .alert-settings-field
+) label span {
+    color: #ff6b73 !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-form-group,
+    .alert-settings-field
+) :is(input, select, textarea) {
+    border-color: #36513f !important;
+    background: var(--theme-input-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-form-group,
+    .alert-settings-field
+) :is(input, select, textarea):focus {
+    border-color: #55c978 !important;
+    box-shadow: 0 0 0 3px rgba(85, 201, 120, 0.16) !important;
+}
+
+html[data-theme="dark"] .alert-settings-tabs {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-soft) !important;
+}
+
+html[data-theme="dark"] .alert-settings-tabs button {
+    background: transparent !important;
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .alert-settings-tabs button:hover {
+    background: var(--theme-hover-bg) !important;
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] .alert-settings-tabs button.active {
+    background: #1f7a3c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] .alert-settings-unit-input {
+    border-color: #36513f !important;
+    background: var(--theme-input-bg) !important;
+}
+
+html[data-theme="dark"] .alert-settings-unit-input span {
+    border-color: var(--theme-border) !important;
+    background: #1c3023 !important;
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .alert-settings-switch {
+    background: #405447 !important;
+}
+
+html[data-theme="dark"] .alert-settings-switch.enabled {
+    background: #2c9a4f !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-cancel-button,
+    .alert-settings-cancel
+) {
+    border-color: #3a5645 !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-cancel-button,
+    .alert-settings-cancel
+):hover {
+    background: var(--theme-hover-bg) !important;
+}
+
+/* Preserve alert status, priority, and category badge meaning. */
+html[data-theme="dark"] :is(
+    .alerts-page-status,
+    .alerts-page-priority,
+    .alerts-page-category-badge
+) {
+    box-shadow: none !important;
+}
+
+/* ---------------------------------------------------------
+   REPORTS — GENERATE REPORT AND REPORT DETAILS
+--------------------------------------------------------- */
+
+html[data-theme="dark"] :is(
+    .reports-page-form-section,
+    .reports-page-summary-box,
+    .reports-page-details-grid > div
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="dark"] .reports-page-form-section-heading > .material-symbols-outlined,
+html[data-theme="dark"] .reports-page-details-icon {
+    border-color: #355440 !important;
+    background: #20382a !important;
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] :is(
+    .reports-page-form-section-heading,
+    .reports-page-details-title,
+    .reports-page-summary-box
+) :is(h2, h3, h4, strong) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .reports-page-form-section-heading,
+    .reports-page-details-title,
+    .reports-page-summary-box,
+    .reports-page-details-grid > div
+) :is(p, small) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .reports-page-details-code span {
+    border-color: #315540 !important;
+    background: #20382a !important;
+    color: #8ae7a1 !important;
+}
+
+html[data-theme="dark"] .reports-page-form-group label {
+    color: #dce7e0 !important;
+}
+
+html[data-theme="dark"] .reports-page-form-group label span {
+    color: #ff6b73 !important;
+}
+
+html[data-theme="dark"] .reports-page-form-group :is(input, select, textarea) {
+    border-color: #36513f !important;
+    background: var(--theme-input-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .reports-page-form-group :is(input, select, textarea):focus {
+    border-color: #55c978 !important;
+    box-shadow: 0 0 0 3px rgba(85, 201, 120, 0.16) !important;
+}
+
+html[data-theme="dark"] .reports-page-form-group input:is([type="date"], [type="time"]) {
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] .reports-page-summary-box > .material-symbols-outlined {
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] .reports-page-details-footer > button:not(.primary),
+html[data-theme="dark"] .reports-page-cancel-button {
+    border-color: #3a5645 !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .reports-page-details-footer > button:not(.primary):hover,
+html[data-theme="dark"] .reports-page-cancel-button:hover {
+    background: var(--theme-hover-bg) !important;
+}
+
+/* Report chart, performance, and table surfaces. */
+html[data-theme="dark"] :is(
+    .reports-page-chart-card,
+    .reports-page-performance-table-wrapper,
+    .reports-page-table-card
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .reports-page-bar-area {
+    border-color: var(--theme-border) !important;
+    background-color: transparent !important;
+    background-image: linear-gradient(
+        to bottom,
+        rgba(185, 207, 193, 0.16) 1px,
+        transparent 1px
+    ) !important;
+}
+
+html[data-theme="dark"] .reports-page-bar-track {
+    background: #2c4133 !important;
+}
+
+html[data-theme="dark"] .reports-page-bar-column > span,
+html[data-theme="dark"] .reports-page-bar-value,
+html[data-theme="dark"] .reports-page-pie-legend p,
+html[data-theme="dark"] .reports-page-pie-legend strong {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .reports-page-pie-center {
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .reports-page-pie-center strong {
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] .reports-page-pie-legend > div,
+html[data-theme="dark"] .reports-page-performance-table :is(th, td) {
+    border-color: var(--theme-border) !important;
+}
+
+/* ---------------------------------------------------------
+   INVENTORY — ADD/EDIT ITEM, VIEW DETAILS, ADJUST STOCK,
+   AND STOCK HISTORY
+--------------------------------------------------------- */
+
+html[data-theme="dark"] :is(
+    .inventory-form-section,
+    .inventory-overview-card,
+    .inventory-details-section,
+    .inventory-description-box,
+    .inventory-notes-box,
+    .inventory-stock-preview,
+    .inventory-history-item,
+    .inventory-empty-history
+) {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="dark"] .inventory-form-section-title > .material-symbols-outlined,
+html[data-theme="dark"] .inventory-details-icon,
+html[data-theme="dark"] .inventory-overview-card > .material-symbols-outlined,
+html[data-theme="dark"] .inventory-history-icon {
+    border-color: #355440 !important;
+    background: #20382a !important;
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-form-section-title,
+    .inventory-details-title,
+    .inventory-details-section-heading,
+    .inventory-overview-card,
+    .inventory-description-box,
+    .inventory-notes-box,
+    .inventory-history-item
+) :is(h2, h3, h4, strong) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-form-section-title,
+    .inventory-details-title,
+    .inventory-details-section-heading,
+    .inventory-overview-card,
+    .inventory-description-box,
+    .inventory-notes-box,
+    .inventory-history-item
+) :is(p, small) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .inventory-form-group label {
+    color: #dce7e0 !important;
+}
+
+html[data-theme="dark"] .inventory-form-group label span {
+    color: #ff6b73 !important;
+}
+
+html[data-theme="dark"] .inventory-form-group :is(input, select, textarea) {
+    border-color: #36513f !important;
+    background: var(--theme-input-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .inventory-form-group :is(input, select, textarea):focus {
+    border-color: #55c978 !important;
+    box-shadow: 0 0 0 3px rgba(85, 201, 120, 0.16) !important;
+}
+
+html[data-theme="dark"] .inventory-form-group input:is([type="date"], [type="time"]) {
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-money-input,
+    .inventory-unit-input
+) {
+    border-color: #36513f !important;
+    background: var(--theme-input-bg) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-money-input,
+    .inventory-unit-input
+) > span {
+    border-color: var(--theme-border) !important;
+    background: #1c3023 !important;
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .inventory-readonly-value,
+html[data-theme="dark"] .inventory-details-info-grid > div {
+    border-color: var(--theme-border) !important;
+    background: #0f1b14 !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .inventory-details-info-grid > div :is(strong, span) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .inventory-details-info-grid > div small {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .inventory-detail-tabs {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-soft) !important;
+}
+
+html[data-theme="dark"] .inventory-detail-tabs button {
+    border-color: transparent !important;
+    background: transparent !important;
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .inventory-detail-tabs button:hover {
+    background: var(--theme-hover-bg) !important;
+    color: #72dd8d !important;
+}
+
+html[data-theme="dark"] .inventory-detail-tabs button.active {
+    border-color: #2c9a4f !important;
+    background: #1f7a3c !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] .inventory-stock-preview > div {
+    border-color: var(--theme-border) !important;
+    background: #0f1b14 !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .inventory-stock-preview :is(strong, span) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .inventory-stock-preview small {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .inventory-history-list {
+    background: transparent !important;
+}
+
+html[data-theme="dark"] .inventory-history-item :is(
+    .inventory-history-main,
+    .inventory-history-quantity
+) {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] .inventory-history-item :is(p, small, span) {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] .inventory-history-count {
+    border-color: #315540 !important;
+    background: #20382a !important;
+    color: #8ae7a1 !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-modal-cancel,
+    .inventory-details-footer > button:not(.primary)
+) {
+    border-color: #3a5645 !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-modal-cancel,
+    .inventory-details-footer > button:not(.primary)
+):hover {
+    background: var(--theme-hover-bg) !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-modal-save,
+    .inventory-stock-form-footer button,
+    .inventory-details-footer > button.primary
+) {
+    border-color: #24994a !important;
+    background: #1f8a43 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] :is(
+    .inventory-modal-save,
+    .inventory-stock-form-footer button,
+    .inventory-details-footer > button.primary
+):hover {
+    background: #29a451 !important;
+}
+
+/* Keep status badges semantic and readable. */
+html[data-theme="dark"] :is(
+    .inventory-form-status-preview,
+    .inventory-details-stock-status,
+    .inventory-history-icon
+) {
+    box-shadow: none !important;
+}
+
+/* ---------------------------------------------------------
+   SCROLLBAR CONSISTENCY INSIDE THE THREE MODULES
+--------------------------------------------------------- */
+
+html[data-theme="dark"] :is(
+    .alerts-page-modal-form,
+    .alert-settings-body,
+    .reports-page-modal-form,
+    .reports-page-details-body,
+    .inventory-modal-form,
+    .inventory-details-body
+)::-webkit-scrollbar-track {
+    background: #0a1510 !important;
+}
+
+html[data-theme="dark"] :is(
+    .alerts-page-modal-form,
+    .alert-settings-body,
+    .reports-page-modal-form,
+    .reports-page-details-body,
+    .inventory-modal-form,
+    .inventory-details-body
+)::-webkit-scrollbar-thumb {
+    border: 2px solid #0a1510 !important;
+    background: #405a49 !important;
+}
+
+
+/* =========================================================
+   JOROSS SYSTEM-WIDE UI CONSISTENCY PASS
+   Light + dark mode shared dimensions, typography and rhythm.
+   This section intentionally sits at the end of theme.css so
+   it can normalize older page-specific CSS without changing
+   application behavior.
+   ========================================================= */
+
+:root {
+    --ui-primary: #166534;
+    --ui-primary-hover: #14532d;
+    --ui-primary-soft: #f0fdf4;
+
+    --ui-text: #26322b;
+    --ui-text-muted: #66736b;
+    --ui-text-soft: #89938d;
+
+    --ui-border: #e3e9e5;
+    --ui-border-strong: #d1d5db;
+    --ui-surface: #ffffff;
+    --ui-surface-soft: #f8faf8;
+    --ui-page-bg: #f6f8f6;
+
+    --ui-card-radius: 13px;
+    --ui-modal-radius: 14px;
+    --ui-control-radius: 8px;
+    --ui-pill-radius: 999px;
+
+    --ui-card-shadow:
+        0 4px 14px
+        rgba(0, 0, 0, 0.06);
+
+    --ui-modal-shadow:
+        0 20px 50px
+        rgba(0, 0, 0, 0.18);
+
+    --ui-control-height: 42px;
+    --ui-input-height: 43px;
+
+    --ui-page-title-size:
+        clamp(1.5rem, 2.3vw, 2rem);
+
+    --ui-page-subtitle-size: 0.9rem;
+    --ui-section-title-size: 1rem;
+    --ui-body-size: 0.78rem;
+    --ui-small-size: 0.69rem;
+}
+
+html[data-theme="dark"] {
+    --ui-primary: #72dd8d;
+    --ui-primary-hover: #8ae7a1;
+    --ui-primary-soft: #1c3023;
+
+    --ui-text: var(--theme-text);
+    --ui-text-muted: var(--theme-text-muted);
+    --ui-text-soft: var(--theme-text-soft);
+
+    --ui-border: var(--theme-border);
+    --ui-border-strong: #365040;
+    --ui-surface: var(--theme-surface);
+    --ui-surface-soft: var(--theme-surface-soft);
+    --ui-page-bg: var(--theme-page-bg);
+
+    --ui-card-shadow: var(--theme-shadow);
+
+    --ui-modal-shadow:
+        0 20px 50px
+        rgba(0, 0, 0, 0.42);
+}
+
+/* ---------------------------------------------------------
+   1. WORKSPACE TYPOGRAPHY
+--------------------------------------------------------- */
+
+:is(
+    .dashboard-layout,
+    .crops-page-layout,
+    .crops-layout,
+    .livestock-page-layout,
+    .livestock-layout,
+    .inventory-page-layout,
+    .inventory-layout,
+    .alerts-page-layout,
+    .reports-page-layout,
+    .settings-page-layout,
+    .fi-layout,
+    .fi-page
+) {
+    color: var(--ui-text);
+}
+
+:is(
+    .dashboard-layout,
+    .crops-page-layout,
+    .crops-layout,
+    .livestock-page-layout,
+    .livestock-layout,
+    .inventory-page-layout,
+    .inventory-layout,
+    .alerts-page-layout,
+    .reports-page-layout,
+    .settings-page-layout,
+    .fi-layout,
+    .fi-page
+) :is(
+    button,
+    input,
+    select,
+    textarea
+) {
+    font-family: inherit;
+}
+
+/* ---------------------------------------------------------
+   2. PAGE HEADER SIZE + SPACING
+--------------------------------------------------------- */
+
+:is(
+    .dashboard-header,
+    .crops-page-header,
+    .crops-header,
+    .livestock-page-header,
+    .livestock-header,
+    .inventory-page-header,
+    .inventory-header,
+    .alerts-page-header,
+    .reports-page-header,
+    .settings-page-header,
+    .fi-header
+) {
+    min-height: 82px !important;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 25px !important;
+    padding-top: 8px !important;
+    padding-bottom: 18px !important;
+
+    border-bottom-width: 2px !important;
+    border-bottom-style: solid !important;
+    border-bottom-color: var(--ui-primary) !important;
+}
+
+:is(
+    .welcome-text,
+    .crops-page-heading,
+    .crops-heading,
+    .livestock-page-heading,
+    .livestock-heading,
+    .inventory-page-heading,
+    .inventory-heading,
+    .alerts-page-heading,
+    .reports-page-heading,
+    .settings-page-heading,
+    .fi-heading
+) > h1 {
+    margin: 0 0 6px !important;
+
+    color: var(--ui-primary) !important;
+
+    font-size: var(--ui-page-title-size) !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.02em;
+}
+
+:is(
+    .welcome-text,
+    .crops-page-heading,
+    .crops-heading,
+    .livestock-page-heading,
+    .livestock-heading,
+    .inventory-page-heading,
+    .inventory-heading,
+    .alerts-page-heading,
+    .reports-page-heading,
+    .settings-page-heading,
+    .fi-heading
+) > p {
+    margin: 0 !important;
+
+    color: var(--ui-text-muted) !important;
+
+    font-size: var(--ui-page-subtitle-size) !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+}
+
+/* ---------------------------------------------------------
+   3. CARD FAMILY
+--------------------------------------------------------- */
+
+:is(
+    .summary-card,
+    .dashboard-card,
+    .crops-page-summary-card,
+    .crops-summary-card,
+    .crops-page-management-card,
+    .crops-page-table-card,
+    .crops-page-chart-card,
+    .crops-page-analytics-card,
+    .livestock-page-summary-card,
+    .livestock-summary-card,
+    .livestock-page-management-card,
+    .livestock-table-card,
+    .livestock-page-table-card,
+    .livestock-page-chart-card,
+    .livestock-page-analytics-card,
+    .inventory-page-summary-card,
+    .inventory-summary-card,
+    .inventory-page-management-card,
+    .inventory-page-table-card,
+    .inventory-page-chart-card,
+    .inventory-page-analytics-card,
+    .alerts-page-summary-card,
+    .alerts-page-management-card,
+    .reports-page-summary-card,
+    .reports-page-management-card,
+    .reports-page-chart-card,
+    .reports-page-table-card,
+    .settings-page-summary-card,
+    .settings-page-main-card,
+    .settings-page-account-card,
+    .settings-page-action-card,
+    .settings-page-data-card,
+    .settings-page-role-card,
+    .settings-page-activity-card,
+    .settings-page-toggle-card,
+    .settings-page-frequency-card,
+    .settings-page-archive-card,
+    .fi-card,
+    .fi-crop-card,
+    .fi-task-card
+) {
+    border-radius: var(--ui-card-radius) !important;
+    box-shadow: var(--ui-card-shadow) !important;
+}
+
+/* Use one vertical rhythm for major sections. */
+:is(
+    .crops-page-management-card,
+    .crops-page-table-card,
+    .livestock-toolbar,
+    .livestock-action-row,
+    .livestock-table-card,
+    .inventory-page-management-card,
+    .inventory-page-table-card,
+    .alerts-page-management-card,
+    .reports-page-management-card,
+    .reports-page-table-card,
+    .settings-page-main-card,
+    .fi-card
+) {
+    margin-top: 22px;
+}
+
+/* ---------------------------------------------------------
+   4. SUMMARY CARD TYPOGRAPHY
+--------------------------------------------------------- */
+
+:is(
+    .summary-card,
+    .crops-page-summary-card,
+    .crops-summary-card,
+    .livestock-page-summary-card,
+    .livestock-summary-card,
+    .inventory-page-summary-card,
+    .inventory-summary-card,
+    .alerts-page-summary-card,
+    .reports-page-summary-card,
+    .settings-page-summary-card
+) :is(p, h3) {
+    color: var(--ui-text-muted) !important;
+
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+}
+
+:is(
+    .summary-card,
+    .crops-page-summary-card,
+    .crops-summary-card,
+    .livestock-page-summary-card,
+    .livestock-summary-card,
+    .inventory-page-summary-card,
+    .inventory-summary-card,
+    .alerts-page-summary-card,
+    .reports-page-summary-card,
+    .settings-page-summary-card
+) h2 {
+    color: var(--ui-text) !important;
+
+    font-size: 1.65rem !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+}
+
+:is(
+    .crops-page-summary-card,
+    .crops-summary-card,
+    .livestock-page-summary-card,
+    .livestock-summary-card,
+    .inventory-page-summary-card,
+    .inventory-summary-card,
+    .alerts-page-summary-card,
+    .reports-page-summary-card,
+    .settings-page-summary-card
+) small {
+    color: var(--ui-text-soft) !important;
+
+    font-size: var(--ui-small-size) !important;
+    line-height: 1.35 !important;
+}
+
+/* ---------------------------------------------------------
+   5. SECTION HEADINGS
+--------------------------------------------------------- */
+
+:is(
+    .reports-page-chart-heading,
+    .reports-page-table-heading,
+    .alerts-page-record-heading,
+    .inventory-page-table-heading,
+    .inventory-table-heading,
+    .crops-page-table-heading,
+    .crops-table-heading,
+    .livestock-action-row,
+    .fi-section-heading,
+    .settings-page-section-heading,
+    .settings-page-card-heading
+) :is(h2, h3) {
+    margin-top: 0 !important;
+
+    color: var(--ui-text) !important;
+
+    font-size: var(--ui-section-title-size) !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+}
+
+:is(
+    .reports-page-chart-heading,
+    .reports-page-table-heading,
+    .alerts-page-record-heading,
+    .inventory-page-table-heading,
+    .inventory-table-heading,
+    .crops-page-table-heading,
+    .crops-table-heading,
+    .livestock-action-row,
+    .fi-section-heading,
+    .settings-page-section-heading,
+    .settings-page-card-heading
+) p {
+    color: var(--ui-text-muted) !important;
+
+    font-size: 0.73rem !important;
+    font-weight: 400 !important;
+    line-height: 1.45 !important;
+}
+
+/* ---------------------------------------------------------
+   6. PRIMARY ACTION BUTTONS
+--------------------------------------------------------- */
+
+:is(
+    .btn-green,
+    .fi-primary-button,
+    button[class*="primary-button"],
+    button[class*="add-button"],
+    button[class*="save-button"],
+    button[class*="generate-button"],
+    button[class*="submit-button"],
+    button[class*="approve-button"],
+    button[class*="confirm-button"],
+    .inventory-modal-save,
+    .inventory-stock-form-footer button[type="submit"]
+) {
+    min-height: var(--ui-control-height) !important;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px !important;
+    padding: 0 16px !important;
+
+    border: 1px solid #166534 !important;
+    border-radius: var(--ui-control-radius) !important;
+
+    background: #166534 !important;
+    color: #ffffff !important;
+
+    font-size: var(--ui-body-size) !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+
+    cursor: pointer;
+}
+
+:is(
+    .btn-green,
+    .fi-primary-button,
+    button[class*="primary-button"],
+    button[class*="add-button"],
+    button[class*="save-button"],
+    button[class*="generate-button"],
+    button[class*="submit-button"],
+    button[class*="approve-button"],
+    button[class*="confirm-button"],
+    .inventory-modal-save,
+    .inventory-stock-form-footer button[type="submit"]
+):hover:not(:disabled) {
+    border-color: #14532d !important;
+    background: #14532d !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] :is(
+    .btn-green,
+    .fi-primary-button,
+    button[class*="primary-button"],
+    button[class*="add-button"],
+    button[class*="save-button"],
+    button[class*="generate-button"],
+    button[class*="submit-button"],
+    button[class*="approve-button"],
+    button[class*="confirm-button"],
+    .inventory-modal-save,
+    .inventory-stock-form-footer button[type="submit"]
+) {
+    border-color: #1f8a43 !important;
+    background: #1f8a43 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] :is(
+    .btn-green,
+    .fi-primary-button,
+    button[class*="primary-button"],
+    button[class*="add-button"],
+    button[class*="save-button"],
+    button[class*="generate-button"],
+    button[class*="submit-button"],
+    button[class*="approve-button"],
+    button[class*="confirm-button"],
+    .inventory-modal-save,
+    .inventory-stock-form-footer button[type="submit"]
+):hover:not(:disabled) {
+    border-color: #29a451 !important;
+    background: #29a451 !important;
+}
+
+/* ---------------------------------------------------------
+   7. SECONDARY / CANCEL / CLEAR ACTIONS
+--------------------------------------------------------- */
+
+:is(
+    .fi-secondary-button,
+    button[class*="secondary-button"],
+    button[class*="cancel-button"],
+    button[class*="clear-button"],
+    button[class*="reset-button"],
+    button[class*="outline-button"],
+    button[class*="download-button"],
+    .inventory-modal-cancel,
+    .alert-settings-cancel
+) {
+    min-height: var(--ui-control-height) !important;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px !important;
+    padding: 0 15px !important;
+
+    border: 1px solid var(--ui-border-strong) !important;
+    border-radius: var(--ui-control-radius) !important;
+
+    background: var(--ui-surface) !important;
+    color: var(--ui-primary) !important;
+
+    font-size: var(--ui-body-size) !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+
+    cursor: pointer;
+}
+
+:is(
+    .fi-secondary-button,
+    button[class*="secondary-button"],
+    button[class*="cancel-button"],
+    button[class*="clear-button"],
+    button[class*="reset-button"],
+    button[class*="outline-button"],
+    button[class*="download-button"],
+    .inventory-modal-cancel,
+    .alert-settings-cancel
+):hover:not(:disabled) {
+    border-color: #a8c9b1 !important;
+    background: var(--ui-primary-soft) !important;
+    color: var(--ui-primary) !important;
+}
+
+/* Keep disabled actions visually consistent. */
+main button:disabled {
+    cursor: not-allowed;
+    opacity: 0.52;
+}
+
+/* Icons inside normal text buttons use one size. */
+:is(
+    .btn-green,
+    .fi-primary-button,
+    .fi-secondary-button,
+    button[class*="primary-button"],
+    button[class*="secondary-button"],
+    button[class*="add-button"],
+    button[class*="save-button"],
+    button[class*="cancel-button"],
+    button[class*="clear-button"],
+    button[class*="reset-button"],
+    button[class*="generate-button"],
+    button[class*="download-button"]
+) .material-symbols-outlined {
+    font-size: 19px !important;
+}
+
+/* ---------------------------------------------------------
+   8. FORM CONTROLS
+--------------------------------------------------------- */
+
+main :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+    select
+) {
+    min-height: var(--ui-input-height);
+
+    border-radius: var(--ui-control-radius) !important;
+
+    font-size: var(--ui-body-size) !important;
+    line-height: 1.2 !important;
+}
+
+main input:not(
+    [type="checkbox"]
+):not(
+    [type="radio"]
+):not(
+    [type="range"]
+):not(
+    [type="file"]
+) {
+    padding-left: 13px;
+    padding-right: 13px;
+}
+
+main select {
+    padding-left: 12px;
+    padding-right: 34px;
+}
+
+main textarea {
+    min-height: 96px;
+
+    padding: 11px 13px !important;
+
+    border-radius: var(--ui-control-radius) !important;
+
+    font-size: var(--ui-body-size) !important;
+    line-height: 1.5 !important;
+}
+
+html:not([data-theme="dark"]) main :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea
+) {
+    border-color: var(--ui-border-strong);
+    background: #ffffff;
+    color: var(--ui-text);
+}
+
+main :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea
+):focus {
+    border-color: #16a34a !important;
+    outline: none !important;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(22, 163, 74, 0.12) !important;
+}
+
+main label {
+    line-height: 1.35;
+}
+
+/* ---------------------------------------------------------
+   9. TOOLBARS / FILTER BARS
+--------------------------------------------------------- */
+
+:is(
+    .crops-page-filter-row,
+    .crops-toolbar,
+    .livestock-page-filter-row,
+    .livestock-toolbar,
+    .inventory-page-filter-row,
+    .inventory-toolbar,
+    .alerts-page-filter-row,
+    .reports-page-filter-row,
+    .settings-page-archive-filters,
+    .fi-toolbar
+) {
+    gap: 12px !important;
+    padding: 16px !important;
+
+    border-radius: 12px !important;
+}
+
+/* ---------------------------------------------------------
+   10. TABLE TYPOGRAPHY + ROW SPACING
+--------------------------------------------------------- */
+
+:is(
+    .crops-page-content,
+    .crops-page,
+    .livestock-page-content,
+    .livestock-page,
+    .inventory-page-content,
+    .inventory-page,
+    .alerts-page-content,
+    .reports-page-content,
+    .settings-page-content,
+    .fi-page
+) table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+:is(
+    .crops-page-content,
+    .crops-page,
+    .livestock-page-content,
+    .livestock-page,
+    .inventory-page-content,
+    .inventory-page,
+    .alerts-page-content,
+    .reports-page-content,
+    .settings-page-content,
+    .fi-page
+) table th {
+    padding: 12px 11px !important;
+
+    color: var(--ui-text-muted);
+
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+    text-align: left;
+}
+
+:is(
+    .crops-page-content,
+    .crops-page,
+    .livestock-page-content,
+    .livestock-page,
+    .inventory-page-content,
+    .inventory-page,
+    .alerts-page-content,
+    .reports-page-content,
+    .settings-page-content,
+    .fi-page
+) table td {
+    padding: 13px 11px !important;
+
+    color: var(--ui-text-muted);
+
+    font-size: 0.75rem !important;
+    font-weight: 400;
+    line-height: 1.45 !important;
+    vertical-align: middle;
+}
+
+/* Preserve stronger text hierarchy inside rows. */
+:is(
+    .crops-page-content,
+    .crops-page,
+    .livestock-page-content,
+    .livestock-page,
+    .inventory-page-content,
+    .inventory-page,
+    .alerts-page-content,
+    .reports-page-content,
+    .settings-page-content,
+    .fi-page
+) table td :is(strong, b) {
+    color: var(--ui-text);
+
+    font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   11. STATUS / CATEGORY PILLS
+--------------------------------------------------------- */
+
+:is(
+    .reports-page-status,
+    .reports-page-category-badge,
+    .livestock-health-status,
+    .livestock-growth-status,
+    .crops-page-status,
+    .crops-page-status-badge,
+    .inventory-stock-status,
+    .inventory-details-stock-status,
+    .alerts-page-priority,
+    .alerts-page-status,
+    .alerts-page-status-badge,
+    .fi-suitability,
+    .fi-count-chip
+) {
+    min-height: 25px !important;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 5px 10px !important;
+
+    border-radius: var(--ui-pill-radius) !important;
+
+    font-size: 0.67rem !important;
+    font-weight: 600 !important;
+    line-height: 1.05 !important;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------
+   12. TABLE ROW ACTION ICONS
+--------------------------------------------------------- */
+
+:is(
+    .crops-page-row-actions,
+    .crops-row-actions,
+    .livestock-row-actions,
+    .inventory-page-row-actions,
+    .inventory-row-actions,
+    .alerts-page-row-actions,
+    .reports-page-row-actions,
+    .settings-page-row-actions,
+    .fi-row-actions
+) {
+    display: flex;
+    align-items: center;
+
+    gap: 5px !important;
+}
+
+:is(
+    .crops-page-row-actions,
+    .crops-row-actions,
+    .livestock-row-actions,
+    .inventory-page-row-actions,
+    .inventory-row-actions,
+    .alerts-page-row-actions,
+    .reports-page-row-actions,
+    .settings-page-row-actions,
+    .fi-row-actions
+) > button {
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    flex: 0 0 32px;
+
+    padding: 0 !important;
+
+    border-radius: 8px !important;
+}
+
+:is(
+    .crops-page-row-actions,
+    .crops-row-actions,
+    .livestock-row-actions,
+    .inventory-page-row-actions,
+    .inventory-row-actions,
+    .alerts-page-row-actions,
+    .reports-page-row-actions,
+    .settings-page-row-actions,
+    .fi-row-actions
+) > button .material-symbols-outlined {
+    font-size: 18px !important;
+}
+
+/* ---------------------------------------------------------
+   13. MODAL SHELLS
+--------------------------------------------------------- */
+
+:is(
+    .reports-page-modal,
+    .reports-page-details-modal-wide,
+    .alerts-page-modal,
+    .alert-settings-modal,
+    .inventory-modal,
+    .inventory-details-modal,
+    .livestock-modal,
+    .livestock-details-modal,
+    .crops-page-modal,
+    .settings-page-password-modal,
+    .settings-page-modal,
+    .smart-import-modal
+) {
+    border-radius: var(--ui-modal-radius) !important;
+    box-shadow: var(--ui-modal-shadow) !important;
+}
+
+/* Modal headers use one spacing scale. */
+:is(
+    .reports-page-modal-header,
+    .reports-page-details-header,
+    .alerts-page-modal-header,
+    .alert-settings-header,
+    .inventory-modal-header,
+    .inventory-details-header,
+    .livestock-modal-header,
+    .livestock-details-header,
+    .crops-page-modal-header,
+    .settings-page-modal-header,
+    .smart-import-modal-header
+) {
+    gap: 14px !important;
+    padding: 18px 22px !important;
+}
+
+/* Normal modal titles, excluding the already-specialized Reports details title. */
+:is(
+    .reports-page-modal-header,
+    .alerts-page-modal-header,
+    .alert-settings-header,
+    .inventory-modal-header,
+    .inventory-details-header,
+    .livestock-modal-header,
+    .livestock-details-header,
+    .crops-page-modal-header,
+    .settings-page-modal-header,
+    .smart-import-modal-header
+) :is(h2, h3) {
+    margin: 0 !important;
+
+    color: var(--ui-text) !important;
+
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+}
+
+/* Modal footer rhythm. */
+:is(
+    .reports-page-modal-footer,
+    .reports-page-details-footer,
+    .alerts-page-modal-footer,
+    .alert-settings-footer,
+    .inventory-modal-footer,
+    .inventory-details-footer,
+    .livestock-modal-footer,
+    .livestock-details-footer,
+    .crops-page-modal-footer,
+    .settings-page-modal-footer,
+    .smart-import-modal-footer
+) {
+    gap: 9px !important;
+    padding: 14px 22px !important;
+}
+
+/* ---------------------------------------------------------
+   14. SMART IMPORT CONSISTENCY
+--------------------------------------------------------- */
+
+[class*="smart-import"] :is(h2, h3, h4) {
+    line-height: 1.3;
+}
+
+[class*="smart-import"] :is(
+    button:not([class*="icon"]),
+    input,
+    select
+) {
+    border-radius: var(--ui-control-radius);
+}
+
+[class*="smart-import"] :is(
+    [class*="card"],
+    [class*="panel"],
+    [class*="preview"]
+) {
+    border-radius: var(--ui-card-radius);
+}
+
+/* ---------------------------------------------------------
+   15. FARM INTELLIGENCE CONSISTENCY
+--------------------------------------------------------- */
+
+.fi-card {
+    padding: 20px !important;
+}
+
+.fi-section-heading {
+    margin-bottom: 16px !important;
+}
+
+.fi-crop-card,
+.fi-task-card {
+    padding: 16px !important;
+}
+
+.fi-form-grid {
+    gap: 14px !important;
+}
+
+.fi-primary-button,
+.fi-secondary-button {
+    min-width: 0;
+}
+
+/* ---------------------------------------------------------
+   16. FOCUS + ACCESSIBILITY
+--------------------------------------------------------- */
+
+main button:focus-visible,
+main a:focus-visible,
+main input:focus-visible,
+main select:focus-visible,
+main textarea:focus-visible {
+    outline: 2px solid #16a34a;
+    outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------
+   17. RESPONSIVE CONSISTENCY
+--------------------------------------------------------- */
+
+@media screen and (max-width: 760px) {
+    :is(
+        .dashboard-header,
+        .crops-page-header,
+        .crops-header,
+        .livestock-page-header,
+        .livestock-header,
+        .inventory-page-header,
+        .inventory-header,
+        .alerts-page-header,
+        .reports-page-header,
+        .settings-page-header,
+        .fi-header
+    ) {
+        align-items: flex-start;
+        flex-direction: column;
+
+        gap: 14px !important;
+    }
+
+    :is(
+        .reports-page-modal-footer,
+        .reports-page-details-footer,
+        .alerts-page-modal-footer,
+        .alert-settings-footer,
+        .inventory-modal-footer,
+        .inventory-details-footer,
+        .livestock-modal-footer,
+        .livestock-details-footer,
+        .crops-page-modal-footer,
+        .settings-page-modal-footer,
+        .smart-import-modal-footer
+    ) > button {
+        flex: 1 1 150px;
+    }
+}
+
+@media screen and (max-width: 520px) {
+    :is(
+        .reports-page-modal-footer,
+        .reports-page-details-footer,
+        .alerts-page-modal-footer,
+        .alert-settings-footer,
+        .inventory-modal-footer,
+        .inventory-details-footer,
+        .livestock-modal-footer,
+        .livestock-details-footer,
+        .crops-page-modal-footer,
+        .settings-page-modal-footer,
+        .smart-import-modal-footer
+    ) {
+        flex-direction: column;
+    }
+
+    :is(
+        .reports-page-modal-footer,
+        .reports-page-details-footer,
+        .alerts-page-modal-footer,
+        .alert-settings-footer,
+        .inventory-modal-footer,
+        .inventory-details-footer,
+        .livestock-modal-footer,
+        .livestock-details-footer,
+        .crops-page-modal-footer,
+        .settings-page-modal-footer,
+        .smart-import-modal-footer
+    ) > button {
+        width: 100%;
+        flex: 0 0 auto;
+    }
+}
+
+
+/* =========================================================
+   DASHBOARD MINI CALENDAR — DARK MODE VISIBILITY FIX
+   The DashboardCalendar component renders dates as
+   button.calendar-day, so target those buttons directly.
+   ========================================================= */
+
+html[data-theme="dark"] .mini-calendar {
+    border-color: #2d4335 !important;
+    background: #132119 !important;
+}
+
+/* Month title and weekday labels */
+html[data-theme="dark"] .mini-calendar .calendar-month h4 {
+    color: #f2f7f4 !important;
+    -webkit-text-fill-color: #f2f7f4 !important;
+}
+
+html[data-theme="dark"] .mini-calendar .calendar-weekdays span {
+    color: #c8d6cd !important;
+    -webkit-text-fill-color: #c8d6cd !important;
+    opacity: 1 !important;
+}
+
+/* All normal dates in the current month */
+html[data-theme="dark"] .mini-calendar .calendar-days .calendar-day {
+    background: transparent !important;
+    color: #dce8e0 !important;
+    -webkit-text-fill-color: #dce8e0 !important;
+    opacity: 1 !important;
+}
+
+/* Previous / next month dates remain secondary but readable */
+html[data-theme="dark"] .mini-calendar .calendar-days .calendar-day.muted {
+    color: #7f9186 !important;
+    -webkit-text-fill-color: #7f9186 !important;
+    opacity: 1 !important;
+}
+
+/* Hover should be visible without changing the selected day */
+html[data-theme="dark"]
+    .mini-calendar
+    .calendar-days
+    .calendar-day:not(.active-day):hover {
+    background: #1c3023 !important;
+    color: #f2f7f4 !important;
+    -webkit-text-fill-color: #f2f7f4 !important;
+}
+
+/* Selected date stays clearly highlighted */
+html[data-theme="dark"]
+    .mini-calendar
+    .calendar-days
+    .calendar-day.active-day {
+    background: #2f9b4d !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+/* Calendar navigation arrows */
+html[data-theme="dark"] .mini-calendar .calendar-nav-button {
+    color: #c8d6cd !important;
+    -webkit-text-fill-color: #c8d6cd !important;
+}
+
+html[data-theme="dark"] .mini-calendar .calendar-nav-button:hover {
+    background: #1c3023 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+
+/* =========================================================
+   FULL FARM CALENDAR — DARK MODE READABILITY FIX
+   Fixes month, week, day, and agenda views inside the
+   Farm Calendar modal so cards and dates are readable.
+========================================================= */
+
+html[data-theme="dark"] body .fc-overlay .fc-content,
+html[data-theme="dark"] body .fc-overlay .fc-layout,
+html[data-theme="dark"] body .fc-overlay .fc-left,
+html[data-theme="dark"] body .fc-overlay .fc-right,
+html[data-theme="dark"] body .fc-overlay .fc-calendar-grid,
+html[data-theme="dark"] body .fc-overlay .fc-week-view,
+html[data-theme="dark"] body .fc-overlay .fc-day-view,
+html[data-theme="dark"] body .fc-overlay .fc-agenda-view,
+html[data-theme="dark"] body .fc-overlay .fc-week-events,
+html[data-theme="dark"] body .fc-overlay .fc-day-event-list,
+html[data-theme="dark"] body .fc-overlay .fc-agenda-list,
+html[data-theme="dark"] body .fc-overlay .fc-selected-list,
+html[data-theme="dark"] body .fc-overlay .fc-upcoming-list {
+    background: transparent !important;
+    color: var(--theme-text) !important;
+}
+
+/* Month view cells */
+html[data-theme="dark"] body .fc-overlay .fc-weekday,
+html[data-theme="dark"] body .fc-overlay .fc-day-cell {
+    border-color: var(--theme-border) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-weekday {
+    background: #102016 !important;
+    color: #f2f7f4 !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day-cell {
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day-cell:hover {
+    background: var(--theme-hover-bg) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day-cell .fc-date,
+html[data-theme="dark"] body .fc-overlay .fc-day-cell .fc-more-events {
+    color: var(--theme-text) !important;
+    -webkit-text-fill-color: var(--theme-text) !important;
+    opacity: 1 !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day-cell.muted {
+    background: #101b14 !important;
+    color: #71847a !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day-cell.muted .fc-date,
+html[data-theme="dark"] body .fc-overlay .fc-day-cell.muted .fc-more-events {
+    color: #71847a !important;
+    -webkit-text-fill-color: #71847a !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day-cell.selected {
+    background: #21492e !important;
+    border-color: #34c759 !important;
+    box-shadow: inset 0 0 0 2px #34c759 !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day-cell.selected .fc-date,
+html[data-theme="dark"] body .fc-overlay .fc-day-cell.selected .fc-more-events {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Week view */
+html[data-theme="dark"] body .fc-overlay .fc-week-column,
+html[data-theme="dark"] body .fc-overlay .fc-week-column-header,
+html[data-theme="dark"] body .fc-overlay .fc-week-event {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-week-column-header span,
+html[data-theme="dark"] body .fc-overlay .fc-week-column-header strong,
+html[data-theme="dark"] body .fc-overlay .fc-week-event strong {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-week-event small,
+html[data-theme="dark"] body .fc-overlay .fc-week-empty {
+    color: var(--theme-text-muted) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-week-column-header.selected {
+    background: #1f6e34 !important;
+    border-color: #34c759 !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-week-column-header.selected span,
+html[data-theme="dark"] body .fc-overlay .fc-week-column-header.selected strong {
+    color: #ffffff !important;
+}
+
+/* Day view */
+html[data-theme="dark"] body .fc-overlay .fc-day-view-header,
+html[data-theme="dark"] body .fc-overlay .fc-day-event {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day-view-header h3,
+html[data-theme="dark"] body .fc-overlay .fc-day-event strong,
+html[data-theme="dark"] body .fc-overlay .fc-day-event span {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-day-view-header p,
+html[data-theme="dark"] body .fc-overlay .fc-day-event p,
+html[data-theme="dark"] body .fc-overlay .fc-day-event small,
+html[data-theme="dark"] body .fc-overlay .fc-day-event .material-symbols-outlined,
+html[data-theme="dark"] body .fc-overlay .fc-day-event .fc-event-time {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Agenda view */
+html[data-theme="dark"] body .fc-overlay .fc-agenda-item {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-agenda-item:hover {
+    background: var(--theme-hover-bg) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-agenda-header h3,
+html[data-theme="dark"] body .fc-overlay .fc-agenda-date strong,
+html[data-theme="dark"] body .fc-overlay .fc-agenda-content strong {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-agenda-header span,
+html[data-theme="dark"] body .fc-overlay .fc-agenda-date small,
+html[data-theme="dark"] body .fc-overlay .fc-agenda-content small {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Right-side cards */
+html[data-theme="dark"] body .fc-overlay .fc-card,
+html[data-theme="dark"] body .fc-overlay .fc-event-card,
+html[data-theme="dark"] body .fc-overlay .fc-upcoming-item {
+    border-color: var(--theme-border) !important;
+    background: var(--theme-surface-raised) !important;
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-card-header h3,
+html[data-theme="dark"] body .fc-overlay .fc-event-title strong,
+html[data-theme="dark"] body .fc-overlay .fc-upcoming-content strong,
+html[data-theme="dark"] body .fc-overlay .fc-upcoming-date strong {
+    color: var(--theme-text) !important;
+}
+
+html[data-theme="dark"] body .fc-overlay .fc-card-header span,
+html[data-theme="dark"] body .fc-overlay .fc-event-card small,
+html[data-theme="dark"] body .fc-overlay .fc-event-time,
+html[data-theme="dark"] body .fc-overlay .fc-event-time .material-symbols-outlined,
+html[data-theme="dark"] body .fc-overlay .fc-upcoming-content small,
+html[data-theme="dark"] body .fc-overlay .fc-upcoming-date small,
+html[data-theme="dark"] body .fc-overlay .fc-empty {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Keep status pills readable */
+html[data-theme="dark"] body .fc-overlay .fc-badge {
+    opacity: 1 !important;
+}
+
+
+/* =========================================================
+   DASHBOARD ACTIVITY VIEW ALL — TRUE DARK TRANSPARENCY
+   This MUST remain at the very end of theme.css.
+   It overrides the earlier global Dashboard modal rules.
+   Applies only to:
+   - Recent Farm Activity > View All
+   - Upcoming Tasks > View All
+========================================================= */
+
+/* Keep the Dashboard clearly visible around and behind the popup. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay {
+    background: rgba(0, 0, 0, 0.10) !important;
+    background-color: rgba(0, 0, 0, 0.10) !important;
+
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* TRUE translucent modal shell.
+   High-specificity selectors intentionally override the older
+   [class*="activity"][class*="modal"] global theme selector. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+>
+div.activity-list-modal,
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+>
+div.task-list-modal {
+    background: rgba(7, 31, 17, 0.34) !important;
+    background-color: rgba(7, 31, 17, 0.34) !important;
+
+    border: 1px solid rgba(89, 166, 111, 0.45) !important;
+
+    box-shadow:
+        0 20px 55px rgba(0, 0, 0, 0.28) !important;
+
+    opacity: 1 !important;
+
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* The header/body must NOT paint an opaque surface over the shell. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+>
+div.activity-list-modal
+>
+div.activity-modal-header,
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+>
+div.task-list-modal
+>
+div.activity-modal-header,
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+>
+div.activity-list-modal
+>
+div.activity-modal-body,
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+>
+div.task-list-modal
+>
+div.task-modal-body {
+    background: transparent !important;
+    background-color: transparent !important;
+
+    opacity: 1 !important;
+
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+>
+:is(
+    div.activity-list-modal,
+    div.task-list-modal
+)
+>
+div.activity-modal-header {
+    border-bottom-color:
+        rgba(99, 181, 123, 0.38) !important;
+}
+
+/* Recent Activity filter panel = transparent card. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+div.activity-filter-box {
+    background: rgba(17, 50, 29, 0.32) !important;
+    background-color: rgba(17, 50, 29, 0.32) !important;
+
+    border-color: rgba(96, 168, 116, 0.38) !important;
+
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.10) !important;
+}
+
+/* Recent Activity table container = transparent. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+div.activity-table-card {
+    background: rgba(17, 50, 29, 0.28) !important;
+    background-color: rgba(17, 50, 29, 0.28) !important;
+
+    border-color: rgba(96, 168, 116, 0.38) !important;
+
+    box-shadow: none !important;
+}
+
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+:is(
+    .activity-table-wrapper,
+    table.activity-table,
+    table.activity-table tbody
+) {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* Table header remains slightly darker so columns are readable. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+table.activity-table
+thead,
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+table.activity-table
+th {
+    background: rgba(3, 24, 12, 0.48) !important;
+    background-color: rgba(3, 24, 12, 0.48) !important;
+}
+
+/* Rows are transparent enough to see the Dashboard underneath. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+table.activity-table
+tbody
+tr,
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+table.activity-table
+tbody
+td {
+    background: rgba(16, 47, 28, 0.25) !important;
+    background-color: rgba(16, 47, 28, 0.25) !important;
+}
+
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+table.activity-table
+tbody
+tr:hover
+td {
+    background: rgba(31, 72, 43, 0.42) !important;
+    background-color: rgba(31, 72, 43, 0.42) !important;
+}
+
+/* Upcoming Tasks search/filter area = transparent. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.task-list-modal
+div.task-modal-filters {
+    background: transparent !important;
+    background-color: transparent !important;
+
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Upcoming Task cards are translucent instead of solid. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.task-list-modal
+div.task-full-list {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.task-list-modal
+div.task-full-item {
+    background: rgba(17, 50, 29, 0.30) !important;
+    background-color: rgba(17, 50, 29, 0.30) !important;
+
+    border-color: rgba(96, 168, 116, 0.38) !important;
+
+    box-shadow: none !important;
+}
+
+/* Search/select controls can stay darker for legibility,
+   but are still translucent. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+:is(input, select),
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.task-list-modal
+:is(input, select) {
+    background: rgba(2, 20, 10, 0.45) !important;
+    background-color: rgba(2, 20, 10, 0.45) !important;
+
+    border-color: rgba(96, 168, 116, 0.40) !important;
+
+    color: #f4f8f5 !important;
+
+    opacity: 1 !important;
+}
+
+/* Preserve readability over transparent surfaces. */
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+:is(h2, h3, strong, th, td),
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.task-list-modal
+:is(h2, h3, strong) {
+    color: #f5faf7 !important;
+}
+
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.activity-list-modal
+:is(p, small),
+html[data-theme="dark"]
+body
+div.activity-modal-overlay
+div.task-list-modal
+:is(p, small) {
+    color: #c8d6cd !important;
+}
