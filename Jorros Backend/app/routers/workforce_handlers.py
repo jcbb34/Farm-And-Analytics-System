@@ -2842,6 +2842,21 @@ def list_tasks_page(
             "offset": offset, "limit": limit}
 
 
+def _held_flag_column(db: Session, activity_id, assigned_employee_id, status_column, statuses):
+    """Per-row 1/0 "held by a farm-event declaration" column for an inner query.
+
+    held_task_expression() is an EXISTS subquery. SQL Server rejects an aggregate over any expression that
+    contains a subquery (error 130, "Cannot perform an aggregate function on an expression containing an
+    aggregate or a subquery"), so SUM(CASE WHEN <held> ...) fails there even though SQLite accepts it.
+    Select this column in an inner query and aggregate the plain ``is_held`` column in the outer query.
+    """
+    from app.services.farm_event_service import held_task_expression
+    return case(
+        (held_task_expression(db, activity_id, assigned_employee_id) & status_column.in_(statuses), 1),
+        else_=0,
+    ).label("is_held")
+
+
 @router.get("/tasks/summary")
 def task_management_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _require_workforce_access(current_user, "list_tasks")
@@ -2853,14 +2868,17 @@ def task_management_summary(db: Session = Depends(get_db), current_user: User = 
         stmt = stmt.where(FarmActivity.assigned_employee_id == own.id)
     base = stmt.subquery()
     today_key = farm_today()
-    from app.services.farm_event_service import held_task_expression
-    held = held_task_expression(db, base.c.id, base.c.assigned_employee_id) & base.c.status.in_(["Pending", "In Progress", "Returned"])
+    flagged = select(
+        base.c.status, base.c.activity_date, base.c.needs_reassignment,
+        _held_flag_column(db, base.c.id, base.c.assigned_employee_id, base.c.status, ["Pending", "In Progress", "Returned"]),
+    ).subquery()
+    held = flagged.c.is_held == 1
     row = db.execute(select(
-        func.sum(case((~held & (base.c.status == "Pending") & (base.c.activity_date <= today_key), 1), else_=0)),
-        func.sum(case((~held & (base.c.status == "In Progress") & (base.c.activity_date <= today_key), 1), else_=0)),
-        func.sum(case((base.c.status == "Submitted for Review", 1), else_=0)),
-        func.sum(case((~held & (base.c.activity_date < today_key) & base.c.status.notin_(["Completed", "Cancelled", "Resolved", "Voided"]), 1), else_=0)),
-        func.sum(case(((~held & (base.c.needs_reassignment == True) & base.c.status.in_(["Pending", "In Progress", "Returned", "Submitted for Review"])), 1), else_=0)),
+        func.sum(case((~held & (flagged.c.status == "Pending") & (flagged.c.activity_date <= today_key), 1), else_=0)),
+        func.sum(case((~held & (flagged.c.status == "In Progress") & (flagged.c.activity_date <= today_key), 1), else_=0)),
+        func.sum(case((flagged.c.status == "Submitted for Review", 1), else_=0)),
+        func.sum(case((~held & (flagged.c.activity_date < today_key) & flagged.c.status.notin_(["Completed", "Cancelled", "Resolved", "Voided"]), 1), else_=0)),
+        func.sum(case(((~held & (flagged.c.needs_reassignment == True) & flagged.c.status.in_(["Pending", "In Progress", "Returned", "Submitted for Review"])), 1), else_=0)),
         func.sum(case((held, 1), else_=0)),
     )).one()
     return dict(zip(("pending", "progress", "review", "overdue", "reassign", "held"), [int(value or 0) for value in row]))
@@ -3103,30 +3121,33 @@ def my_tasks_summary(
     horizon = today_key + timedelta(days=7)
     active_statuses = ["Pending", "In Progress", "Returned", "Submitted for Review"]
     missed_statuses = ["Pending", "In Progress", "Returned"]
-    from app.services.farm_event_service import held_task_expression
-    held = held_task_expression(db, FarmActivity.id, FarmActivity.assigned_employee_id) & FarmActivity.status.in_(missed_statuses)
+    flagged = select(
+        FarmActivity.id, FarmActivity.status, FarmActivity.activity_date,
+        _held_flag_column(db, FarmActivity.id, FarmActivity.assigned_employee_id, FarmActivity.status, missed_statuses),
+    ).where(
+        FarmActivity.assigned_employee_id == employee.id,
+        FarmActivity.is_archived == False,
+        FarmActivity.status.in_(active_statuses),
+    ).subquery()
+    held = flagged.c.is_held == 1
     row = db.execute(
         select(
-            func.count(FarmActivity.id),
-            func.sum(case((FarmActivity.activity_date == today_key, 1), else_=0)),
+            func.count(flagged.c.id),
+            func.sum(case((flagged.c.activity_date == today_key, 1), else_=0)),
             func.sum(case((
-                ~held & (FarmActivity.activity_date < today_key)
-                & FarmActivity.status.in_(missed_statuses),
+                ~held & (flagged.c.activity_date < today_key)
+                & flagged.c.status.in_(missed_statuses),
                 1,
             ), else_=0)),
-            func.sum(case((~held & (FarmActivity.status == "In Progress"), 1), else_=0)),
-            func.sum(case((~held & (FarmActivity.status == "Returned"), 1), else_=0)),
-            func.sum(case((FarmActivity.status == "Submitted for Review", 1), else_=0)),
+            func.sum(case((~held & (flagged.c.status == "In Progress"), 1), else_=0)),
+            func.sum(case((~held & (flagged.c.status == "Returned"), 1), else_=0)),
+            func.sum(case((flagged.c.status == "Submitted for Review", 1), else_=0)),
             func.sum(case((
-                (FarmActivity.activity_date > today_key)
-                & (FarmActivity.activity_date <= horizon),
+                (flagged.c.activity_date > today_key)
+                & (flagged.c.activity_date <= horizon),
                 1,
             ), else_=0)),
             func.sum(case((held, 1), else_=0)),
-        ).where(
-            FarmActivity.assigned_employee_id == employee.id,
-            FarmActivity.is_archived == False,
-            FarmActivity.status.in_(active_statuses),
         )
     ).one()
 
