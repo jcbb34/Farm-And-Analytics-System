@@ -92,7 +92,6 @@
 
 .workforce-tab.active {
     border-color: #178b2d;
-    background: #178b2d;
     color: #ffffff;
     box-shadow: 0 3px 9px rgba(23, 139, 45, 0.18);
 }
@@ -1224,7 +1223,7 @@
     gap: 8px;
 }
 
-/* Employee roster visibility */
+/* Prompt 7 employee roster visibility */
 .my-schedule-actions {
     display: flex;
     gap: 8px;
@@ -1401,7 +1400,7 @@
     border-radius: 3px;
 }
 
-/* Coverage task and leave history visibility */
+/* Prompt 9.1 — coverage task and leave-history visibility */
 .coverage-task-banner {
     display: flex;
     gap: 10px;
@@ -1459,7 +1458,7 @@
 [data-theme="dark"] .my-leave-history-row { border-color: #334038; }
 
 /* =========================================================
-   EMPLOYEE MY TASKS TABS
+   PROMPT 9.2 — EMPLOYEE MY TASKS TABS
 ========================================================= */
 .my-tasks-page .my-tasks-primary-tabs {
     margin-bottom: 12px;
@@ -1740,7 +1739,7 @@ html[data-theme="dark"] .my-leave-tab-stack .my-leave-history-heading h2 {
 :root[data-theme="dark"] .my-tasks-page .leave-status-badge.cancelled,
 [data-theme="dark"] .my-tasks-page .leave-status-badge.cancelled { background: #25302a; color: #aab5ad; }
 
-/* Assigned Work uses the shared system type scale. */
+/* Prompt 9.2 typography follow-up — Assigned Work uses the shared system type scale. */
 .my-tasks-page .my-assigned-work-card {
     font-family: "Inter", Arial, sans-serif;
 }
@@ -2032,7 +2031,7 @@ html[data-theme="dark"] .my-leave-tab-stack .my-leave-history-heading h2 {
     margin: 0 0 16px;
 }
 
-/* Compact employee self-service attendance bar. */
+/* Prompt 10.5: compact employee self-service attendance bar. */
 .my-attendance-bar {
     display: flex;
     align-items: center;

@@ -1,16 +1,13 @@
-import { hostname, networkInterfaces } from "node:os";
+import { networkInterfaces } from "node:os";
 
 function getLanDevOrigins() {
     const origins = new Set([
         "localhost",
         "127.0.0.1",
-    ]);
+        "10.23.205.2",
+        "192.168.137.1"
 
-    const computerName = hostname().trim();
-    if (computerName) {
-        origins.add(computerName);
-        if (!computerName.endsWith(".local")) origins.add(`${computerName}.local`);
-    }
+    ]);
 
     // Keep the server computer's current LAN IPv4 addresses allowed.
     let interfaces = {};
@@ -64,7 +61,6 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-    agentRules: false,
     allowedDevOrigins: getLanDevOrigins(),
     reactStrictMode: true,
     async rewrites() {
