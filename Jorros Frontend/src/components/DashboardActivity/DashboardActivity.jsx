@@ -141,6 +141,16 @@ function activityIsInPeriod(dateValue, period) {
         return false;
     }
 
+    if (typeof period === "string" && period.includes(" to ")) {
+        const [fromStr, toStr] = period.split(" to ");
+        const fromDate = parseActivityDate(fromStr);
+        const toDate = parseActivityDate(toStr);
+        if (fromDate && toDate) {
+            toDate.setHours(23, 59, 59, 999);
+            return activityDate >= fromDate && activityDate <= toDate;
+        }
+    }
+
     const now = new Date();
     const start = new Date(
         now.getFullYear(),

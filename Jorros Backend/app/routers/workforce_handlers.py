@@ -391,6 +391,37 @@ def view_task_evidence_thumbnail(
     return _evidence_file_response(evidence, thumbnail=True)
 
 
+@router.delete("/evidence-assets/{public_id}")
+def delete_task_evidence(
+    public_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_workforce_access(current_user, "delete_task_evidence")
+    evidence = _evidence_or_404(db, public_id)
+    task = _task_or_404(db, evidence.activity_id)
+    _assert_evidence_task_access(db, task, current_user)
+
+    # Can only delete Temporary evidence that hasn't been submitted
+    if evidence.submission_id is not None:
+        raise HTTPException(status_code=400, detail="Cannot delete evidence that has already been submitted with a task.")
+    if evidence.status != "Temporary":
+        raise HTTPException(status_code=400, detail="Only temporary (unsubmitted) evidence can be deleted.")
+
+    # Delete from storage
+    from app.services.evidence_storage import get_evidence_storage
+    storage = get_evidence_storage()
+    storage.delete(evidence.storage_identifier)
+    storage.delete(evidence.thumbnail_storage_identifier)
+
+    # Mark as deleted in DB
+    evidence.status = "Deleted"
+    evidence.deleted_at = datetime.now()
+    db.commit()
+
+    return {"success": True, "message": "Evidence photo deleted."}
+
+
 @router.get("/evidence/{filename}")
 def view_legacy_workforce_evidence(
     filename: str,
@@ -3732,6 +3763,9 @@ def submit_task(
         raise HTTPException(status_code=403, detail="This task is assigned to another employee.")
 
     observation = validate_task_observation(db, task, payload.monitoring)
+    if observation is None and task.source_type in MONITORING_TYPES:
+        raise HTTPException(400, "This monitoring task is missing its resource context. Verify source_type and source_record_id.")
+
     if observation is not None and (payload.approve_now or correction_only):
         raise HTTPException(400, "Monitoring observations require explicit review. Submit for review instead of Approve Now or usage correction.")
     evidence_assets = _resolve_submission_evidence(db, task=task, payload=payload)

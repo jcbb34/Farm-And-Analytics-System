@@ -6,4 +6,5 @@ router = domain_router(
     "view_task_evidence",
     "view_task_evidence_thumbnail",
     "view_legacy_workforce_evidence",
+    "delete_task_evidence",
 )

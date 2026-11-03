@@ -84,6 +84,10 @@ export const workforceService = Object.freeze({
         formData.append("file", file);
         return httpClient.upload(`/workforce/tasks/${taskId}/evidence`, formData);
     },
+    deleteEvidencePhoto: (evidenceUrl) => {
+        const publicId = evidenceUrl.split('/').pop();
+        return httpClient.delete(`/workforce/tasks/evidence/${publicId}`);
+    },
     downloadEvidencePhoto: (evidenceUrl) => httpClient.download(evidenceUrl),
     submitTask: async (id, payload, idempotencyKey = null) => {
         const response = await httpClient.post(`/workforce/tasks/${id}/submit`, payload, {

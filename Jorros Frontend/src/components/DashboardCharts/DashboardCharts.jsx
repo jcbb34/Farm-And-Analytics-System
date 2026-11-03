@@ -359,6 +359,10 @@ function inSelectedRange(value, selectedFilter) {
 }
 
 function getDashboardChartFilter(period) {
+    if (typeof period === "string" && period.includes(" to ")) {
+        return period;
+    }
+
     if (period === "today") {
         return "Today";
     }

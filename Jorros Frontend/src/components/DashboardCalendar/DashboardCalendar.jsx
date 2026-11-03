@@ -110,6 +110,16 @@ function eventIsInPeriod(dateKey, period) {
         return false;
     }
 
+    if (typeof period === "string" && period.includes(" to ")) {
+        const [fromStr, toStr] = period.split(" to ");
+        const fromDate = parseDateKey(fromStr);
+        const toDate = parseDateKey(toStr);
+        if (fromDate && toDate) {
+            toDate.setHours(23, 59, 59, 999);
+            return eventDate >= fromDate && eventDate <= toDate;
+        }
+    }
+
     const now = new Date();
     const start = new Date(
         now.getFullYear(),

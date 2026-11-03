@@ -235,13 +235,27 @@ export default function EvidencePhotoField({
         }
     };
 
-    const clearEvidence = () => {
-        if (blocked) return;
-        onChange("");
-        setUploadedName("");
-        setPendingName("");
-        setStatus({ type: "idle", message: "Photo removed from this submission." });
-        if (inputRef.current) inputRef.current.value = "";
+    const [deleting, setDeleting] = useState(false);
+
+    const clearEvidence = async () => {
+        if (blocked || deleting) return;
+        setDeleting(true);
+        try {
+            // If evidence is managed (server-side), also delete from backend storage
+            if (managed && value) {
+                await workforceService.deleteEvidencePhoto(value);
+            }
+        } catch (error) {
+            notification.error("Failed to delete evidence from server: " + (error?.message || "Unknown error"), "Evidence");
+        } finally {
+            // Always clear local form state regardless of backend result
+            onChange("");
+            setUploadedName("");
+            setPendingName("");
+            setStatus({ type: "idle", message: "Photo removed from this submission." });
+            if (inputRef.current) inputRef.current.value = "";
+            setDeleting(false);
+        }
     };
 
     const triggerFilePicker = () => {
@@ -253,7 +267,10 @@ export default function EvidencePhotoField({
     const uploadIcon = uploading ? "progress_activity" : hasEvidence ? "photo_camera_back" : "add_a_photo";
 
     return <div className="workforce-field full evidence-photo-field" data-evidence-state={uploading ? "uploading" : hasEvidence ? "uploaded" : status.type}>
-        <label>{label}{required ? " *" : ""}</label>
+        <div className="evidence-header-row">
+            <label>{label}{required ? " *" : ""}</label>
+            {hasEvidence && <span className="evidence-count-badge">1 active attachment</span>}
+        </div>
 
         <div className="evidence-photo-actions" role="group" aria-label={`${label} actions`}>
             <button
@@ -277,15 +294,15 @@ export default function EvidencePhotoField({
                 aria-label={hasEvidence ? "Replace evidence photo" : "Upload evidence photo"}
             />
 
-            {hasEvidence && <EvidenceViewButton evidenceUrl={value} disabled={blocked}/>} 
+            {hasEvidence && <EvidenceViewButton evidenceUrl={value} disabled={blocked}/>}
             {hasEvidence && <button
                 type="button"
                 className="evidence-action-button evidence-action-button--remove evidence-remove-button"
                 onClick={clearEvidence}
-                disabled={blocked}
+                disabled={blocked || deleting}
             >
-                <span className="material-symbols-outlined" aria-hidden="true">delete</span>
-                <span>Remove</span>
+                <span className="material-symbols-outlined" aria-hidden="true">{deleting ? "progress_activity" : "delete"}</span>
+                <span>{deleting ? "Removing…" : "Remove Attachment"}</span>
             </button>}
         </div>
 

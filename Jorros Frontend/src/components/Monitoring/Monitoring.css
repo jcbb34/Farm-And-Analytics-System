@@ -29,5 +29,23 @@ html[data-theme="dark"] .monitoring-panel, html[data-theme="dark"] .monitoring-h
 html[data-theme="dark"] .monitoring-heading h3, html[data-theme="dark"] .monitoring-heading > span { color: #84d79b; }
 html[data-theme="dark"] .monitoring-field input, html[data-theme="dark"] .monitoring-field select, html[data-theme="dark"] .monitoring-history-filter button { background: #0c2115; border-color: #3c5b45; color: #eaf3ed; color-scheme: dark; }
 html[data-theme="dark"] .monitoring-note, html[data-theme="dark"] .monitoring-heading p, html[data-theme="dark"] .monitoring-summary dt, html[data-theme="dark"] .monitoring-estimate-label, html[data-theme="dark"] .monitoring-history-filter > span { color: #b4cbbd; }
+.auto-computed-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #e8f0fe;
+    color: #1a73e8;
+    margin-left: 6px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+html[data-theme="dark"] .auto-computed-badge {
+    background: #1a3a5c;
+    color: #8ab4f8;
+}
+
 @media(max-width: 850px) { .monitoring-grid, .monitoring-summary { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 @media(max-width: 540px) { .monitoring-grid, .monitoring-summary { grid-template-columns: 1fr; } .monitoring-panel { padding: 14px; } }

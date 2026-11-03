@@ -31,18 +31,34 @@ export function MonitoringObservationFields({ context, value, onChange, disabled
     if (!context) return null;
     const data = value || initialObservation(context);
     const crop = context.resource_type === "Crop";
+
+    // Auto-compute total measured weight from animals_measured × average_weight_kg
+    const computedTotalWeight = (data.animals_measured !== "" && data.animals_measured != null && data.average_weight_kg !== "" && data.average_weight_kg != null)
+        ? Number(Number(data.animals_measured) * Number(data.average_weight_kg)).toFixed(3)
+        : "";
+
     const field = (name, label, options = {}) => <label className="monitoring-field"><span>{label}</span><input {...options} disabled={disabled} value={data[name] ?? ""} onChange={(event) => onChange({ ...data, [name]: event.target.value })} /></label>;
+
+    const handledOnChange = (name, event) => {
+        const newValue = event.target.value;
+        const updated = { ...data, [name]: newValue };
+        // If animals_measured or average_weight_kg changes, we don't need to pass total - it'll be computed in payload
+        onChange(updated);
+    };
+
     return <section className="monitoring-panel monitoring-observation"><div className="monitoring-heading"><span className="material-symbols-outlined" aria-hidden="true">fact_check</span><div><h3>{crop ? "Crop observation" : "Livestock measurement"}</h3><p>Enter what you observed. The linked record changes after approval.</p></div></div><div className="monitoring-grid">
         {field("observation_date", "Observation date *", { type: "date", required: true, min: context.earliest_date, max: context.latest_date })}
         <label className="monitoring-field"><span>{crop ? "Observed stage *" : "Proposed stage (optional)"}</span><select disabled={disabled} required={crop} value={data.observed_stage || ""} onChange={(event) => onChange({ ...data, observed_stage: event.target.value })}><option value="">{crop ? "Select observed stage" : "No stage proposal"}</option>{(context.stage_choices || []).map((stage) => <option key={stage}>{stage}</option>)}</select></label>
         {crop ? field("current_surviving", "Surviving plants *", { type: "number", required: true, min: "0", max: context.quantity, step: "1" }) : <>
-            {field("animals_measured", "Animals measured *", { type: "number", required: true, min: "1", max: context.quantity, step: "1" })}
-            {field("average_weight_kg", "Average weight (kg) *", { type: "number", required: true, min: "0.001", step: "0.001" })}
-            {field("total_measured_weight_kg", "Total measured weight (kg)", { type: "number", min: "0.001", step: "0.001" })}
+            {field("animals_measured", "Animals measured *", { type: "number", required: true, min: "1", max: context.quantity, step: "1", onChange: (e) => handledOnChange("animals_measured", e) })}
+            {field("average_weight_kg", "Average weight (kg) *", { type: "number", required: true, min: "0.001", step: "0.001", onChange: (e) => handledOnChange("average_weight_kg", e) })}
+            <label className="monitoring-field"><span>Total measured weight (kg) <span className="auto-computed-badge">Auto</span></span>
+                <input type="number" min="0.001" step="0.001" readOnly value={computedTotalWeight} style={{ backgroundColor: "#f5f5f5", color: "#666" }} />
+            </label>
             {field("min_weight_kg", "Minimum measured weight (kg)", { type: "number", required: Number(data.animals_measured) > 1, min: "0.001", step: "0.001" })}
             {field("max_weight_kg", "Maximum measured weight (kg)", { type: "number", required: Number(data.animals_measured) > 1, min: "0.001", step: "0.001" })}
         </>}
-    </div>{!crop && <p className="monitoring-note">Record only the animals actually measured. Total measured weight refers to that sample, not an estimated whole-group total. Stage changes need explicit reviewer confirmation.</p>}</section>;
+    </div>{!crop && <p className="monitoring-note">Record only the animals actually measured. Total measured weight is auto-computed (animals measured × average weight). Stage changes need explicit reviewer confirmation.</p>}</section>;
 }
 
 export function ObservationSummary({ observation }) {
