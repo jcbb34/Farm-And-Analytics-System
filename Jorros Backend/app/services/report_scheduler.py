@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.core.recovery_runtime import RecoveryBusy, guarded_background
 
 import asyncio
 from datetime import date, datetime, time, timedelta
@@ -426,6 +427,7 @@ def get_automation_status(db: Session):
     return items
 
 
+@guarded_background
 def _run_report_scheduler_once():
     # Import lazily so report-period helpers and tests do not require the live DBAPI/engine.
     from app.core.database import SessionLocal
@@ -452,6 +454,12 @@ async def report_scheduler_loop():
                     report_codes=generated,
                     generated_count=len(generated),
                 )
+        except RecoveryBusy:
+            _log(
+                logging.INFO,
+                "report_scheduler_skipped",
+                reason="backup_or_recovery_maintenance",
+            )
         except Exception as error:
             _log_failure("report_scheduler_failed", error)
         await asyncio.sleep(60)

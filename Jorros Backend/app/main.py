@@ -25,6 +25,8 @@ from app.routers.alerts import router as alerts_router
 from app.routers.weather import router as weather_router
 from app.routers.reports import router as reports_router
 from app.routers.backups import router as backups_router
+from app.routers.backup_recovery import router as backup_recovery_router
+from app.services.backup_recovery.worker import RecoveryGateMiddleware, backup_worker_loop
 from app.routers.imports import router as imports_router
 from app.routers.audit import router as audit_router
 from app.routers.resource_usages import router as resource_usages_router
@@ -56,32 +58,41 @@ async def lifespan(app: FastAPI):
     # Startup recovery is intentionally idempotent. If the previous process
     # stopped while leave coverage was active, eligible future Pending tasks
     # are safely restored before the scheduler begins its recurring cycle.
-    startup_db = SessionLocal()
+    from app.core.recovery_runtime import farm_access, RecoveryBusy
     try:
-        reconcile_expired_leave_coverage(startup_db, actor_name="System Startup Recovery")
-        startup_db.commit()
-    except Exception as error:
-        startup_db.rollback()
-        LOGGER.exception("Leave coverage startup recovery failed: %s", error)
-    finally:
-        startup_db.close()
+        with farm_access():
+            startup_db = SessionLocal()
+            try:
+                reconcile_expired_leave_coverage(startup_db, actor_name="System Startup Recovery")
+                startup_db.commit()
+            except Exception as error:
+                startup_db.rollback()
+                LOGGER.exception("Leave coverage startup recovery failed: %s", error)
+            finally:
+                startup_db.close()
 
-    # Give operators an immediate, actionable message when a newer source ZIP
-    # is running against an older SQL Server schema. This check is read-only; it
-    # never stamps or upgrades the database automatically.
-    schema_db = SessionLocal()
-    try:
-        missing_attendance_columns = attendance_schema_missing_columns(schema_db)
-        if missing_attendance_columns:
-            LOGGER.warning(
-                "Database migration required before Attendance is fully usable. "
-                "Run `python -m alembic upgrade head` from Jorros Backend. "
-                f"Missing staff_attendance columns: {', '.join(sorted(missing_attendance_columns))}"
-            )
-    except Exception as error:
-        LOGGER.exception("Database schema readiness check could not run: %s", error)
-    finally:
-        schema_db.close()
+            # Give operators an immediate, actionable message when a newer source ZIP
+            # is running against an older SQL Server schema. This check is read-only; it
+            # never stamps or upgrades the database automatically.
+            schema_db = SessionLocal()
+            try:
+                missing_attendance_columns = attendance_schema_missing_columns(schema_db)
+                if missing_attendance_columns:
+                    LOGGER.warning(
+                        "Database migration required before Attendance is fully usable. "
+                        "Run `python -m alembic upgrade head` from Jorros Backend. "
+                        f"Missing staff_attendance columns: {', '.join(sorted(missing_attendance_columns))}"
+                    )
+            except Exception as error:
+                LOGGER.exception("Database schema readiness check could not run: %s", error)
+            finally:
+                schema_db.close()
+
+    except RecoveryBusy:
+        LOGGER.info("Farm startup checks deferred during backup/recovery maintenance.")
+
+    if settings.backup_worker_enabled:
+        background_tasks.append(asyncio.create_task(backup_worker_loop()))
 
     if settings.report_scheduler_enabled:
         background_tasks.append(asyncio.create_task(report_scheduler_loop()))
@@ -111,7 +122,7 @@ for router in [
     auth_router, users_router, roles_router, crops_router, locations_router, archives_router, void_authorizations_router,
     livestock_router, inventory_router, activities_router,
     alerts_router, weather_router, reports_router, backups_router,
-    imports_router, audit_router, resource_usages_router, production_sales_router, analytics_router, workforce_router,
+    backup_recovery_router, imports_router, audit_router, resource_usages_router, production_sales_router, analytics_router, workforce_router,
     events_router, system_router, farm_events_router, farm_locations_router,
 ]:
     app.include_router(router)
@@ -131,6 +142,7 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+app.add_middleware(RecoveryGateMiddleware)
 
 
 @app.middleware("http")
@@ -155,7 +167,7 @@ async def add_security_headers(request: Request, call_next):
 
     # Authentication and account-security responses must not be cached by
     # browsers or intermediate proxies.
-    if request.url.path.startswith("/api/v1/auth"):
+    if request.url.path.startswith(("/api/v1/auth", "/api/v1/backup-recovery")):
         response.headers["Cache-Control"] = "no-store"
         response.headers["Pragma"] = "no-cache"
 

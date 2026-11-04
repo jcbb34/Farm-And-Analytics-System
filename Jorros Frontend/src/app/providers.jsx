@@ -7,6 +7,7 @@ import { UnsavedChangesProvider } from "../context/UnsavedChangesContext.jsx";
 import { AppHeaderProvider } from "../context/AppHeaderContext.jsx";
 import PwaBootstrap from "../components/PWA/PwaBootstrap.jsx";
 import { VoidAuthorizationProvider } from "../context/VoidAuthorizationContext.jsx";
+import BackupReminderNotice from "../components/BackupRecovery/BackupReminderNotice.jsx";
 import RealTimeProvider from "../context/RealTimeProvider.jsx";
 
 export default function Providers({ children }) {
@@ -16,6 +17,7 @@ export default function Providers({ children }) {
             <ThemeProvider>
             <NotificationProvider>
                 <AuthProvider>
+                    <BackupReminderNotice/>
                     <VoidAuthorizationProvider>
                     <UnsavedChangesProvider>
                         <AppHeaderProvider>

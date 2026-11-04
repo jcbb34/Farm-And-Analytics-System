@@ -1,8 +1,9 @@
 import logging
+from threading import Lock
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
 
@@ -30,13 +31,31 @@ connection_url = URL.create(
 
 
 engine = create_engine(
-    connection_url,
+    settings.database_url or connection_url,
     pool_pre_ping=True,
 )
 
 
+_last_epoch = None
+_epoch_lock = Lock()
+
+def ensure_recovery_epoch():
+    global _last_epoch
+    from app.core.recovery_runtime import session_epoch
+    current = session_epoch()
+    if current != _last_epoch:
+        with _epoch_lock:
+            if _last_epoch is not None and current != _last_epoch: engine.dispose()
+            _last_epoch = current
+
+class RecoveryAwareSession(Session):
+    def __init__(self, *args, **kwargs):
+        ensure_recovery_epoch()
+        super().__init__(*args, **kwargs)
+
 SessionLocal = sessionmaker(
     bind=engine,
+    class_=RecoveryAwareSession,
     autoflush=False,
     expire_on_commit=False,
 )
@@ -57,6 +76,7 @@ def get_db():
 
 def check_database_connection():
     try:
+        ensure_recovery_epoch()
         with engine.connect() as connection:
             connection.execute(
                 text("SELECT 1")

@@ -16,6 +16,7 @@ import {
 } from "../../context/NotificationContext.jsx";
 
 import { userService } from "../../services/userService.js";
+import { useAuth } from "../../context/AuthContext.jsx";
 import { permissionsAreTaskOnly } from "../../utils/accessControl.js";
 import { PersonalNameFields, PersonalAddressFields } from "../PersonalDetails/PersonalDetails.jsx";
 import { composeFullName, emptyPersonalDetails, validatePersonalDetails } from "../PersonalDetails/personalDetails.js";
@@ -832,6 +833,7 @@ function UserManagement({
     currentProfile,
     isAdministrator,
 }) {
+    const { refreshCurrentUser } = useAuth();
     const [users, setUsers] =
         useState([]);
 
@@ -1164,38 +1166,11 @@ function UserManagement({
                 if (
                     selectedUser.isCurrentAccount
                 ) {
-                    const updatedProfile = {
-                        ...currentProfile,
-                        fullName:
-                            normalizedUpdatedUser.fullName,
-                        username:
-                            normalizedUpdatedUser.username,
-                        email:
-                            normalizedUpdatedUser.email,
-                        contactNumber:
-                            normalizedUpdatedUser.contactNumber,
-                        position:
-                            normalizedUpdatedUser.position,
-                        role:
-                            normalizedUpdatedUser.role,
-                    };
-
-                    localStorage.setItem(
-                        "joross-profile",
-                        JSON.stringify(
-                            updatedProfile
-                        )
-                    );
-
-                    window.dispatchEvent(
-                        new CustomEvent(
-                            "joross-profile-updated",
-                            {
-                                detail:
-                                    updatedProfile,
-                            }
-                        )
-                    );
+                    try {
+                        await refreshCurrentUser();
+                    } catch {
+                        notifyWarning("The account was saved. Reopen Account settings to refresh your signed-in profile.");
+                    }
                 }
 
                 notifySuccess(

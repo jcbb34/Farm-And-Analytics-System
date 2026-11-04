@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from fastapi.responses import FileResponse
 
 from app.core.database import get_db
+from app.core.recovery_runtime import HostLock, RecoveryBusy
 from app.core.dependencies import has_permission
 from app.models import (
     SystemBackup,
@@ -470,10 +471,13 @@ def create_backup(
     current_user: User = Depends(require_backup_administrator),
 ):
     try:
-        return _backup_response(create_database_backup(
-            db,
-            created_by_user_id=current_user.id,
-        ))
+        with HostLock("backup-worker"):
+            return _backup_response(create_database_backup(
+                db,
+                created_by_user_id=current_user.id,
+            ))
+    except RecoveryBusy as error:
+        raise HTTPException(409, str(error)) from None
     except BackupServiceError as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

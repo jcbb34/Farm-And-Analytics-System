@@ -7,6 +7,18 @@ class Settings(BaseSettings):
     db_name: str
     db_driver: str
 
+    database_url: str = ""
+    backup_control_dir: str = "storage/backup_control"
+    backup_sql_directory: str = ""
+    backup_worker_enabled: bool = True
+    backup_worker_interval_seconds: int = Field(default=5, ge=1, le=300)
+    backup_activation_enabled: bool = False
+    backup_max_upload_bytes: int = Field(default=4 * 1024**3, ge=1024)
+    backup_google_client_id: str = ""
+    backup_google_client_secret: str = ""
+    backup_google_redirect_uri: str = ""
+    backup_frontend_return_url: str = "http://localhost:3000/settings?section=data"
+
     db_trusted_connection: str = "yes"
     db_trust_server_certificate: str = "yes"
 

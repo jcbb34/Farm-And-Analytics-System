@@ -34,6 +34,16 @@ async function setup(page, { holdFirst = false } = {}) {
         if (path === "/api/v1/inventory") return route.fulfill({ json: [{ id: 7, item_code: "TEST-FERT", name: "Synthetic Fertilizer", category: "Fertilizer", quantity: 100 - saved.size * 2, unit: "kg", is_archived: false }] });
         if (["/api/v1/crops", "/api/v1/crops/details"].includes(path)) return route.fulfill({ json: [crop] });
         if (path === "/api/v1/crops/1") return route.fulfill({ json: crop });
+        if (path === "/api/v1/backup-recovery/overview") return route.fulfill({ json: {
+            options: { format: "zip", destination: "local", encrypted: false, hour: 2, minute: 0, frequency: "daily", timezone: "Asia/Manila", reminder_days: 7, retain_count: 10 },
+            sets: [
+                { id: "BKP-RECOVERY", created_at: `${today}T08:00:00Z`, status: "Completed", format: "zip", legacy: true, protected: true, file_validated: true, artifacts: { zip: { name: "BKP-RECOVERY.recovery.zip", size: 234, encrypted: false } } },
+                { id: "BKP-LEGACY", created_at: `${today}T07:00:00Z`, status: "Completed", format: "json", legacy: true, protected: true, file_validated: false, artifacts: { json: { name: "BKP-LEGACY.json", size: 120, encrypted: false } } },
+            ], jobs: [], drills: [], rollbacks: [], audit: [], drive: {}, readiness: {}, storage: {},
+        } });
+        if (path === "/api/v1/backup-recovery/notices") return route.fulfill({ json: [] });
+        if (path === "/api/v1/backup-recovery/backups/BKP-RECOVERY/download/zip" || path === "/api/v1/backup-recovery/backups/BKP-LEGACY/download/json") { downloads.push(path); return route.fulfill({ contentType: "application/octet-stream", body: Buffer.from([80, 75, 3, 4, 0, 255]) }); }
+
         if (path === "/api/v1/backups") return route.fulfill({ json: [
             { id: 1, backup_code: "BKP-RECOVERY", filename: "BKP-RECOVERY.json", status: "Completed", recovery_available: true, recovery_file_size_bytes: 234, file_size_bytes: 123, created_at: `${today}T08:00:00` },
             { id: 2, backup_code: "BKP-LEGACY", filename: "BKP-LEGACY.json", status: "Completed", file_size_bytes: 120, created_at: `${today}T07:00:00` },
@@ -85,17 +95,17 @@ test("manual usage prevents another submission while saving", async ({ page }) =
     await expect(panel.getByRole("button", { name: "Save Usage", exact: false })).toBeEnabled();
 });
 
-for (const [code, filename, path] of [
-    ["BKP-RECOVERY", "BKP-RECOVERY.recovery.zip", "/api/v1/backups/1/recovery-package"],
-    ["BKP-LEGACY", "BKP-LEGACY.json", "/api/v1/backups/2/content"],
+for (const [code, filename, path, action] of [
+    ["BKP-RECOVERY", "BKP-RECOVERY.recovery.zip", "/api/v1/backup-recovery/backups/BKP-RECOVERY/download/zip", "Download ZIP"],
+    ["BKP-LEGACY", "BKP-LEGACY.json", "/api/v1/backup-recovery/backups/BKP-LEGACY/download/json", "Download Legacy JSON"],
 ]) {
     test(`System Data downloads ${code} in its supported format`, async ({ page }) => {
         const state = await setup(page);
-        await page.goto("/settings");
-        await page.getByRole("button", { name: /System Data/ }).click();
+        await page.goto("/settings?section=data");
         const row = page.getByRole("row").filter({ hasText: code });
+        await row.getByText("Files & Actions", { exact: true }).click();
         const pending = page.waitForEvent("download");
-        await row.getByRole("button", { name: "Download backup", exact: true }).click();
+        await row.getByRole("button", { name: action, exact: true }).click();
         const downloaded = await pending;
         expect(downloaded.suggestedFilename()).toBe(filename);
         expect(await downloaded.failure()).toBeNull();

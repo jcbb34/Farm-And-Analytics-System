@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parent
 ARCHIVE_ROOT = "Joross_Farm"
 ROOT_FILES = (
     "create_source_release.py",
+    "BACKUP_RECOVERY_RELEASE.md",
     "run_farm.py",
     "verify_upgrade.ps1",
     "cleanup_project.ps1",
@@ -24,6 +25,7 @@ ROOT_FILES = (
 )
 BACKEND_FILES = (
     "alembic.ini",
+    "BACKUP_RECOVERY.md",
     "requirements.txt",
     "requirements-dev.txt",
     ".env.example",
@@ -42,7 +44,7 @@ FRONTEND_FILES = (
 )
 DIRECTORIES = {
     "Jorros Backend/reference_data": {".json"},
-    "Jorros Backend/app": {".py"},
+    "Jorros Backend/app": {".py", ".sql"},
     "Jorros Backend/tests": {".py"},
     "Jorros Backend/scripts": {".py", ".sql"},
     "migrations": {".py", ".mako"},

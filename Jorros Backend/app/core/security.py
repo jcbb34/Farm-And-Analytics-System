@@ -5,6 +5,7 @@ from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
 from app.core.config import settings
+from app.core.recovery_runtime import session_epoch
 
 
 password_hasher = PasswordHash.recommended()
@@ -40,6 +41,7 @@ def create_access_token(
 
     payload = {
         "sub": str(user_id),
+        "epoch": session_epoch(),
         "ver": int(auth_version),
         "purpose": "access",
         "exp": expires_at,
@@ -67,6 +69,7 @@ def create_two_factor_challenge(
 
     payload = {
         "sub": str(user_id),
+        "epoch": session_epoch(),
         "purpose": "two_factor_login",
         "ver": int(auth_version),
         "exp": expires_at,
@@ -93,7 +96,7 @@ def decode_two_factor_challenge(
             ],
         )
 
-        if payload.get("purpose") != "two_factor_login":
+        if payload.get("purpose") != "two_factor_login" or payload.get("epoch", "0") != session_epoch():
             return None
 
         subject = payload.get("sub")
@@ -122,7 +125,7 @@ def decode_access_token_claims(
         )
         # Older access tokens had no purpose claim. Keep those sessions valid,
         # but never allow a signed login challenge to authorize API requests.
-        if payload.get("purpose", "access") != "access":
+        if payload.get("purpose", "access") != "access" or payload.get("epoch", "0") != session_epoch():
             return None
         subject = payload.get("sub")
         if subject is None:

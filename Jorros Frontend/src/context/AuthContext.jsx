@@ -492,12 +492,20 @@ export function AuthProvider({ children }) {
         }
 
         const currentUser = await authService.getCurrentUser();
+        const latestSession = readStoredSession();
+        if (
+            latestSession?.accessToken !== session.accessToken ||
+            String(latestSession?.user?.id) !== String(session.user?.id) ||
+            String(currentUser.id) !== String(session.user?.id)
+        ) {
+            return null;
+        }
         const updatedSession = saveSession(
             {
-                ...session,
+                ...latestSession,
                 user: currentUser,
             },
-            { sessionOnly: Boolean(session?.sessionOnly) }
+            { sessionOnly: Boolean(latestSession?.sessionOnly) }
         );
 
         setSession(updatedSession);
