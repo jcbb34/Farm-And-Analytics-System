@@ -26,6 +26,7 @@ import { reportService } from "../../services/reportService.js";
 import { backupService } from "../../services/backupService.js";
 import { authService } from "../../services/authService.js";
 import TwoFactorSetupModal from "./components/TwoFactorSetupModal.jsx";
+import AccountProfileDetails from "./components/AccountProfileDetails.jsx";
 import { useSettingsRoles } from "./hooks/useSettingsRoles.js";
 
 import {
@@ -58,30 +59,11 @@ const initialProfile = {
     contactNumber: "",
     position: "",
     role: "",
+    personalDetails: null,
+    userCode: "",
+    status: "",
 };
 
-
-function getStoredProfile() {
-    try {
-        const storedProfile =
-            localStorage.getItem(
-                "joross-profile"
-            );
-
-        if (!storedProfile) {
-            return initialProfile;
-        }
-
-        return {
-            ...initialProfile,
-            ...JSON.parse(
-                storedProfile
-            ),
-        };
-    } catch {
-        return initialProfile;
-    }
-}
 
 const initialNotificationSettings = {
     cropAlerts: true,
@@ -918,9 +900,9 @@ function Settings() {
 
     const {
         user,
-        updateCurrentUser,
         logout,
         isAdministrator,
+        refreshCurrentUser,
     } = useAuth();
 
     const [
@@ -928,21 +910,21 @@ function Settings() {
         setActiveSection,
     ] = useState("account");
 
-    const [
-        profile,
-        setProfile,
-    ] = useState(() => ({
-        ...getStoredProfile(),
-        ...(user || {}),
-    }));
+    const profile = useMemo(() => ({ ...initialProfile, ...user }), [user]);
+    const refreshAccountRef = useRef(refreshCurrentUser);
+    refreshAccountRef.current = refreshCurrentUser;
+    const [accountRefreshError, setAccountRefreshError] = useState("");
 
-    const [
-        profileForm,
-        setProfileForm,
-    ] = useState(() => ({
-        ...getStoredProfile(),
-        ...(user || {}),
-    }));
+    useEffect(() => {
+        if (activeSection !== "account" || !user?.id) return undefined;
+        let active = true;
+        setAccountRefreshError("");
+        refreshAccountRef.current().catch(() => {
+            if (active) setAccountRefreshError("Your account details could not be refreshed. Reopen Account settings to try again.");
+        });
+        return () => { active = false; };
+    }, [activeSection, user?.id]);
+
 
     const isSystemAdministrator = Boolean(isAdministrator);
 
@@ -976,12 +958,6 @@ function Settings() {
     const [archiveTotal, setArchiveTotal] = useState(null);
     const updateArchiveCounts = (counts) => setArchiveTotal(Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0));
 
-    const [
-        archivedRecords,
-        setArchivedRecords,
-    ] = useState(
-        initialLocalArchivedRecords
-    );
 
     const [
         backups,
@@ -1058,21 +1034,7 @@ function Settings() {
         setImportDetailsFilter,
     ] = useState("all");
 
-    const [
-        archiveSearch,
-        setArchiveSearch,
-    ] = useState("");
-
-    const [
-        archiveModuleFilter,
-        setArchiveModuleFilter,
-    ] = useState("All");
-
-    const [
-        profileOpen,
-        setProfileOpen,
-    ] = useState(false);
-
+    
     const [
         passwordModalOpen,
         setPasswordModalOpen,
@@ -1096,8 +1058,6 @@ function Settings() {
     const importFileInput =
         useRef(null);
 
-    const profileMenuRef =
-        useRef(null);
 
     const profileDetailsRef =
         useRef(null);
@@ -1110,20 +1070,7 @@ function Settings() {
             return;
         }
 
-        const synchronizedProfile = {
-            ...getStoredProfile(),
-            ...user,
-            role: user.role,
-        };
-
-        setProfile(synchronizedProfile);
-        setProfileForm(synchronizedProfile);
         setTwoFactorEnabled(Boolean(user.twoFactorEnabled));
-
-        localStorage.setItem(
-            "joross-profile",
-            JSON.stringify(synchronizedProfile)
-        );
     }, [user]);
 
     useEffect(() => {
@@ -1151,51 +1098,7 @@ function Settings() {
         };
     }, [user]);
 
-    useEffect(() => {
-        const handleOutsideClick = (
-            event
-        ) => {
-            if (
-                profileMenuRef.current &&
-                !profileMenuRef.current.contains(
-                    event.target
-                )
-            ) {
-                setProfileOpen(false);
-            }
-        };
-
-        const handleEscapeKey = (
-            event
-        ) => {
-            if (event.key === "Escape") {
-                setProfileOpen(false);
-            }
-        };
-
-        document.addEventListener(
-            "mousedown",
-            handleOutsideClick
-        );
-
-        document.addEventListener(
-            "keydown",
-            handleEscapeKey
-        );
-
-        return () => {
-            document.removeEventListener(
-                "mousedown",
-                handleOutsideClick
-            );
-
-            document.removeEventListener(
-                "keydown",
-                handleEscapeKey
-            );
-        };
-    }, []);
-
+    
     useEffect(() => {
         const searchParams =
             new URLSearchParams(
@@ -1389,173 +1292,9 @@ function Settings() {
         const result = await archiveService.list({ counts_only: true }); updateArchiveCounts(result.counts || {});
     });
 
-    const openAccountTarget = (
-        targetName
-    ) => {
-        setActiveSection(
-            "account"
-        );
 
-        setProfileOpen(false);
 
-        window.setTimeout(
-            () => {
-                const target =
-                    targetName ===
-                    "security"
-                        ? accountSecurityRef.current
-                        : profileDetailsRef.current;
 
-                target?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                });
-            },
-            80
-        );
-    };
-
-    const filteredArchivedRecords =
-        useMemo(() => {
-            const search =
-                archiveSearch
-                    .trim()
-                    .toLowerCase();
-
-            return archivedRecords.filter(
-                (record) => {
-                    const matchesSearch =
-                        !search ||
-                        record.recordName
-                            .toLowerCase()
-                            .includes(
-                                search
-                            ) ||
-                        record.reason
-                            .toLowerCase()
-                            .includes(
-                                search
-                            ) ||
-                        record.archivedBy
-                            .toLowerCase()
-                            .includes(
-                                search
-                            );
-
-                    const matchesModule =
-                        archiveModuleFilter ===
-                            "All" ||
-                        record.module ===
-                            archiveModuleFilter;
-
-                    return (
-                        matchesSearch &&
-                        matchesModule
-                    );
-                }
-            );
-        }, [
-            archivedRecords,
-            archiveSearch,
-            archiveModuleFilter,
-        ]);
-
-    const handleProfileChange = (
-        event
-    ) => {
-        const {
-            name,
-            value,
-        } = event.target;
-
-        setProfileForm(
-            (currentProfile) => ({
-                ...currentProfile,
-                [name]: value,
-            })
-        );
-    };
-
-    const saveProfile = async (
-        event
-    ) => {
-        event.preventDefault();
-
-        const requiredFields = [
-            "fullName",
-            "username",
-            "email",
-            "contactNumber",
-            "position",
-            "role",
-        ];
-
-        const missingField =
-            requiredFields.some(
-                (fieldName) =>
-                    !String(
-                        profileForm[
-                            fieldName
-                        ] || ""
-                    ).trim()
-            );
-
-        if (missingField) {
-            notify(
-                "Please complete all account information."
-            );
-
-            return;
-        }
-
-        if (
-            !profileForm.email
-                .toLowerCase()
-                .endsWith(
-                    "@gmail.com"
-                )
-        ) {
-            notify(
-                "Please enter a valid Gmail address."
-            );
-
-            return;
-        }
-
-        if (
-            !/^09\d{9}$/.test(
-                profileForm.contactNumber
-            )
-        ) {
-            notify(
-                "The contact number must contain 11 digits and begin with 09."
-            );
-
-            return;
-        }
-
-        const savedProfile = {
-            ...profileForm,
-            role: profile.role,
-            status: profile.status || "Active",
-        };
-
-        try {
-            const updatedUser = await updateCurrentUser(savedProfile);
-
-            setProfile(updatedUser);
-            setProfileForm(updatedUser);
-
-            notify(
-                "Account information saved successfully."
-            );
-        } catch (error) {
-            notify(
-                error?.message ||
-                    "Unable to save account information."
-            );
-        }
-    };
 
     const endSecuritySession = async () => {
         // These settings revoke the access token in the backend before this runs.
@@ -1972,80 +1711,6 @@ function Settings() {
         );
     };
 
-    const restoreRecord = async (
-        record
-    ) => {
-        const confirmed =
-            await confirmAction({
-                title: "Restore Archived Record",
-                message:
-                    `Restore "${record.recordName}"?`,
-                type: "info",
-                confirmText: "Restore",
-                cancelText: "Cancel",
-            });
-
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            if (record.apiBacked) {
-                if (
-                    record.module ===
-                    "Crop"
-                ) {
-                    await cropService.restoreCrop(
-                        record.sourceId
-                    );
-                } else if (
-                    record.module ===
-                    "Livestock"
-                ) {
-                    await livestockService.restoreLivestock(
-                        record.sourceId
-                    );
-                } else if (
-                    record.module ===
-                    "Inventory"
-                ) {
-                    await inventoryService.restoreInventory(
-                        record.sourceId
-                    );
-                } else if (
-                    record.module ===
-                    "Report"
-                ) {
-                    await reportService.restoreReport(
-                        record.sourceId
-                    );
-                }
-            }
-
-            setArchivedRecords(
-                (currentRecords) =>
-                    currentRecords.filter(
-                        (item) =>
-                            item.id !==
-                            record.id
-                    )
-            );
-
-            notify(
-                `${record.recordName} was restored successfully.`
-            );
-        } catch (error) {
-            console.error(
-                "Failed to restore archived record:",
-                error
-            );
-
-            notify(
-                error?.message ||
-                    `Unable to restore ${record.recordName}.`
-            );
-        }
-    };
 
     const deleteArchivedRecord = async (
         record
@@ -2112,184 +1777,22 @@ function Settings() {
                     </div>
                 </div>
 
-                <article
-                    ref={
-                        profileDetailsRef
-                    }
-                    className="settings-page-account-card settings-page-scroll-target"
-                >
+                {accountRefreshError && <p className="settings-page-account-refresh-error" role="status">{accountRefreshError}</p>}
+
+                <article ref={profileDetailsRef} className="settings-page-account-card settings-page-scroll-target" aria-label="Account profile">
                     <div className="settings-page-account-profile">
-                        <span className="settings-page-large-avatar">
-                            {getInitials(
-                                profile.fullName
-                            )}
+                        <span className="settings-page-large-avatar" aria-hidden="true">
+                            {getInitials(profile.fullName || profile.username)}
                         </span>
 
-                        <div>
-                            <h3>
-                                {
-                                    profile.fullName
-                                }
-                            </h3>
-
-                            <p>
-                                {
-                                    profile.role
-                                }
-                            </p>
-
-                            <small>
-                                {
-                                    profile.email
-                                }
-                            </small>
+                        <div className="settings-page-account-identity">
+                            <h3>{profile.fullName || profile.username || "Account"}</h3>
+                            <p>{profile.role || "Not assigned"}</p>
+                            <small>{profile.email || "No email address added"}</small>
                         </div>
                     </div>
 
-                    <form
-                        className="settings-page-account-form"
-                        onSubmit={
-                            saveProfile
-                        }
-                    >
-                        <div className="settings-page-form-grid">
-                            <div className="settings-page-form-group">
-                                <label htmlFor="settingsFullName">
-                                    Full Name
-                                    <span>*</span>
-                                </label>
-
-                                <input
-                                    id="settingsFullName"
-                                    name="fullName"
-                                    type="text"
-                                    value={
-                                        profileForm.fullName
-                                    }
-                                    onChange={
-                                        handleProfileChange
-                                    }
-                                    required
-                                />
-                            </div>
-
-                            <div className="settings-page-form-group">
-                                <label htmlFor="settingsUsername">
-                                    Username
-                                    <span>*</span>
-                                </label>
-
-                                <input
-                                    id="settingsUsername"
-                                    name="username"
-                                    type="text"
-                                    value={
-                                        profileForm.username
-                                    }
-                                    onChange={
-                                        handleProfileChange
-                                    }
-                                    required
-                                />
-                            </div>
-
-                            <div className="settings-page-form-group">
-                                <label htmlFor="settingsEmail">
-                                    Email Address
-                                    <span>*</span>
-                                </label>
-
-                                <input
-                                    id="settingsEmail"
-                                    name="email"
-                                    type="email"
-                                    value={
-                                        profileForm.email
-                                    }
-                                    onChange={
-                                        handleProfileChange
-                                    }
-                                    required
-                                />
-                            </div>
-
-                            <div className="settings-page-form-group">
-                                <label htmlFor="settingsContact">
-                                    Contact Number
-                                    <span>*</span>
-                                </label>
-
-                                <input
-                                    id="settingsContact"
-                                    name="contactNumber"
-                                    type="text"
-                                    maxLength="11"
-                                    value={
-                                        profileForm.contactNumber
-                                    }
-                                    onChange={
-                                        handleProfileChange
-                                    }
-                                    required
-                                />
-                            </div>
-
-                            <div className="settings-page-form-group">
-                                <label htmlFor="settingsPosition">
-                                    Position
-                                    <span>*</span>
-                                </label>
-
-                                <input
-                                    id="settingsPosition"
-                                    name="position"
-                                    type="text"
-                                    value={
-                                        profileForm.position
-                                    }
-                                    onChange={
-                                        handleProfileChange
-                                    }
-                                    required
-                                />
-                            </div>
-
-                            <div className="settings-page-form-group">
-                                <label htmlFor="settingsRole">
-                                    Role
-                                    <span>*</span>
-                                </label>
-
-                                <input
-                                    id="settingsRole"
-                                    name="role"
-                                    type="text"
-                                    value={
-                                        profile.role
-                                    }
-                                    readOnly
-                                    aria-readonly="true"
-                                />
-
-                                <small>
-                                    Your own role cannot be changed here. Roles are assigned by a System Administrator through User Management.
-                                </small>
-                            </div>
-                        </div>
-
-                        <div className="settings-page-account-form-footer">
-                            <button
-                                type="submit"
-                                className="settings-page-primary-button"
-                            >
-                                <span className="material-symbols-outlined">
-                                    save
-                                </span>
-
-                                Save Account
-                            </button>
-                        </div>
-                    </form>
+                    <AccountProfileDetails profile={profile} />
                 </article>
 
                 <div
