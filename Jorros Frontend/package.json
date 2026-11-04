@@ -8,16 +8,20 @@
     "start": "next start",
     "check:source": "node scripts/check-source.mjs",
     "test:frontend": "node --test tests/*.test.mjs",
-    "test:qr": "playwright test"
+    "test:qr": "playwright test",
+    "check:resources": "tsc --project tsconfig.resources.json"
   },
   "dependencies": {
     "chart.js": "^4.5.1",
-    "next": "16.3.0",
+    "next": "16.4.5",
     "react": "^19.2.7",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@playwright/test": "^1.64.1"
+    "@playwright/test": "^1.64.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2"
   }
 }

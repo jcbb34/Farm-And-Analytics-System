@@ -63,13 +63,13 @@ export const workforceService = Object.freeze({
         httpClient.get("/workforce/my-tasks/page", { query: query(options), cache: "no-store", signal }),
     getMyTaskSummary: ({ signal = undefined } = {}) =>
         httpClient.get("/workforce/my-tasks/summary", { cache: "no-store", signal }),
-    createTask: async (payload) => {
-        const response = await httpClient.post("/workforce/tasks", payload);
+    createTask: async (payload, { idempotencyKey = null } = {}) => {
+        const response = await httpClient.post("/workforce/tasks", payload, { headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {} });
         notifyWorkforceResourceChanged();
         return response;
     },
-    scheduleResourceWork: async (payload) => {
-        const response = await httpClient.post("/workforce/tasks/schedule-resource-work", payload);
+    scheduleResourceWork: async (payload, { idempotencyKey = null } = {}) => {
+        const response = await httpClient.post("/workforce/tasks/schedule-resource-work", payload, { headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {} });
         notifyWorkforceResourceChanged();
         return response;
     },

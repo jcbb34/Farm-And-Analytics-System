@@ -327,8 +327,11 @@ def update_usage(
     movement_type: str | None = None,
     allow_negative: bool = False,
     movement_reason: str | None = None,
+    allow_task_correction: bool = False,
 ) -> ResourceUsage:
     usage = _lock_usage(db, usage)
+    if (usage.activity_id or usage.task_submission_id) and not allow_task_correction:
+        raise HTTPException(409, "Task-linked usage must be corrected through its approved task in Task Management.")
     if usage.is_voided:
         raise HTTPException(status_code=400, detail="Voided resource usage cannot be edited.")
 
@@ -570,6 +573,8 @@ def serialize_usage(db: Session, usage: ResourceUsage) -> dict:
     return {
         "id": usage.id,
         "module": usage.module,
+        "activity_id": usage.activity_id,
+        "task_submission_id": usage.task_submission_id,
         "target_id": int(target_id or 0),
         "target_name": target_name,
         "inventory_item_id": usage.inventory_item_id,

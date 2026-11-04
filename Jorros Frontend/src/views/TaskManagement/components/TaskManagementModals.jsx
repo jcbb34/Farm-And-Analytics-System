@@ -67,6 +67,8 @@ function TaskManagementModals({
     submitAssistedWork,
     taskAssignmentStockError,
     taskForm,
+    taskSaving,
+    existingTaskId,
     taskSourceOptions,
     tasks,
     toggleAdditionalPosition,
@@ -1102,7 +1104,9 @@ function TaskManagementModals({
                             </button>
                         </header>
 
-                        <form className="workforce-modal-form" onSubmit={saveTask}>
+                        <form className="workforce-modal-form" onSubmit={saveTask} aria-busy={taskSaving}>
+                            {existingTaskId && <p role="status">This occurrence already has a task. <a href={`/task-management?taskId=${existingTaskId}`}>Open existing task</a></p>}
+                            <fieldset disabled={taskSaving} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: "grid", gap: "20px" }}>
                             <section className="workforce-modal-section">
                                 <div className="workforce-modal-section-title">
                                     <span className="material-symbols-outlined">assignment</span>
@@ -1118,7 +1122,8 @@ function TaskManagementModals({
                                     </div>
                                     <div className="workforce-field">
                                         <label htmlFor="assign-task-category">Category</label>
-                                        <input id="assign-task-category" required value={taskForm.category} onChange={(e)=>setTaskForm({...taskForm,category:e.target.value})}/>
+                                        <datalist id="task-work-categories">{["Farm Inspection", "Livestock Feeding", "Harvesting", "Fertilization", "Vaccination"].map((category) => <option key={category} value={category} />)}</datalist>
+                                        <input list="task-work-categories" id="assign-task-category" required value={taskForm.category} onChange={(e)=>setTaskForm({...taskForm,category:e.target.value})}/>
                                     </div>
                                     <div className="workforce-field">
                                         <label htmlFor="assign-task-related">Related To</label>
@@ -1216,8 +1221,8 @@ function TaskManagementModals({
                                         >
                                             <option value="">No inventory deduction for this task</option>
                                             {manualTaskResourceItems.map((item) => (
-                                                <option key={item.id} value={item.id}>
-                                                    {item.itemCode} — {item.name} · {item.quantity} {item.unit} available
+                                                <option key={item.id} value={item.id} disabled={Boolean(item.expirationDate && taskForm.activity_date > item.expirationDate)}>
+                                                    {item.itemCode} — {item.name} · {item.quantity} {item.unit} available{item.expirationDate && taskForm.activity_date > item.expirationDate ? " — expires before work date" : ""}
                                                 </option>
                                             ))}
                                         </select>
@@ -1264,6 +1269,16 @@ function TaskManagementModals({
                                 </div>
                             </section>
 
+                            {taskForm.source_module === "Livestock" && /feed/i.test(`${taskForm.name} ${taskForm.category} ${selectedTaskInventoryItem?.category || ""}`) && (
+                                <div className="workforce-field">
+                                    <label htmlFor="task-feeding-slot">Feeding Slot</label>
+                                    <select id="task-feeding-slot" value={taskForm.feeding_slot || ""} onChange={(event) => setTaskForm({ ...taskForm, feeding_slot: event.target.value })}>
+                                        <option value="">Select scheduled feeding</option>
+                                        {(taskSourceOptions.find((row) => String(row.id) === String(taskForm.source_record_id))?.feedingSlots || []).map((slot) => <option key={slot}>{slot}</option>)}
+                                    </select>
+                                    <small>Feeding and harvest assignments update their farm records after review. An existing occurrence is opened from its task.</small>
+                                </div>
+                            )}
                             <section className="workforce-modal-section">
                                 <div className="workforce-modal-section-title">
                                     <span className="material-symbols-outlined">event_available</span>
@@ -1294,11 +1309,8 @@ function TaskManagementModals({
                                         <label htmlFor="assign-task-time">Start Time</label>
                                         <input id="assign-task-time" type="time" value={taskForm.start_time} onChange={(e)=>setTaskForm({...taskForm,start_time:e.target.value})}/>
                                     </div>
-                                    <div className="workforce-field full">
-                                        <label htmlFor="assign-task-recurring">Recurring Rule</label>
-                                        <input id="assign-task-recurring" placeholder="e.g. Daily / Weekly" value={taskForm.recurring_rule} onChange={(e)=>setTaskForm({...taskForm,recurring_rule:e.target.value})}/>
-                                    </div>
-                                    {taskForm.recurring_rule.trim() && <>
+                                    <p className="workforce-field full">This creates one dated assignment. Configure repeating crop or livestock care in its management page.</p>
+                                    {Boolean(taskForm.employee_id) && <>
                                         <div className="workforce-field">
                                             <label htmlFor="assign-task-backup">Backup Employee</label>
                                             <select id="assign-task-backup" value={taskForm.backup_employee_id} onChange={(e)=>setTaskForm({...taskForm,backup_employee_id:e.target.value})}>
@@ -1333,8 +1345,8 @@ function TaskManagementModals({
                                     </div>
                                     <div className="workforce-modal-checks full">
                                         <label>
-                                            <input type="checkbox" checked={taskForm.requires_review} onChange={(e)=>setTaskForm({...taskForm,requires_review:e.target.checked})}/>
-                                            <span>Requires manager review</span>
+                                            <input type="checkbox" checked={Boolean(taskForm.employee_id) || taskForm.requires_review} disabled={Boolean(taskForm.employee_id)} onChange={(e)=>setTaskForm({...taskForm,requires_review:e.target.checked})}/>
+                                            <span>{taskForm.employee_id ? "Manager review is required for assigned work" : "Requires manager review"}</span>
                                         </label>
                                         <label>
                                             <input type="checkbox" checked={taskForm.requires_evidence} onChange={(e)=>setTaskForm({...taskForm,requires_evidence:e.target.checked})}/>
@@ -1351,13 +1363,14 @@ function TaskManagementModals({
                                 <button
                                     type="submit"
                                     className="workforce-modal-save"
-                                    disabled={Boolean(taskAssignmentStockError)}
+                                    disabled={taskSaving || Boolean(taskAssignmentStockError)}
                                     title={taskAssignmentStockError || "Save assignment"}
                                 >
                                     <span className="material-symbols-outlined">assignment_add</span>
-                                    {taskAssignmentStockError ? "Insufficient Stock" : "Save Assignment"}
+                                    {taskSaving ? "Saving…" : taskAssignmentStockError ? "Check Resource" : "Save Assignment"}
                                 </button>
                             </footer>
+                            </fieldset>
                         </form>
                     </div>
                 </div>

@@ -323,3 +323,13 @@ html[data-theme="dark"] .sidebar {
     }
 
 }
+
+/* Keep the phone rail from expanding over page controls on hover or tap focus. */
+@media screen and (max-width: 720px) {
+    .sidebar:not(.sidebar-task-only),
+    .sidebar:not(.sidebar-task-only):hover,
+    .sidebar:not(.sidebar-task-only):focus-within {
+        width: var(--sidebar-collapsed-width);
+    }
+    .sidebar:not(.sidebar-task-only) .brand-logo-img { transform: none; }
+}

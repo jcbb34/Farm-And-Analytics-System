@@ -1,11 +1,10 @@
 import unittest
-from types import SimpleNamespace
-from unittest.mock import patch
 
-from fastapi import HTTPException
 from datetime import date
 
 from pydantic import ValidationError
+
+from test_calendar_event_creation import events, farm
 
 from app.schemas.workforce import CareTemplateStepInput, TaskCreate
 
@@ -60,42 +59,35 @@ class WorkforceResourceValidationTests(unittest.TestCase):
                 "inventory_item_id": 8,
             })
 
-    def test_create_task_rejects_planned_quantity_above_available_stock(self):
-        try:
-            import pyodbc  # noqa: F401
-            import pyotp  # noqa: F401
-            import qrcode  # noqa: F401
-        except ModuleNotFoundError:
-            self.skipTest("SQL Server/auth runtime packages are not installed in this test environment")
-        from app.routers import workforce
 
-        payload = TaskCreate.model_validate({
-            **self.base_task(),
-            "source_module": "Crop",
-            "source_record_id": 4,
-            "planned_inventory_item_id": 10,
-            "planned_quantity": 1.0,
-        })
-        inventory_item = SimpleNamespace(
-            id=10,
-            is_archived=False,
-            quantity=0.55,
-            unit="kg",
-            name="Complete Fertilizer 14-14-14",
-            category="Fertilizer",
-        )
 
-        class FakeSession:
-            def get(self, model, item_id):
-                return inventory_item if item_id == 10 else None
+# This check exercises the real API and transaction with generated SQLite records;
+# it does not require a SQL Server driver or a FakeSession tied to handler internals.
+from sqlalchemy import select, func
+from sqlalchemy.orm import Session
+from app.models import InventoryItem, FarmActivity, FarmCreationCommand
 
-        with patch.object(workforce, "_require_workforce_access", return_value=None):
-            with self.assertRaises(HTTPException) as caught:
-                workforce.create_task(payload, FakeSession(), SimpleNamespace(id=1, full_name="Admin"))
 
-        self.assertEqual(caught.exception.status_code, 400)
-        self.assertIn("Insufficient stock for assignment", caught.exception.detail)
-        self.assertIn("0.55 kg", caught.exception.detail)
+def test_create_task_rejects_planned_quantity_above_available_stock(events):
+    with Session(events.engine) as db:
+        db.get(InventoryItem, events.stock["Fertilizer"]).quantity = 0.55
+        before = db.scalar(select(func.count()).select_from(FarmActivity))
+        db.commit()
+    response = events.client.post("/api/v1/workforce/tasks", headers={
+        **events.headers["manager"], "Idempotency-Key": "insufficient-stock-assignment",
+    }, json={
+        "name": "Fertilize crop", "category": "Fertilization", "activity_date": str(events.today),
+        "employee_id": events.employees["worker"], "source_module": "Crop",
+        "source_record_id": events.ids["Crop"], "planned_inventory_item_id": events.stock["Fertilizer"],
+        "planned_quantity": 1,
+    })
+    assert response.status_code == 422, response.text
+    assert "Insufficient stock for assignment" in response.json()["detail"]
+    assert "0.55 kg" in response.json()["detail"]
+    with Session(events.engine) as db:
+        assert db.scalar(select(func.count()).select_from(FarmActivity)) == before
+        assert db.scalar(select(FarmCreationCommand).where(FarmCreationCommand.idempotency_key == "insufficient-stock-assignment")) is None
+        assert float(db.get(InventoryItem, events.stock["Fertilizer"]).quantity) == 0.55
 
 
 if __name__ == "__main__":

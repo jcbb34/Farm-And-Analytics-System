@@ -199,6 +199,7 @@ function createEmptyEventForm(selectedDate) {
         sourceRecordId: "",
         inventoryItemId: "",
         plannedQuantity: "",
+        feedingSlot: "",
         location: "",
         description: "",
         status: "Pending",
@@ -337,6 +338,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
     const canAssignEmployees = hasPermission("workforce:manage");
     const [eventEmployees, setEventEmployees] = useState([]), [employeesLoading, setEmployeesLoading] = useState(false);
     const [employeeError, setEmployeeError] = useState(""), [employeeRetry, setEmployeeRetry] = useState(0);
+    const [existingEventTaskId, setExistingEventTaskId] = useState(null);
     const [eventResources, setEventResources] = useState({ crops: [], livestock: [], inventory: [] });
     const [resourcesLoading, setResourcesLoading] = useState(false), [resourceError, setResourceError] = useState("");
     const [resourceRetry, setResourceRetry] = useState(0), [eventSaving, setEventSaving] = useState(false);
@@ -808,16 +810,17 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
             description: eventForm.description, instructions: eventForm.description, date: eventForm.date, startTime: eventForm.startTime, endTime: eventForm.endTime,
             assignedBy: user?.fullName || user?.full_name || "Farm Manager", assignedTo: employee?.full_name || "Unassigned", assignedEmployeeId: employee?.id || null,
             requiresReview: Boolean(employee), requiresEvidence: Boolean(employee), status: employee ? "Pending" : eventForm.status, priority: eventForm.priority,
+            feedingSlot: eventForm.feedingSlot || null,
             ...(target ? { sourceModule: eventForm.sourceModule, sourceType: inventoryPlan ? eventKind === "Inventory" ? "inventory_restock_plan" : "equipment_maintenance_plan" : "manual_work", sourceRecordId: Number(eventForm.sourceRecordId), sourcePath: eventForm.sourceModule === "Crop" ? "/crops" : eventForm.sourceModule === "Livestock" ? "/livestock" : "/inventory" } : {}),
             ...(needsResource ? { plannedInventoryItemId: Number(eventForm.inventoryItemId), plannedQuantity: Number(eventForm.plannedQuantity), plannedUnit: selectedEventInventory.unit } : {}) };
-        eventSavingRef.current = true; setEventSaving(true);
+        eventSavingRef.current = true; setEventSaving(true); setExistingEventTaskId(null);
         try {
             const key = stableIdempotencyKey(eventRequestRef, payload, "calendar-event"), saved = await activityService.createActivity(payload, key), newEvent = activityToCalendarEvent(saved);
             setEvents((rows) => [...rows.filter((row) => row.id !== newEvent.id), newEvent]);
             const date = parseDateKey(eventForm.date); setSelectedDate(date); setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
             clearStableIdempotencyKey(eventRequestRef); setShowEventModal(false);
             notify(employee ? "Farm event saved and assigned. The employee can see it in My Tasks." : "Farm event saved successfully.");
-        } catch (error) { notify(error?.message || "Unable to save the farm event. Your entries have been kept."); }
+        } catch (error) { setExistingEventTaskId(error?.details?.existingTaskId || null); notify(error?.message || "Unable to save the farm event. Your entries have been kept."); }
         finally { eventSavingRef.current = false; setEventSaving(false); }
     };
 
@@ -2101,6 +2104,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                 </div>
                             </div>
 
+                            {existingEventTaskId && <p role="status">This occurrence is already scheduled. <a href={`/task-management?taskId=${existingEventTaskId}`}>Open existing task</a></p>}
                             <EventContextFields form={eventForm} onChange={setEventForm} resources={eventResources} loading={resourcesLoading} error={resourceError} retry={() => setResourceRetry((old) => old + 1)} busy={eventSaving} needsResource={needsResource} />
                             <div className="calendar-form-row two-columns">
                                 <div className="calendar-form-group">

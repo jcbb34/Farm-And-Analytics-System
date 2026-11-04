@@ -46,6 +46,7 @@ class FarmActivityCreate(BaseModel):
     planned_quantity: float | None = Field(default=None, ge=0)
     planned_unit: str | None = Field(default=None, max_length=40)
     recurring_rule: str | None = Field(default=None, max_length=255)
+    feeding_slot: str | None = Field(default=None, max_length=40)
     planned_inventory_item_id: int | None = Field(default=None, gt=0)
     planned_usage_type: str | None = Field(default=None, max_length=60)
     status: str = Field(default="Pending", max_length=30)
@@ -141,6 +142,14 @@ class FarmActivityUpdate(BaseModel):
         default=None,
         max_length=20,
     )
+
+
+    @field_validator("recurring_rule")
+    @classmethod
+    def reject_unsupported_recurrence(cls, value):
+        if value and value.strip():
+            raise ValueError("Repeating manual tasks are not supported. Configure care schedules in Crops or Livestock.")
+        return None
 
 
 class FarmActivityResponse(BaseModel):

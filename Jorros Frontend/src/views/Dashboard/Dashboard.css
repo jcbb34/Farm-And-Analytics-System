@@ -1037,3 +1037,9 @@ html[data-theme="dark"]
     line-height: var(--summary-card-compact-value-line-height);
 }
 
+
+.dashboard-resource-card strong { white-space: normal; overflow-wrap: anywhere; }
+.dashboard-resource-error { color: #9f291d; font-size: .9rem; }
+.dashboard-resource-error button { margin-left: 8px; border: 1px solid #b42318; border-radius: 6px; background: #fff; color: #9f291d; padding: 5px 10px; cursor: pointer; }
+.dashboard-resource-skeleton { display: block; min-width: 85px; height: 18px; border-radius: 5px; background: #e4ece5; }
+.resource-task-link { color: #166534; font-size: .85rem; }

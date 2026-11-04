@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.core.recovery_runtime import RecoveryBusy, guarded_background
 
 import asyncio
 from datetime import datetime, timezone
@@ -95,7 +96,11 @@ def _run_task_evaluation(run_id: str) -> dict:
         if not _begin_evaluation(db, "tasks"):
             return {"generated": 0, "resolved": 0, "errors": 0, "skipped": 1}
 
-        counters = evaluate_automatic_tasks(db)
+        counters = evaluate_automatic_tasks(db, skip_if_busy=True)
+        if counters.get("skipped"):
+            _structured_log(logging.INFO, "scheduler_evaluation_skipped", run_id=run_id,
+                            evaluation="tasks", reason="task_generation_busy")
+            return {"generated": 0, "resolved": 0, "errors": 0, "skipped": 1}
         expired_evidence = cleanup_expired_task_evidence(db)
         result = {
             "generated": int(counters.get("created", 0)),
@@ -209,6 +214,7 @@ def _persist_run(summary: dict) -> None:
         db.close()
 
 
+@guarded_background
 def run_farm_automation_cycle() -> dict:
     """Run one observable, non-overlapping task and alert evaluation cycle."""
 
@@ -360,14 +366,32 @@ def _scheduler_worker(stop_event: Event) -> None:
                 if not session_lock_is_held(connection, FARM_AUTOMATION_LEADER_GUARD):
                     _structured_log(logging.WARNING, "scheduler_leadership_lost")
                     break
-                run_farm_automation_cycle()
+                try:
+                    run_farm_automation_cycle()
+                except RecoveryBusy:
+                    _structured_log(
+                        logging.INFO,
+                        "scheduler_cycle_skipped",
+                        reason="backup_or_recovery_maintenance",
+                    )
+                    if stop_event.wait(interval):
+                        break
+                    continue
                 if monotonic() - last_event_prune >= 3600:
-                    last_event_prune = monotonic()
                     prune_db = SessionLocal()
                     try:
-                        removed = prune_change_events(prune_db)
+                        removed = guarded_background(prune_change_events)(prune_db)
+                        last_event_prune = monotonic()
                         _structured_log(logging.INFO, "change_events_pruned", removed=removed, retention_days=14)
+                    except RecoveryBusy:
+                        prune_db.rollback()
+                        _structured_log(
+                            logging.INFO,
+                            "change_event_prune_skipped",
+                            reason="backup_or_recovery_maintenance",
+                        )
                     except Exception as error:
+                        last_event_prune = monotonic()
                         prune_db.rollback()
                         _structured_log(logging.ERROR, "change_event_prune_failed",
                                         error_type=type(error).__name__, error=str(error))

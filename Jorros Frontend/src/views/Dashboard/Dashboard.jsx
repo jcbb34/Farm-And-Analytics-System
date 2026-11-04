@@ -8,6 +8,9 @@ import {
     useState,
 } from "react";
 
+import { useAuth } from "../../context/AuthContext.jsx";
+import DashboardResourceOverview from "./components/DashboardResourceOverview.jsx";
+import useDashboardResources from "./hooks/useDashboardResources.js";
 import WeatherReadiness from "../../components/FarmEvents/WeatherReadiness.jsx";
 import { weatherSignals } from "../../services/weatherPolicy.js";
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
@@ -86,6 +89,8 @@ function getSavedDashboardPeriod() {
 }
 
 function Dashboard() {
+    const { hasPermission } = useAuth();
+    const resourceAccess = useMemo(() => ({ crop: hasPermission("crops:view"), livestock: hasPermission("livestock:view"), inventory: hasPermission("inventory:view") }), [hasPermission]);
     const [dashboardPeriod, setDashboardPeriod] = useState(
         getSavedDashboardPeriod
     );
@@ -103,8 +108,11 @@ function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [activitiesLoading, setActivitiesLoading] =
         useState(true);
+    const [inventoryError, setInventoryError] = useState("");
     const [loadError, setLoadError] = useState("");
     const [weatherError, setWeatherError] = useState("");
+
+    const resourceOverview = useDashboardResources({ period: dashboardPeriod, inventory, inventoryError, inventoryLoading: loading, access: resourceAccess });
 
     // Load the data needed for the main dashboard first.
     const loadCoreDashboardData = useCallback(async () => {
@@ -142,8 +150,10 @@ function Dashboard() {
         }
 
         if (inventoryResult.status === "fulfilled") {
+            setInventoryError("");
             setInventory(inventoryResult.value || []);
         } else {
+            setInventoryError("Unable to load current inventory.");
             failedCount += 1;
             console.error(
                 "Failed to load dashboard inventory:",
@@ -477,6 +487,8 @@ function Dashboard() {
                         </article>
                     ))}
                 </section>
+
+                {(resourceAccess.crop || resourceAccess.livestock) && <DashboardResourceOverview {...resourceOverview} stockError={resourceAccess.inventory ? inventoryError : ""} onRetry={() => { resourceOverview.retry(); void loadCoreDashboardData(); }} />}
 
                 <DashboardWeatherStrip
                     weatherData={weatherData}

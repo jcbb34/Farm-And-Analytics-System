@@ -109,13 +109,14 @@ def _get_alembic_revision(connection) -> str | None:
         return None
 
 
-def _snapshot_database(on_snapshot=None) -> tuple[dict[str, Any], int, int]:
+def _snapshot_database(on_snapshot=None, source_engine=None) -> tuple[dict[str, Any], int, int]:
     metadata = MetaData()
     tables_payload: dict[str, Any] = {}
     total_rows = 0
 
     # Hold one consistent database view while its referenced photos are copied.
-    snapshot_engine = engine.execution_options(isolation_level="SERIALIZABLE")
+    selected_engine = source_engine or engine
+    snapshot_engine = selected_engine.execution_options(isolation_level="SERIALIZABLE")
     with snapshot_engine.begin() as connection:
         inspector = inspect(connection)
         table_names = sorted(
@@ -168,8 +169,8 @@ def _snapshot_database(on_snapshot=None) -> tuple[dict[str, Any], int, int]:
             "tables": tables_payload,
         }
 
-        if engine.dialect.name == "sqlite" and engine.url.database not in (None, ":memory:"):
-            payload["database"]["sqlite_source_path"] = str(Path(engine.url.database).resolve())
+        if selected_engine.dialect.name == "sqlite" and selected_engine.url.database not in (None, ":memory:"):
+            payload["database"]["sqlite_source_path"] = str(Path(selected_engine.url.database).resolve())
         if on_snapshot:
             on_snapshot(payload)
     return payload, len(tables_payload), total_rows

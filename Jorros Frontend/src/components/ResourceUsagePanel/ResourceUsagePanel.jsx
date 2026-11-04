@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "../../context/AuthContext.jsx";
+
 import { useVoidAuthorization } from "../../context/VoidAuthorizationContext.jsx";
 
 import { confirmAction, notify, promptAction } from "../../context/NotificationContext.jsx";
@@ -119,6 +121,7 @@ function emptyScheduleForm(module) {
 
 export default function ResourceUsagePanel({ module, target, canEdit = true, onChanged }) {
     const requestVoid = useVoidAuthorization();
+    const { hasPermission } = useAuth();
     const [inventory, setInventory] = useState([]);
     const [usages, setUsages] = useState([]);
     const [scheduledTasks, setScheduledTasks] = useState([]);
@@ -267,6 +270,7 @@ export default function ResourceUsagePanel({ module, target, canEdit = true, onC
     };
 
     const closeScheduleForm = () => {
+        if (scheduleSavingRef.current) return;
         setShowScheduleForm(false);
         setScheduleForm(emptyScheduleForm(module));
     };
@@ -282,6 +286,9 @@ export default function ResourceUsagePanel({ module, target, canEdit = true, onC
             return next;
         });
     };
+
+    const scheduleSavingRef = useRef(false);
+    const scheduleRequestRef = useRef(null);
 
     const handleScheduleSubmit = async (event) => {
         event.preventDefault();
@@ -310,9 +317,11 @@ export default function ResourceUsagePanel({ module, target, canEdit = true, onC
             return;
         }
 
+        if (scheduleSavingRef.current) return;
+        scheduleSavingRef.current = true;
         setScheduling(true);
         try {
-            await workforceService.scheduleResourceWork({
+            const payload = {
                 module,
                 target_id: Number(targetId),
                 inventory_item_id: Number(scheduleForm.inventoryItemId),
@@ -323,8 +332,12 @@ export default function ResourceUsagePanel({ module, target, canEdit = true, onC
                 priority: scheduleForm.priority,
                 instructions: scheduleForm.instructions || null,
                 requires_evidence: Boolean(scheduleForm.requiresEvidence),
-            });
-            closeScheduleForm();
+            };
+            const idempotencyKey = stableIdempotencyKey(scheduleRequestRef, payload, "schedule-resource-work");
+            await workforceService.scheduleResourceWork(payload, { idempotencyKey });
+            clearStableIdempotencyKey(scheduleRequestRef);
+            setShowScheduleForm(false);
+            setScheduleForm(emptyScheduleForm(module));
             await loadData();
             notify("Work scheduled successfully. It will appear in the assigned employee's My Tasks when due.");
             window.dispatchEvent(new CustomEvent("joross:activities-updated"));
@@ -332,11 +345,16 @@ export default function ResourceUsagePanel({ module, target, canEdit = true, onC
         } catch (scheduleError) {
             notify(scheduleError?.message || "Unable to schedule this resource work.");
         } finally {
+            scheduleSavingRef.current = false;
             setScheduling(false);
         }
     };
 
     const openEditForm = (usage) => {
+        if (usage.activityId || usage.taskSubmissionId) {
+            notify("Correct this usage through its approved task in Task Management.");
+            return;
+        }
         if (module === "Livestock" && !usageTypes.includes(usage.usageType)) {
             notify(`${usage.usageType} is a historical Resource Usage record. New feed usage is handled by Feeding and vaccine usage by Vaccination, so this old record is view-only here.`);
             return;
@@ -692,6 +710,7 @@ export default function ResourceUsagePanel({ module, target, canEdit = true, onC
                 </form>
             )}
 
+            {canEdit && <p className="resource-usage-flow-note">If this work has an employee task, submit and correct it through that task to keep one stock record.</p>}
             <div className="resource-usage-list">
                 {loading ? (
                     <div className="resource-usage-empty">Loading resource usage...</div>
@@ -730,7 +749,9 @@ export default function ResourceUsagePanel({ module, target, canEdit = true, onC
                                 <strong>{usage.quantity} {usage.unit}</strong>
                                 <small>{usage.inventoryItemCode}</small>
                             </div>
-                            {canEdit && (
+                            {(usage.activityId || usage.taskSubmissionId) ? (
+                                usage.activityId && hasPermission("workforce:manage") ? <a href={`/task-management?taskId=${usage.activityId}`} className="resource-task-link">View task record</a> : <small>Manager correction required</small>
+                            ) : canEdit && (
                                 <div className="resource-usage-row-actions">
                                     <button type="button" title="Correct usage" onClick={() => openEditForm(usage)}>
                                         <span className="material-symbols-outlined">edit</span>

@@ -12,6 +12,15 @@ SMART_IMPORT_AUTOMATION_GUARD = "farm:smart-import-vs-automation"
 FARM_AUTOMATION_LEADER_GUARD = "farm:automation-scheduler-leader"
 
 
+
+class DatabaseLockBusy(RuntimeError):
+    """A retryable SQL Server lock conflict, not an unhandled server failure."""
+    def __init__(self, resource: str, result_code: int):
+        self.resource = resource
+        self.result_code = result_code
+        super().__init__(f"Database lock is busy for {resource!r} (code {result_code}).")
+
+
 def _transaction_lock_result(
     db: Session,
     resource: str,
@@ -60,6 +69,8 @@ def acquire_transaction_lock(
 
     # sp_getapplock returns >= 0 for success and negative values for timeout,
     # cancellation, or deadlock victim status.
+    if result in {-1, -2, -3}:
+        raise DatabaseLockBusy(resource, result)
     if result < 0:
         raise RuntimeError(
             f"Unable to acquire database lock for {resource!r} (code {result})."
@@ -78,11 +89,12 @@ def try_acquire_transaction_lock(
     should cause the scheduler to skip its current cycle rather than block or
     participate in a database deadlock.
     """
-    return _transaction_lock_result(
-        db,
-        resource,
-        timeout_ms=timeout_ms,
-    ) >= 0
+    result = _transaction_lock_result(db, resource, timeout_ms=timeout_ms)
+    if result in {-1, -2, -3}:
+        return False
+    if result < 0:
+        raise RuntimeError(f"Unable to acquire database lock for {resource!r} (code {result}).")
+    return True
 
 
 def try_acquire_session_lock(

@@ -137,6 +137,8 @@ function Sidebar() {
                             <li key={item.name}>
                                 <Link
                                     href={item.path}
+                                    aria-label={item.name}
+                                    title={item.name}
                                     onClick={(event) =>
                                         handleNavigation(
                                             event,
@@ -149,7 +151,7 @@ function Sidebar() {
                                             : "sidebar-item"
                                     }
                                 >
-                                    <span className="material-symbols-outlined">
+                                    <span className="material-symbols-outlined" aria-hidden="true">
                                         {item.icon}
                                     </span>
 

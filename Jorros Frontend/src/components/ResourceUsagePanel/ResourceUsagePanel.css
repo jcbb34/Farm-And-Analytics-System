@@ -598,3 +598,6 @@
     display: block;
     margin-top: 8px;
 }
+
+.resource-task-link { color: #166534; font-size: .85rem; }
+.resource-usage-flow-note { font-size: .85rem; color: #52615a; margin: 10px 0; }

@@ -590,7 +590,12 @@
     padding-bottom: 21px;
     margin-bottom: 22px;
 
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--ui-border);
+}
+
+.settings-page-account-identity {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .settings-page-large-avatar {
@@ -615,7 +620,7 @@
 .settings-page-account-profile h3 {
     margin: 0 0 4px;
 
-    color: #333333;
+    color: var(--ui-text);
 
     font-size: 1.12rem;
 }
@@ -623,16 +628,120 @@
 .settings-page-account-profile p {
     margin: 0 0 4px;
 
-    color: #166534;
+    color: var(--ui-primary);
 
     font-size: 0.78rem;
     font-weight: 600;
 }
 
 .settings-page-account-profile small {
-    color: #777777;
+    display: block;
+
+    color: var(--ui-text-muted);
 
     font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.settings-page-account-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 20px 32px;
+    margin: 0;
+}
+
+.settings-page-account-groups {
+    display: grid;
+    gap: 24px;
+}
+
+.settings-page-account-group + .settings-page-account-group {
+    padding-top: 24px;
+    border-top: 1px solid var(--ui-border);
+}
+
+.settings-page-account-group-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    color: var(--ui-primary);
+}
+
+.settings-page-account-group-heading h3 {
+    margin: 0;
+    color: var(--ui-text);
+    font-size: 0.91rem;
+    line-height: 1.4;
+}
+
+.settings-page-account-group-heading > span {
+    flex-shrink: 0;
+    font-size: 22px;
+}
+
+.settings-page-account-address-heading {
+    margin: 24px 0 18px;
+    color: var(--ui-text);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+.settings-page-account-address-heading small {
+    color: var(--ui-text-muted);
+    font-size: 0.73rem;
+    font-weight: 400;
+}
+
+.settings-page-account-detail.full-width {
+    grid-column: 1 / -1;
+}
+
+.settings-page-account-refresh-error {
+    margin-bottom: 16px;
+    color: var(--ui-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.settings-page-account-detail {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 6px;
+    overflow-wrap: anywhere;
+}
+
+.settings-page-account-detail dt {
+    color: var(--ui-text-muted);
+
+    font-size: 0.73rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.settings-page-account-detail dd {
+    margin: 0;
+
+    color: var(--ui-text);
+
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.settings-page-account-detail small {
+    display: block;
+    margin-top: 5px;
+
+    color: var(--ui-text-muted);
+
+    font-size: var(--ui-small-size);
+    font-weight: 400;
+    line-height: 1.5;
 }
 
 .settings-page-form-grid {
@@ -721,17 +830,20 @@
 .settings-page-security-actions {
     display: grid;
     grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+        repeat(auto-fit, minmax(min(100%, 260px), 1fr));
 
     gap: 17px;
     margin-top: 19px;
 }
 
 .settings-page-action-card {
+    min-width: 0;
+
     display: grid;
     grid-template-columns:
         auto minmax(0, 1fr);
-    align-items: center;
+    grid-template-rows: 1fr auto;
+    align-items: start;
 
     gap: 14px;
     padding: 20px;
@@ -742,6 +854,11 @@
     background: #ffffff;
 }
 
+.settings-page-action-card > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .settings-page-action-icon {
     width: 46px;
     height: 46px;
@@ -750,18 +867,18 @@
     justify-content: center;
     align-items: center;
 
-    grid-row: 1 / 3;
+    grid-row: 1;
 
     border-radius: 11px;
 
-    background: #e8f5e9;
-    color: #166534;
+    background: var(--ui-primary-soft);
+    color: var(--ui-primary);
 }
 
 .settings-page-action-card h3 {
     margin: 0 0 5px;
 
-    color: #333333;
+    color: var(--ui-text);
 
     font-size: 0.91rem;
 }
@@ -769,7 +886,7 @@
 .settings-page-action-card p {
     margin: 0;
 
-    color: #777777;
+    color: var(--ui-text-muted);
 
     font-size: 0.7rem;
     line-height: 1.5;
@@ -778,27 +895,40 @@
 .settings-page-action-card
     > button {
     grid-column: 2;
+    align-self: end;
 
     width: fit-content;
+    max-width: 100%;
+    min-height: var(--ui-control-height);
 
     padding: 9px 14px;
 
-    border: 1px solid #166534;
-    border-radius: 7px;
+    border: 1px solid var(--ui-primary);
+    border-radius: var(--ui-control-radius);
 
-    background: #ffffff;
-    color: #166534;
+    background: var(--ui-surface);
+    color: var(--ui-primary);
 
     font-family: inherit;
     font-size: 0.73rem;
     font-weight: 600;
+    line-height: 1.4;
 
     cursor: pointer;
 }
 
+.settings-page-action-card > button:hover {
+    background: var(--ui-primary-soft);
+}
+
+.settings-page-action-card > button:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 3px;
+}
+
 .settings-page-action-card
     > button.enabled {
-    background: #dcfce7;
+    background: var(--ui-primary-soft);
 }
 
 /* ========================================
@@ -809,10 +939,10 @@
     padding: 21px;
     margin-top: 19px;
 
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--ui-border);
     border-radius: 12px;
 
-    background: #ffffff;
+    background: var(--ui-surface);
 }
 
 .settings-page-card-heading {
@@ -842,7 +972,14 @@
 
 .settings-page-card-heading
     > .material-symbols-outlined {
-    color: #166534;
+    flex-shrink: 0;
+
+    color: var(--ui-primary);
+}
+
+.settings-page-activity-list > div > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .settings-page-activity-list
@@ -853,7 +990,7 @@
     gap: 12px;
     padding: 12px 0;
 
-    border-bottom: 1px solid #eeeeee;
+    border-bottom: 1px solid var(--ui-border);
 }
 
 .settings-page-activity-list
@@ -875,8 +1012,8 @@
 
     border-radius: 9px;
 
-    background: #e8f5e9;
-    color: #166534;
+    background: var(--ui-primary-soft);
+    color: var(--ui-primary);
 }
 
 .settings-page-activity-list
@@ -890,14 +1027,14 @@
     strong {
     margin-bottom: 3px;
 
-    color: #444444;
+    color: var(--ui-text);
 
     font-size: 0.76rem;
 }
 
 .settings-page-activity-list
     small {
-    color: #888888;
+    color: var(--ui-text-muted);
 
     font-size: 0.66rem;
 }
@@ -1939,6 +2076,7 @@
         display: none;
     }
 
+    .settings-page-account-details,
     .settings-page-form-grid,
     .settings-page-data-grid {
         grid-template-columns: 1fr;
@@ -1966,6 +2104,26 @@
 
     .settings-page-section-content {
         padding: 21px 17px 28px;
+    }
+
+    .settings-page-account-card,
+    .settings-page-action-card,
+    .settings-page-activity-card {
+        padding: 18px;
+    }
+
+    .settings-page-account-profile {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .settings-page-action-card {
+        column-gap: 12px;
+    }
+
+    .settings-page-action-card > button {
+        grid-column: 1 / -1;
     }
 
     .settings-page-permission-grid {

@@ -108,6 +108,10 @@ function TaskManagement() {
     const [positionSearch, setPositionSearch] = useState("");
     const [repairingAccountLinks, setRepairingAccountLinks] = useState(false);
     const [showTaskForm, setShowTaskForm] = useState(false);
+    const [taskSaving, setTaskSaving] = useState(false);
+    const [existingTaskId, setExistingTaskId] = useState(null);
+    const taskSavingRef = useRef(false);
+    const taskCreateRequestRef = useRef(null);
     const [showEmployeeForm, setShowEmployeeForm] = useState(false);
     const [editingEmployeeId, setEditingEmployeeId] = useState(null);
     const [employeeAssignmentOptions, setEmployeeAssignmentOptions] = useState({ crops: [], livestock: [] });
@@ -240,11 +244,13 @@ function TaskManagement() {
     }, [taskForm.planned_quantity]);
 
     const taskAssignmentStockError = useMemo(() => {
-        if (!selectedTaskInventoryItem || taskPlannedQuantityNumber == null) return "";
+        if (!selectedTaskInventoryItem) return "";
+        if (selectedTaskInventoryItem.expirationDate && taskForm.activity_date > selectedTaskInventoryItem.expirationDate) return "The selected stock expires before the work date. Choose valid stock.";
+        if (taskPlannedQuantityNumber == null) return "";
         const available = Number(selectedTaskInventoryItem.quantity || 0);
         if (taskPlannedQuantityNumber <= available + 0.0000001) return "";
         return `Insufficient stock. Only ${available.toLocaleString(undefined, { maximumFractionDigits: 3 })} ${selectedTaskInventoryItem.unit} of ${selectedTaskInventoryItem.name} is available.`;
-    }, [selectedTaskInventoryItem, taskPlannedQuantityNumber]);
+    }, [selectedTaskInventoryItem, taskPlannedQuantityNumber, taskForm.activity_date]);
 
     const taskStatusOptions = useMemo(() => [
         "All",
@@ -410,6 +416,7 @@ function TaskManagement() {
     );
 
     const closeTaskModal = useCallback(() => {
+        if (taskSavingRef.current) return;
         setShowTaskForm(false);
     }, []);
 
@@ -475,74 +482,91 @@ function TaskManagement() {
 
     const saveTask = async (event) => {
         event.preventDefault();
-        if (taskAssignmentStockError) {
-            notification.error(taskAssignmentStockError, "Insufficient Stock");
-            return;
-        }
-        const selectedEmployee = taskForm.employee_id
-            ? employees.find((employee) => String(employee.id) === String(taskForm.employee_id))
-            : null;
-        const selectedBackup = taskForm.backup_employee_id
-            ? employees.find((employee) => String(employee.id) === String(taskForm.backup_employee_id))
-            : null;
-        if (selectedEmployee && !selectedEmployee.portal_assignment_ready) {
-            notification.error(`${selectedEmployee.full_name} cannot receive portal work: ${selectedEmployee.account_status || "No Login Account"}. Link or create the employee login first.`, "Employee Account Required");
-            return;
-        }
-        if (selectedBackup && !selectedBackup.portal_assignment_ready) {
-            notification.error(`${selectedBackup.full_name} cannot be used as a task backup until an active Employee login is linked.`, "Backup Account Required");
-            return;
-        }
-        let allowUnavailableOverride = false;
-        if (selectedEmployee && taskForm.activity_date) {
-            try {
-                const availability = await workforceService.getAvailability(taskForm.activity_date, taskForm.activity_date, selectedEmployee.id);
-                const day = availability?.[0];
-                if (day && !day.available) {
-                    allowUnavailableOverride = await confirmAction({
-                        title: "Employee Unavailable",
-                        message: `${selectedEmployee.full_name} is unavailable on ${taskForm.activity_date}: ${day.reason}. Assign anyway as an authorized manager override? The task will remain visible with an availability warning.`,
-                        confirmText: "Assign Anyway",
-                    });
-                    if (!allowUnavailableOverride) return;
-                }
-            } catch (err) {
-                notification.error(err?.message || "Unable to verify employee availability.", "Availability Check");
+        if (taskSavingRef.current) return;
+        taskSavingRef.current = true;
+        setTaskSaving(true);
+        setExistingTaskId(null);
+        try {
+            if (!taskForm.name.trim() || !taskForm.category.trim()) {
+                notification.error("Enter a task name and category.", "Task Details");
                 return;
             }
-        }
-        try {
-            await workforceService.createTask({
-                ...taskForm,
-                employee_id: taskForm.employee_id ? Number(taskForm.employee_id) : null,
-                allow_unavailable_override: allowUnavailableOverride,
-                planned_quantity: taskForm.planned_quantity === "" ? null : Number(taskForm.planned_quantity),
-                planned_unit: taskForm.planned_unit || null,
-                planned_inventory_item_id: taskForm.planned_inventory_item_id ? Number(taskForm.planned_inventory_item_id) : null,
-                planned_usage_type: taskForm.planned_usage_type || null,
-                source_module: taskForm.source_module || null,
-                source_type: taskForm.source_module ? (taskForm.source_type || "manual_work") : null,
-                source_record_id: taskForm.source_record_id ? Number(taskForm.source_record_id) : null,
-                source_path: taskForm.source_module === "Crop" ? "/crops" : taskForm.source_module === "Livestock" ? "/livestock" : null,
-                recurring_rule: taskForm.recurring_rule || null,
-                backup_employee_id: taskForm.backup_employee_id ? Number(taskForm.backup_employee_id) : null,
-                time_sensitive: Boolean(taskForm.time_sensitive),
-                controlled_rescheduling: Boolean(taskForm.controlled_rescheduling),
-                max_delay_minutes: taskForm.max_delay_minutes === "" ? null : Number(taskForm.max_delay_minutes),
-                description: taskForm.description || null,
-                instructions: taskForm.instructions || null,
-            });
-            notification.success("Task created and assigned.", "Task Management");
-            setTaskForm(EMPTY_TASK); setShowTaskForm(false); await load();
-        } catch (err) {
-            const message = err?.message || "Unable to create task.";
-            notification.error(message, /insufficient stock/i.test(message) ? "Insufficient Stock" : "Task Error");
-            if (/insufficient stock/i.test(message)) {
-                // Another task or inventory transaction may have changed stock
-                // after this modal was opened. Refresh the current stock values
-                // so the inline Assign Task warning immediately reflects it.
-                await loadSupportData();
+            if (taskAssignmentStockError) {
+                notification.error(taskAssignmentStockError, "Insufficient Stock");
+                return;
             }
+            const selectedEmployee = taskForm.employee_id
+                ? employees.find((employee) => String(employee.id) === String(taskForm.employee_id))
+                : null;
+            const selectedBackup = taskForm.backup_employee_id
+                ? employees.find((employee) => String(employee.id) === String(taskForm.backup_employee_id))
+                : null;
+            if (selectedEmployee && !selectedEmployee.portal_assignment_ready) {
+                notification.error(`${selectedEmployee.full_name} cannot receive portal work: ${selectedEmployee.account_status || "No Login Account"}. Link or create the employee login first.`, "Employee Account Required");
+                return;
+            }
+            if (selectedBackup && !selectedBackup.portal_assignment_ready) {
+                notification.error(`${selectedBackup.full_name} cannot be used as a task backup until an active Employee login is linked.`, "Backup Account Required");
+                return;
+            }
+            let allowUnavailableOverride = false;
+            if (selectedEmployee && taskForm.activity_date) {
+                try {
+                    const availability = await workforceService.getAvailability(taskForm.activity_date, taskForm.activity_date, selectedEmployee.id);
+                    const day = availability?.[0];
+                    if (day && !day.available) {
+                        allowUnavailableOverride = await confirmAction({
+                            title: "Employee Unavailable",
+                            message: `${selectedEmployee.full_name} is unavailable on ${taskForm.activity_date}: ${day.reason}. Assign anyway as an authorized manager override? The task will remain visible with an availability warning.`,
+                            confirmText: "Assign Anyway",
+                        });
+                        if (!allowUnavailableOverride) return;
+                    }
+                } catch (err) {
+                    notification.error(err?.message || "Unable to verify employee availability.", "Availability Check");
+                    return;
+                }
+            }
+            try {
+                const payload = {
+                    ...taskForm,
+                    employee_id: taskForm.employee_id ? Number(taskForm.employee_id) : null,
+                    allow_unavailable_override: allowUnavailableOverride,
+                    planned_quantity: taskForm.planned_quantity === "" ? null : Number(taskForm.planned_quantity),
+                    planned_unit: taskForm.planned_unit || null,
+                    planned_inventory_item_id: taskForm.planned_inventory_item_id ? Number(taskForm.planned_inventory_item_id) : null,
+                    planned_usage_type: taskForm.planned_usage_type || null,
+                    source_module: taskForm.source_module || null,
+                    source_type: taskForm.source_module ? (taskForm.source_type || "manual_work") : null,
+                    source_record_id: taskForm.source_record_id ? Number(taskForm.source_record_id) : null,
+                    source_path: taskForm.source_module === "Crop" ? "/crops" : taskForm.source_module === "Livestock" ? "/livestock" : null,
+                    feeding_slot: taskForm.feeding_slot || null,
+                    backup_employee_id: taskForm.backup_employee_id ? Number(taskForm.backup_employee_id) : null,
+                    time_sensitive: Boolean(taskForm.time_sensitive),
+                    controlled_rescheduling: Boolean(taskForm.controlled_rescheduling),
+                    max_delay_minutes: taskForm.max_delay_minutes === "" ? null : Number(taskForm.max_delay_minutes),
+                    description: taskForm.description || null,
+                    instructions: taskForm.instructions || null,
+                };
+                const idempotencyKey = stableIdempotencyKey(taskCreateRequestRef, payload, "manual-task");
+                await workforceService.createTask(payload, { idempotencyKey });
+                clearStableIdempotencyKey(taskCreateRequestRef);
+                notification.success("Task saved.", "Task Management");
+                setTaskForm(EMPTY_TASK); setShowTaskForm(false); await load();
+            } catch (err) {
+                setExistingTaskId(err?.details?.existingTaskId || null);
+                const message = err?.message || "Unable to create task.";
+                notification.error(message, /insufficient stock/i.test(message) ? "Insufficient Stock" : "Task Error");
+                if (/insufficient stock/i.test(message)) {
+                    // Another task or inventory transaction may have changed stock
+                    // after this modal was opened. Refresh the current stock values
+                    // so the inline Assign Task warning immediately reflects it.
+                    await loadSupportData();
+                }
+            }
+        } finally {
+            taskSavingRef.current = false;
+            setTaskSaving(false);
         }
     };
 
@@ -1358,6 +1382,8 @@ function TaskManagement() {
                     submitAssistedWork,
                     taskAssignmentStockError,
                     taskForm,
+                    taskSaving,
+                    existingTaskId,
                     taskSourceOptions,
                     tasks,
                     toggleAdditionalPosition,

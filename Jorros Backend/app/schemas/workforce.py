@@ -322,8 +322,8 @@ class TaskCreate(BaseModel):
     description: str | None = None
     instructions: str | None = None
     activity_date: date
-    start_time: str = "08:00"
-    end_time: str | None = None
+    start_time: time = time(8, 0)
+    end_time: time | None = None
     employee_id: int | None = Field(default=None, gt=0)
     allow_unavailable_override: bool = False
     priority: str = "Medium"
@@ -334,6 +334,7 @@ class TaskCreate(BaseModel):
     planned_inventory_item_id: int | None = Field(default=None, gt=0)
     planned_usage_type: str | None = Field(default=None, max_length=40)
     recurring_rule: str | None = Field(default=None, max_length=255)
+    feeding_slot: str | None = Field(default=None, max_length=40)
     backup_employee_id: int | None = Field(default=None, gt=0)
     time_sensitive: bool = False
     controlled_rescheduling: bool = False
@@ -343,8 +344,21 @@ class TaskCreate(BaseModel):
     source_record_id: int | None = Field(default=None, gt=0)
     source_path: str | None = Field(default=None, max_length=180)
 
+    @field_validator("name", "category", "related_to", "location")
+    @classmethod
+    def nonblank_text(cls, value):
+        value = value.strip()
+        if not value:
+            raise ValueError("A nonblank value is required.")
+        return value
+
     @model_validator(mode="after")
     def validate_resource_link(self):
+        from app.schemas.activity import ALLOWED_ACTIVITY_PRIORITIES
+        if self.priority not in ALLOWED_ACTIVITY_PRIORITIES:
+            raise ValueError("Invalid activity priority.")
+        if self.end_time is not None and self.end_time <= self.start_time:
+            raise ValueError("End time must be later than start time.")
         if self.max_delay_minutes is not None and not self.controlled_rescheduling:
             raise ValueError("Maximum delay requires controlled rescheduling to be enabled.")
         if self.planned_inventory_item_id is not None:
@@ -369,6 +383,13 @@ class ResourceWorkScheduleCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_schedule(self):
+        from app.schemas.activity import ALLOWED_ACTIVITY_PRIORITIES
+        if self.priority not in ALLOWED_ACTIVITY_PRIORITIES:
+            raise ValueError("Invalid activity priority.")
+        try:
+            time.fromisoformat(self.start_time)
+        except ValueError as exc:
+            raise ValueError("Invalid task start time.") from exc
         crop_types = {"Fertilizer", "Pesticide", "Herbicide", "Other"}
         livestock_types = {
             "Medicine", "Vitamin / Supplement", "Disinfectant",

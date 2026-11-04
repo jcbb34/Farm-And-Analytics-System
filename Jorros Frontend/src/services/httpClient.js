@@ -226,7 +226,7 @@ async function request(
                 status: response.status,
                 code: data?.code || "HTTP_ERROR",
                 details:
-                    data?.errors || data?.details || null,
+                    data?.errors || data?.details || (response.headers.get("X-Existing-Task-Id") ? { existingTaskId: Number(response.headers.get("X-Existing-Task-Id")) } : null),
                 response: data,
             });
         }

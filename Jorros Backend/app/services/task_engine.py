@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from app.core.farm_time import farm_now_naive, farm_today
 from sqlalchemy.orm import Session
 
-from app.services.db_concurrency import acquire_transaction_lock
+from app.services.db_concurrency import acquire_transaction_lock, try_acquire_transaction_lock
 from app.services.code_counter_service import next_record_code
 from app.services.task_assignment import (
     assignment_is_protected,
@@ -317,7 +317,6 @@ def _upsert_automatic_task(
 ) -> tuple[FarmActivity, str]:
     task = db.scalar(
         select(FarmActivity).where(
-            FarmActivity.is_automatic == True,
             FarmActivity.source_key == source_key,
         )
     )
@@ -402,6 +401,11 @@ def _upsert_automatic_task(
         recalculate_task_reassignment(db, task)
         return task, "created"
 
+    # A manager may schedule the native occurrence from Calendar/Task Management.
+    # Its source key is shared, while its explicit plan and assignment stay intact.
+    if not task.is_automatic:
+        return task, "unchanged"
+
     if (source_type in {"crop_growth_check", "livestock_growth_check"}
             and task.status == "Resolved" and task.activity_date >= farm_today()
             and task.problem_report == "Monitoring schedule changed or monitoring stopped."
@@ -450,7 +454,6 @@ def _upsert_automatic_task(
     task.source_path = source_path
     task.source_key = source_key
     task.is_automatic = True
-    task.updated_at = now
     if task.default_employee_id is None and task.assignment_source == "automatic_default":
         task.default_employee_id = default_employee_id
     if task.assignment_source in {"automatic_default", "Rest-Day Coverage"}:
@@ -464,7 +467,10 @@ def _upsert_automatic_task(
                 db, task, default_employee_id=task.default_employee_id or default_employee_id
             )
     recalculate_task_reassignment(db, task)
-
+    if db.is_modified(task, include_collections=False):
+        task.updated_at = now
+    # Preserve the existing upsert result contract for synchronized occurrences,
+    # while an identical refresh performs no UPDATE and holds no write row lock.
     return task, "updated"
 
 
@@ -1098,7 +1104,6 @@ def _livestock_tasks(
 
                 existing_task = db.scalar(
                     select(FarmActivity).where(
-                        FarmActivity.is_automatic == True,
                         FarmActivity.source_key == key,
                     )
                 )
@@ -1437,13 +1442,20 @@ def evaluate_automatic_tasks(
     db: Session,
     *,
     commit: bool = True,
+    skip_if_busy: bool = False,
 ) -> dict[str, int]:
-    acquire_transaction_lock(db, "automation:tasks")
     """Synchronize actionable module data into farm activities.
 
     Source records remain the authoritative operational data.
     Activities only represent the work that needs to be done.
     """
+    if skip_if_busy:
+        if not try_acquire_transaction_lock(db, "automation:tasks", timeout_ms=0):
+            # This optional refresh owns no mutations. Never commit or roll back
+            # someone else's pending work when another evaluator owns the lock.
+            return {"created": 0, "updated": 0, "unchanged": 0, "completed": 0, "active": 0, "skipped": 1}
+    else:
+        acquire_transaction_lock(db, "automation:tasks")
     today = farm_today()
 
     active_keys: set[str] = set()

@@ -49,6 +49,8 @@ class ResourceUsageUpdate(BaseModel):
 
 class ResourceUsageResponse(BaseModel):
     id: int
+    activity_id: int | None = None
+    task_submission_id: int | None = None
     module: str
     target_id: int
     target_name: str

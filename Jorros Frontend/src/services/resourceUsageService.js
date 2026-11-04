@@ -4,6 +4,8 @@ function normalizeUsage(record = {}) {
     return {
         id: record.id,
         module: record.module ?? "",
+        activityId: record.activityId ?? record.activity_id ?? null,
+        taskSubmissionId: record.taskSubmissionId ?? record.task_submission_id ?? null,
         targetId: record.targetId ?? record.target_id ?? null,
         targetName: record.targetName ?? record.target_name ?? "",
         inventoryItemId:
@@ -80,9 +82,9 @@ export const resourceUsageService = Object.freeze({
                 end_date: endDate,
             },
         });
-        return (Array.isArray(response) ? response : response?.data ?? []).map(
-            normalizeUsage
-        );
+        const rows = Array.isArray(response) ? response : response?.data;
+        if (!Array.isArray(rows)) throw new Error("The server returned invalid resource usage data.");
+        return rows.map(normalizeUsage);
     },
 
     async createUsage(data, { idempotencyKey = null } = {}) {

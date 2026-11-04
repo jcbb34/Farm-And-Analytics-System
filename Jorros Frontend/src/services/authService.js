@@ -4,6 +4,7 @@ import {
 } from "../config/appConfig.js";
 
 import { httpClient } from "./httpClient.js";
+import { normalizeAccountProfile } from "../utils/accountProfile.js";
 
 
 const MOCK_ADMIN = Object.freeze({
@@ -115,72 +116,6 @@ async function mockLogin({
 }
 
 
-/*
- * Convert FastAPI snake_case fields
- * into the camelCase structure used
- * by the Next.js frontend.
- */
-function normalizeBackendUser(user = {}) {
-    const normalizedUser = {
-        id: user.id,
-
-        userCode:
-            user.userCode ??
-            user.user_code ??
-            "",
-
-        fullName:
-            user.fullName ??
-            user.full_name ??
-            "",
-
-        username:
-            user.username ?? "",
-
-        email:
-            user.email ?? "",
-
-        contactNumber:
-            user.contactNumber ??
-            user.contact_number ??
-            "",
-
-        position:
-            user.position ?? "",
-
-        status:
-            user.status ?? "Active",
-
-        role:
-            typeof user.role === "string"
-                ? user.role
-                : user.role?.name ?? "",
-
-        lastLogin:
-            user.lastLogin ??
-            user.last_login ??
-            null,
-
-        twoFactorEnabled: Boolean(
-            user.twoFactorEnabled ??
-            user.two_factor_enabled ??
-            false
-        ),
-    };
-
-    if (
-        Array.isArray(
-            user.permissions
-        )
-    ) {
-        normalizedUser.permissions =
-            user.permissions;
-    }
-
-    return normalizedUser;
-}
-
-
 function normalizeLoginResponse(
     response
 ) {
@@ -212,7 +147,7 @@ function normalizeLoginResponse(
             Date.now() +
                 expiresIn * 1000,
 
-        user: normalizeBackendUser(
+        user: normalizeAccountProfile(
             response?.user
         ),
     };
@@ -312,7 +247,7 @@ export const authService =
                     "/auth/me"
                 );
 
-            return normalizeBackendUser(
+            return normalizeAccountProfile(
                 response
             );
         },

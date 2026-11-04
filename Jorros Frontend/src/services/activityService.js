@@ -2,6 +2,7 @@ import { loadEventResources } from './eventPlanningService.js';
 import { httpClient } from "./httpClient.js";
 
 const inFlightActivityRequests = new Map();
+let automaticSyncRequest = null;
 const inFlightActivityMutations = new Map();
 
 function createActivityRequestKey(
@@ -244,6 +245,7 @@ function createActivityPayload(data = {}) {
         source_type: data.sourceType ?? data.source_type ?? null,
         source_record_id: data.sourceRecordId ?? data.source_record_id ?? null,
         source_path: data.sourcePath ?? data.source_path ?? null,
+        feeding_slot: data.feedingSlot || data.feeding_slot || null,
         recurring_rule: data.recurringRule?.trim() || data.recurring_rule?.trim() || null,
 
         status: normalizeStatus(data.status),
@@ -411,14 +413,13 @@ function notifyLinkedFarmDataUpdated(activity) {
 
 export const activityService = Object.freeze({
     async syncAutomaticActivities() {
-        const response = await httpClient.post(
-            "/activities/evaluate",
-            {}
-        );
-
-        inFlightActivityRequests.clear();
-
-        return response?.data ?? response;
+        if (automaticSyncRequest) return automaticSyncRequest;
+        automaticSyncRequest = httpClient.post("/activities/evaluate", {}).then((response) => {
+            inFlightActivityRequests.clear();
+            return response?.data ?? response;
+        });
+        try { return await automaticSyncRequest; }
+        finally { automaticSyncRequest = null; }
     },
 
     async getActivities(

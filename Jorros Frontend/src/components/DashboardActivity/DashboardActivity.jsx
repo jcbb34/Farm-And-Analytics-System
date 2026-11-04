@@ -312,7 +312,8 @@ function DashboardActivity({ period = "month", onAddEvent }) {
 
     // Refresh this component when another part of the system updates activities
     useEffect(() => {
-        loadActivities({ synchronize: true });
+        // The backend scheduler generates tasks; opening Dashboard only reads them.
+        loadActivities();
 
         const refreshActivities = () => {
             loadActivities();

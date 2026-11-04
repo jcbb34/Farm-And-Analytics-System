@@ -403,6 +403,7 @@ function normalizeLivestock(record = {}) {
             record.next_vaccination ??
             "",
 
+        feedingSlots: record.feedingSlots ?? record.feeding_slots ?? [],
         feedingSchedule: {
             times:
                 record.feedingSchedule?.times ??

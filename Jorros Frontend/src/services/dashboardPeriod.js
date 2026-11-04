@@ -7,10 +7,12 @@ const ALLOWED_PERIODS = new Set([
     "custom",
 ]);
 
+/** @param {number} value */
 function pad(value) {
     return String(value).padStart(2, "0");
 }
 
+/** @param {Date | string | number} value */
 export function formatDashboardDateKey(value) {
     const date = value instanceof Date ? value : new Date(value);
 
@@ -23,10 +25,12 @@ export function formatDashboardDateKey(value) {
     )}`;
 }
 
+/** @param {string} value */
 export function normalizeDashboardPeriod(value) {
     return ALLOWED_PERIODS.has(value) ? value : "month";
 }
 
+/** @param {string} dateKey */
 function formatFriendlyDate(dateKey) {
     if (!dateKey) return "";
 
@@ -40,6 +44,7 @@ function formatFriendlyDate(dateKey) {
     });
 }
 
+/** @param {string} period @param {{startDate?: string, endDate?: string}} customRange @param {Date} now */
 export function getDashboardPeriodRange(
     period,
     customRange = {},
@@ -98,6 +103,7 @@ export function getDashboardPeriodRange(
     };
 }
 
+/** @param {string} value @param {{startDate: string, endDate: string}} range */
 export function isDateInDashboardRange(value, range) {
     if (!range?.startDate || !range?.endDate) {
         return true;
@@ -111,6 +117,7 @@ export function isDateInDashboardRange(value, range) {
     return key >= range.startDate && key <= range.endDate;
 }
 
+/** @param {{startDate?: string, endDate?: string}} range */
 export function countDashboardRangeDays(range) {
     if (!range?.startDate || !range?.endDate) return 1;
 
@@ -121,5 +128,5 @@ export function countDashboardRangeDays(range) {
         return 1;
     }
 
-    return Math.max(1, Math.round((end - start) / 86400000) + 1);
+    return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
 }

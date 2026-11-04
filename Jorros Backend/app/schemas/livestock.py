@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 
 ALLOWED_HEALTH_STATUSES = {
@@ -412,6 +412,12 @@ class LivestockGrowthResponse(BaseModel):
 
 
 class LivestockResponse(BaseModel):
+    @computed_field
+    @property
+    def feeding_slots(self) -> list[str]:
+        from app.services.task_engine import _feeding_occurrences
+        return [slot for _, slot, _ in _feeding_occurrences(self.feed_times)]
+
     monitoring_summary: dict | None = None
     monitoring_enabled: bool = False
     monitoring_start_date: date | None = None

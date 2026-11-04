@@ -184,6 +184,7 @@ router = APIRouter(prefix="/api/v1/workforce", tags=["Workforce and Tasks"])
 # _require_workforce_access before loading private records so forbidden callers
 # receive 403 without learning whether another employee record exists.
 WORKFORCE_PERMISSION_MATRIX = {
+    "delete_task_evidence": {"any_of": ("workforce:submit", "workforce:manage", "workforce:review")},
     "upload_task_evidence": {"any_of": ("workforce:submit", "workforce:manage", "workforce:review")},
     "view_task_evidence": {"any_of": ("workforce:submit", "workforce:manage", "workforce:review")},
     "view_task_evidence_thumbnail": {"any_of": ("workforce:submit", "workforce:manage", "workforce:review")},
@@ -1677,8 +1678,13 @@ def _task_responses(db: Session, tasks: list[FarmActivity], current_user: User |
 
 
 def _feeding_slot(task: FarmActivity) -> str:
+    if task.source_type == "livestock_feeding" and task.source_key:
+        prefix = f"livestock:feeding:{task.source_record_id}:{task.activity_date.isoformat()}:"
+        if task.source_key.startswith(prefix):
+            key = task.source_key[len(prefix):]
+            return {"daily-feeding": "Daily Feeding", "midday": "Midday"}.get(key, key.replace("-", " ").title())
     name = (task.name or "").lower()
-    for label in ("Morning", "Noon", "Afternoon", "Evening"):
+    for label in ("Morning", "Midday", "Noon", "Afternoon", "Evening"):
         if label.lower() in name:
             return label
     return task.start_time.strftime("%H:%M") if task.start_time else "Feeding"
@@ -1688,12 +1694,8 @@ def _planned_feed(task: FarmActivity, livestock: Livestock) -> float:
     if task.planned_quantity is not None and float(task.planned_quantity) > 0:
         return round(float(task.planned_quantity), 3)
     daily = float(livestock.daily_feed_kg or 0) * int(livestock.quantity or 1)
-    schedule = str(livestock.feed_times or "").lower()
-    feedings = 1
-    if "twice" in schedule or "2" in schedule:
-        feedings = 2
-    elif "three" in schedule or "3" in schedule:
-        feedings = 3
+    from app.services.task_engine import _feeding_occurrences
+    feedings = max(1, len(_feeding_occurrences(livestock.feed_times)))
     return round(daily / feedings, 3) if daily > 0 else 0.0
 
 
@@ -1763,6 +1765,7 @@ def _sync_feeding_usage(
                 },
                 current_user=current_user,
                 movement_type="Usage Adjustment",
+                allow_task_correction=True,
                 allow_negative=allow_negative_inventory,
                 movement_reason=movement_reason,
             )
@@ -1999,6 +2002,7 @@ def _sync_task_resource_usage(
         },
         current_user=current_user,
         movement_type="Usage Adjustment",
+        allow_task_correction=True,
         allow_negative=allow_negative_inventory,
         movement_reason=movement_reason,
     )
@@ -3200,99 +3204,43 @@ def create_task(
     payload: TaskCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ):
     _require_workforce_access(current_user, "create_task")
-    employee = _assignable_employee_or_404(db, payload.employee_id) if payload.employee_id else None
-    backup_employee = _assignable_employee_or_404(db, payload.backup_employee_id) if payload.backup_employee_id else None
-    if employee is not None:
-        _require_portal_assignment_account(db, employee)
-        _require_assignment_availability(
-            db, employee, payload.activity_date,
-            allow_override=bool(payload.allow_unavailable_override),
-        )
-    if backup_employee is not None:
-        _require_portal_assignment_account(db, backup_employee)
-    if employee is not None and backup_employee is not None and employee.id == backup_employee.id:
-        raise HTTPException(status_code=400, detail="Backup employee must be different from the default employee.")
-    resource_item = None
-    planned_usage_type = payload.planned_usage_type
-    planned_unit = payload.planned_unit
-    if payload.planned_inventory_item_id:
-        resource_item = db.get(InventoryItem, payload.planned_inventory_item_id)
-        if resource_item is None or resource_item.is_archived:
-            raise HTTPException(status_code=400, detail="Selected inventory resource is missing or archived.")
-        _validate_task_resource_choice(
-            module=payload.source_module,
-            item=resource_item,
-            task_text=" ".join([payload.name, payload.category, payload.instructions or ""]),
-        )
-        if payload.source_module not in {"Crop", "Livestock"} or not payload.source_record_id:
-            raise HTTPException(
-                status_code=400,
-                detail="A task-linked inventory resource requires a Crop or Livestock source record.",
-            )
-        planned_unit = resource_item.unit
-        planned_usage_type = planned_usage_type or _infer_usage_type(payload.source_module, resource_item)
-
-        # Prevent creating a resource task that is impossible with the stock
-        # available at assignment time. My Tasks keeps its own final stock
-        # check because stock may still change between assignment and execution.
-        planned_amount = float(payload.planned_quantity or 0)
-        available_amount = float(resource_item.quantity or 0)
-        if planned_amount > available_amount + 0.0000001:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Insufficient stock for assignment. Planned {planned_amount:g} {resource_item.unit}, "
-                    f"but only {available_amount:g} {resource_item.unit} of {resource_item.name} is available."
-                ),
-            )
-    task = FarmActivity(
-        activity_code=_next_code(db, FarmActivity, "ACT"),
-        name=payload.name.strip(),
-        category=payload.category.strip(),
-        related_to=payload.related_to.strip(),
-        location=payload.location.strip(),
-        description=(payload.description or "").strip() or None,
-        instructions=(payload.instructions or "").strip() or None,
-        activity_date=payload.activity_date,
-        start_time=_parse_clock(payload.start_time, time(8, 0)),
-        end_time=_parse_clock(payload.end_time),
-        assigned_by=current_user.full_name,
-        assigned_to=employee.full_name if employee else "Unassigned",
-        assigned_employee_id=employee.id if employee else None,
-        status="Pending",
-        priority=payload.priority,
-        # Any manual task assigned to a real employee enters the review workflow.
-        # Unassigned reminders may still opt out and use Resolve instead.
-        requires_review=True if employee is not None else payload.requires_review,
-        requires_evidence=payload.requires_evidence,
-        planned_quantity=payload.planned_quantity,
-        planned_unit=planned_unit,
-        planned_inventory_item_id=resource_item.id if resource_item else None,
-        planned_usage_type=planned_usage_type,
-        recurring_rule=(payload.recurring_rule or "").strip() or None,
-        default_employee_id=employee.id if employee else None,
-        backup_employee_id=payload.backup_employee_id,
-        time_sensitive=bool(payload.time_sensitive),
-        controlled_rescheduling=bool(payload.controlled_rescheduling),
-        max_delay_minutes=payload.max_delay_minutes,
-        source_module=payload.source_module,
-        source_type=payload.source_type,
-        source_record_id=payload.source_record_id,
-        source_path=payload.source_path,
-        is_automatic=False,
-        created_by_user_id=current_user.id,
-    )
-    db.add(task)
-    db.flush()
-    recalculate_task_reassignment(db, task)
-    from app.services.farm_event_service import reconcile_event_holds
-    db.flush()
-    reconcile_event_holds(db, tasks=[task])
-    db.commit()
-    db.refresh(task)
-    return _task_response(db, task)
+    from app.schemas.activity import FarmActivityCreate
+    from app.services.manual_activity_service import create_manual_activity
+    from app.services.idempotency import begin_creation_command, record_creation_command, request_fingerprint
+    if not isinstance(idempotency_key, (str, type(None))):
+        idempotency_key = None
+    fingerprint = request_fingerprint(payload)
+    try:
+        existing = begin_creation_command(db, idempotency_key=idempotency_key,
+            command_type="task_create", request_hash=fingerprint, user_id=current_user.id)
+        if existing:
+            task = db.get(FarmActivity, existing.target_id)
+            if task is None:
+                raise HTTPException(409, "The original task is no longer available; no duplicate was created.")
+            return _task_response(db, task)
+        values = payload.model_dump(exclude={"employee_id", "allow_unavailable_override",
+            "backup_employee_id", "time_sensitive", "controlled_rescheduling", "max_delay_minutes"})
+        task = create_manual_activity(db, FarmActivityCreate(
+            **values, assigned_employee_id=payload.employee_id,
+            assigned_by=current_user.full_name, assigned_to="Unassigned",
+        ), current_user, allow_unavailable_override=payload.allow_unavailable_override,
+            backup_employee_id=payload.backup_employee_id, time_sensitive=payload.time_sensitive,
+            controlled_rescheduling=payload.controlled_rescheduling, max_delay_minutes=payload.max_delay_minutes,
+            assignment_reason="Employee assigned from Task Management.")
+        record_creation_command(db, idempotency_key=idempotency_key, command_type="task_create",
+            request_hash=fingerprint, target_id=task.id, user_id=current_user.id)
+        db.commit()
+        db.refresh(task)
+        return _task_response(db, task)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "The task changed during saving. Retry the same request; no partial task was saved.") from exc
+    except Exception:
+        db.rollback()
+        raise
 
 
 def _scheduled_resource_task_name(module: str, usage_type: str, target_name: str) -> tuple[str, str]:
@@ -3320,7 +3268,37 @@ def schedule_resource_work(
     payload: ResourceWorkScheduleCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ):
+    _require_workforce_access(current_user, "schedule_resource_work")
+    from app.services.idempotency import begin_creation_command, record_creation_command, request_fingerprint
+    if not isinstance(idempotency_key, (str, type(None))):
+        idempotency_key = None
+    fingerprint = request_fingerprint(payload)
+    try:
+        existing = begin_creation_command(db, idempotency_key=idempotency_key,
+            command_type="resource_work_create", request_hash=fingerprint, user_id=current_user.id)
+        if existing:
+            task = db.get(FarmActivity, existing.target_id)
+            if task is None:
+                raise HTTPException(409, "The original assignment is no longer available; no duplicate was created.")
+        else:
+            acquire_transaction_lock(db, "automation:tasks", timeout_ms=1500)
+            task = _create_scheduled_resource_work(payload, db, current_user)
+            record_creation_command(db, idempotency_key=idempotency_key, command_type="resource_work_create",
+                request_hash=fingerprint, target_id=task.id, user_id=current_user.id)
+        db.commit()
+        db.refresh(task)
+        return _task_response(db, task)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "The assignment changed during saving. Retry the same request; no partial assignment was saved.") from exc
+    except Exception:
+        db.rollback()
+        raise
+
+
+def _create_scheduled_resource_work(payload, db, current_user):
     """Schedule consumable crop/livestock work without deducting stock yet.
 
     The assigned employee receives the task in My Tasks. The reported actual
@@ -3362,6 +3340,11 @@ def schedule_resource_work(
     if item is None or item.is_archived:
         raise HTTPException(status_code=400, detail="Selected inventory resource is missing or archived.")
 
+    from app.services.manual_activity_service import validate_planned_resource
+    validate_planned_resource(item, payload.activity_date)
+    _require_assignment_availability(db, employee, payload.activity_date, allow_override=False)
+    if not str(location or "").strip():
+        raise HTTPException(422, "Set the related record's field or pen before scheduling work.")
     name, category = _scheduled_resource_task_name(payload.module, payload.usage_type, target_name)
     _validate_task_resource_choice(
         module=payload.module,
@@ -3434,9 +3417,12 @@ def schedule_resource_work(
     db.add(task)
     db.flush()
     recalculate_task_reassignment(db, task)
-    db.commit()
-    db.refresh(task)
-    return _task_response(db, task)
+    record_assignment_change(db, task, old_employee_id=None, new_employee_id=employee.id,
+        assignment_source="manual", actor_user_id=current_user.id, actor_name=current_user.full_name,
+        reason="Employee assigned from Schedule Resource Work.")
+    from app.services.farm_event_service import reconcile_event_holds
+    reconcile_event_holds(db, tasks=[task])
+    return task
 
 
 @router.put("/tasks/{task_id}/assignment", response_model=TaskResponse)
@@ -3456,6 +3442,12 @@ def update_task_assignment(
             detail="Submitted, completed, approved/voided, resolved, cancelled, or archived tasks cannot be reassigned.",
         )
 
+    if (payload.activity_date is not None and payload.activity_date != task.activity_date
+            and task.source_type in {"livestock_feeding", "crop_harvest"} and task.source_key):
+        raise HTTPException(422, "Change the care schedule in its farm record or create the correct dated occurrence; this task keeps its original operation date.")
+    if payload.employee_id is not None:
+        from app.services.manual_activity_service import assert_operational_workflow
+        assert_operational_workflow(task)
     changes = payload.model_dump(exclude_unset=True)
     reason = (changes.pop("reason", None) or "").strip()
     allow_unavailable_override = bool(changes.pop("allow_unavailable_override", False))
@@ -3699,6 +3691,8 @@ def submit_task(
     acquire_transaction_lock(db, f"workforce-task-lifecycle:{task_id}")
     task = _task_locked_or_404(db, task_id)
     own_employee = _assert_task_access(db, task, current_user)
+    from app.services.manual_activity_service import assert_operational_workflow
+    assert_operational_workflow(task)
 
     existing_retry = _existing_idempotent_submission(
         db,
@@ -4147,6 +4141,9 @@ def review_task(
     task = _task_locked_or_404(db, task_id)
     if payload.decision not in {"Approve", "Return"}:
         raise HTTPException(400, "Pending submissions can only be approved or returned for correction. Use Void Work on eligible approved, completed tasks.")
+    if payload.decision == "Approve":
+        from app.services.manual_activity_service import assert_operational_workflow
+        assert_operational_workflow(task)
     submission = _latest_submission(db, task.id)
     if submission is None or task.status != "Submitted for Review" or submission.review_status != "Submitted":
         raise HTTPException(

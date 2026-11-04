@@ -12,8 +12,8 @@ const addDaysToDateKey = (key, days) => {
 const EMPTY_TASK = {
     name: "", category: "General", related_to: "General Farm", location: "Jorros Farm",
     description: "", instructions: "", activity_date: today(), start_time: "08:00",
-    employee_id: "", priority: "Medium", requires_review: true, requires_evidence: false,
-    recurring_rule: "", backup_employee_id: "", time_sensitive: false, controlled_rescheduling: false, max_delay_minutes: "",
+    employee_id: "", priority: "Medium", requires_review: true, requires_evidence: true,
+    feeding_slot: "", backup_employee_id: "", time_sensitive: false, controlled_rescheduling: false, max_delay_minutes: "",
     planned_quantity: "", planned_unit: "",
     planned_inventory_item_id: "", planned_usage_type: "",
     source_module: "", source_type: "manual_work", source_record_id: "", source_path: "",

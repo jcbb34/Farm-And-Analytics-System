@@ -1,4 +1,5 @@
 "use client";
+import { buildResourceCards } from "../resourceOverview.js";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -381,70 +382,10 @@ export default function useDashboardPage() {
         [resourceUsages.length]
     );
 
-    const resourceCards = useMemo(() => {
-        const formatTypeTotal = (usageTypes) => {
-            const matching = resourceUsages.filter((row) =>
-                usageTypes.includes(row.usageType)
-            );
-            if (!matching.length) return "0";
-
-            const byUnit = new Map();
-            matching.forEach((row) => {
-                const unit = row.unit || "unit";
-                byUnit.set(
-                    unit,
-                    (byUnit.get(unit) || 0) + Number(row.quantity || 0)
-                );
-            });
-
-            return [...byUnit.entries()]
-                .map(
-                    ([unit, quantity]) =>
-                        `${Number(quantity.toFixed(2))} ${unit}`
-                )
-                .join(" / ");
-        };
-
-        const lowStockItems = inventory.filter(
-            (item) => Number(item.quantity) <= Number(item.reorderLevel)
-        ).length;
-        const expiringItems = inventory.filter((item) =>
-            isExpiringSoon(item.expirationDate, 30)
-        ).length;
-
-        return [
-            {
-                id: "fertilizer",
-                icon: "compost",
-                title: "Fertilizer Used",
-                value: formatTypeTotal(["Fertilizer"]),
-            },
-            {
-                id: "pesticide",
-                icon: "pest_control",
-                title: "Crop Protection Used",
-                value: formatTypeTotal(["Pesticide", "Herbicide"]),
-            },
-            {
-                id: "feed",
-                icon: "grass",
-                title: "Livestock Feed Used",
-                value: formatTypeTotal(["Feed"]),
-            },
-            {
-                id: "health",
-                icon: "vaccines",
-                title: "Animal Health Supplies",
-                value: formatTypeTotal(["Medicine", "Vitamin", "Vaccine"]),
-            },
-            {
-                id: "stock-watch",
-                icon: "inventory",
-                title: "Stock Watch",
-                value: `${lowStockItems} low • ${expiringItems} expiring`,
-            },
-        ];
-    }, [inventory, resourceUsages]);
+    const resourceCards = useMemo(() => buildResourceCards(resourceUsages, {
+        lowStockItems: inventory.filter((item) => Number(item.quantity) <= Number(item.reorderLevel)).length,
+        expiringItems: inventory.filter((item) => isExpiringSoon(item.expirationDate, 30)).length,
+    }), [inventory, resourceUsages]);
 
     const handlePeriodChange = (nextPeriod) => {
         const normalized = normalizeDashboardPeriod(nextPeriod);

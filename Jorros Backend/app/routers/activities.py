@@ -366,7 +366,7 @@ def evaluate_tasks(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    return evaluate_automatic_tasks(db)
+    return evaluate_automatic_tasks(db, skip_if_busy=True)
 
 
 @router.get("/event-resources")
@@ -404,6 +404,8 @@ def event_resources(
                 Livestock.record_name,
                 Livestock.animal_code,
                 Livestock.pen_location,
+                Livestock.feed_times,
+                Livestock.feed_inventory_item_id,
             )
             .where(Livestock.is_archived == False)
             .order_by(Livestock.record_name, Livestock.id)
@@ -421,6 +423,7 @@ def event_resources(
                 InventoryItem.quantity,
                 InventoryItem.location,
                 InventoryItem.reorder_level,
+                InventoryItem.expiration_date,
             )
             .where(InventoryItem.is_archived == False)
             .order_by(InventoryItem.name, InventoryItem.id)
@@ -428,6 +431,8 @@ def event_resources(
         if "Inventory" in domains
         else []
     )
+    from app.services.task_engine import _feeding_occurrences
+
     return {
         "crops": [{"id": x.id, "name": x.name, "field": x.field} for x in crops],
         "livestock": [
@@ -436,6 +441,8 @@ def event_resources(
                 "name": x.record_name,
                 "code": x.animal_code,
                 "location": x.pen_location,
+                "feeding_slots": [slot for _, slot, _ in _feeding_occurrences(x.feed_times)],
+                "feed_inventory_item_id": x.feed_inventory_item_id,
             }
             for x in animals
         ],
@@ -448,6 +455,7 @@ def event_resources(
                 "quantity": float(x.quantity or 0),
                 "location": x.location,
                 "reorder_level": float(x.reorder_level or 0),
+                "expiration_date": x.expiration_date,
             }
             for x in items
         ],
@@ -520,209 +528,12 @@ def create_activity(
                 current_user,
                 current_employee_id=_current_employee_id(db, current_user),
             )
-        employee = None
-        if payload.assigned_employee_id is not None:
-            if not has_permission(current_user, "workforce:manage"):
-                raise HTTPException(
-                    403,
-                    "Workforce management permission is required to assign employee work.",
-                )
-            if payload.status != "Pending":
-                raise HTTPException(
-                    422,
-                    "Assigned work must start as Pending and use employee submission and manager approval.",
-                )
-            from app.routers.workforce_handlers import (
-                _assignable_employee_or_404,
-                _require_portal_assignment_account,
-                _require_assignment_availability,
-            )
+        from app.services.manual_activity_service import create_manual_activity
 
-            employee = _assignable_employee_or_404(db, payload.assigned_employee_id)
-            _require_portal_assignment_account(db, employee)
-            _require_assignment_availability(
-                db, employee, payload.activity_date, allow_override=False
-            )
-        elif payload.status in {"Submitted for Review", "Returned"}:
-            raise HTTPException(
-                422, "New events cannot start with a submission or correction status."
-            )
-        domain = event_domain(payload.category)
-        expected_module = "Inventory" if domain == "Equipment" else domain
-        if (
-            payload.source_record_id
-            and domain != "General"
-            and payload.source_module != expected_module
-        ):
-            raise HTTPException(
-                422, "The related record must match the selected event type."
-            )
-        if domain == "Inventory" and not (
-            payload.source_module == "Inventory" and payload.source_record_id
-        ):
-            raise HTTPException(
-                422,
-                "Select the inventory item to restock before scheduling this event.",
-            )
-        target = None
-        if (
-            payload.source_module in {"Crop", "Livestock", "Inventory"}
-            and payload.source_record_id
-        ):
-            target = db.get(
-                {"Crop": Crop, "Livestock": Livestock, "Inventory": InventoryItem}[
-                    payload.source_module
-                ],
-                payload.source_record_id,
-            )
-            if target is None or target.is_archived:
-                raise HTTPException(
-                    422, "The selected related record is missing or archived."
-                )
-        planning_inventory = payload.source_module == "Inventory" and target is not None
-        record_location = (
-            getattr(
-                target,
-                {
-                    "Crop": "field",
-                    "Livestock": "pen_location",
-                    "Inventory": "location",
-                }.get(payload.source_module, "location"),
-                None,
-            )
-            if target is not None
-            else None
+        activity = create_manual_activity(
+            db, payload, current_user,
+            assignment_reason="Employee assigned from Add Farm Event.",
         )
-        if target is not None and not str(record_location or "").strip():
-            raise HTTPException(
-                422,
-                "The related record has no field, pen or warehouse. Set its location in the management page before scheduling the event.",
-            )
-        if planning_inventory and domain not in {"Inventory", "Equipment"}:
-            raise HTTPException(
-                422,
-                "Inventory records can be linked to restocking or equipment maintenance events.",
-            )
-        if (
-            planning_inventory
-            and domain == "Equipment"
-            and not is_equipment_category(target.category)
-        ):
-            raise HTTPException(
-                422, "Select an equipment or tool record for equipment maintenance."
-            )
-        if planning_inventory and payload.planned_inventory_item_id:
-            raise HTTPException(
-                422,
-                "A restocking or equipment plan cannot deduct a consumption resource.",
-            )
-        event_location = record_location if target is not None else payload.location
-        event_source_type = (
-            (
-                "inventory_restock_plan"
-                if domain == "Inventory"
-                else "equipment_maintenance_plan"
-            )
-            if planning_inventory
-            else payload.source_type
-        )
-        resource = None
-        usage = payload.planned_usage_type
-        if payload.planned_inventory_item_id:
-            if employee is None or target is None:
-                raise HTTPException(
-                    422,
-                    "Stock-linked work requires an employee and a crop/livestock record.",
-                )
-            resource = db.get(InventoryItem, payload.planned_inventory_item_id)
-            if resource is None or resource.is_archived:
-                raise HTTPException(
-                    422, "The selected inventory resource is missing or archived."
-                )
-            from app.routers.workforce_handlers import (
-                _validate_task_resource_choice,
-                _infer_usage_type,
-            )
-
-            _validate_task_resource_choice(
-                module=payload.source_module,
-                item=resource,
-                task_text=f"{payload.name} {payload.category}",
-            )
-            if not payload.planned_quantity or payload.planned_quantity > float(
-                resource.quantity or 0
-            ):
-                raise HTTPException(
-                    422,
-                    "Enter a positive planned quantity within the available inventory stock.",
-                )
-            usage = usage or _infer_usage_type(payload.source_module, resource)
-        activity = FarmActivity(
-            activity_code=generate_activity_code(db),
-            name=payload.name,
-            category=payload.category,
-            related_to=target.name if planning_inventory else payload.related_to,
-            location=event_location,
-            description=clean_optional_text(payload.description),
-            activity_date=payload.activity_date,
-            start_time=payload.start_time,
-            end_time=payload.end_time,
-            duration=clean_optional_text(payload.duration),
-            assigned_by=current_user.full_name,
-            assigned_to=employee.full_name if employee else payload.assigned_to,
-            assigned_employee_id=employee.id if employee else None,
-            default_employee_id=employee.id if employee else None,
-            assignment_source="manual",
-            instructions=clean_optional_text(payload.instructions),
-            requires_review=True if employee else payload.requires_review,
-            requires_evidence=payload.requires_evidence,
-            planned_quantity=payload.planned_quantity,
-            planned_unit=(
-                resource.unit if resource else clean_optional_text(payload.planned_unit)
-            ),
-            planned_inventory_item_id=resource.id if resource else None,
-            planned_usage_type=usage,
-            recurring_rule=clean_optional_text(payload.recurring_rule),
-            status=payload.status,
-            priority=payload.priority,
-            is_automatic=False,
-            source_module=payload.source_module,
-            source_type=event_source_type,
-            source_record_id=payload.source_record_id,
-            source_detail_id=payload.source_detail_id,
-            source_code=payload.source_code,
-            source_path=payload.source_path,
-            source_key=None,
-            completed_at=farm_now_naive() if payload.status == "Completed" else None,
-            is_archived=False,
-            created_by_user_id=current_user.id,
-        )
-        if employee:
-            from app.routers.workforce_handlers import _task_resource_profile
-
-            profile = _task_resource_profile(db, activity)
-            if profile["required"] and not profile["linked"]:
-                raise HTTPException(
-                    422,
-                    "This work uses inventory. Link its crop/livestock and inventory resource before saving. Seed use is recorded through Crops.",
-                )
-        db.add(activity)
-        db.flush()
-        if employee:
-            record_assignment_change(
-                db,
-                activity,
-                old_employee_id=None,
-                new_employee_id=employee.id,
-                assignment_source="manual",
-                actor_user_id=current_user.id,
-                actor_name=current_user.full_name,
-                reason="Employee assigned from Add Farm Event.",
-            )
-            recalculate_task_reassignment(db, activity)
-        from app.services.farm_event_service import reconcile_event_holds
-
-        reconcile_event_holds(db, tasks=[activity])
         record_creation_command(
             db,
             idempotency_key=idempotency_key,
