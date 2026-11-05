@@ -1,3 +1,4 @@
+import { WORK_TYPES, workTypeLabel, eventDomain, taskCategoryUpdate } from "../../../services/eventPlanning.js";
 import { PersonalNameFields, PersonalAddressFields } from "../../../components/PersonalDetails/PersonalDetails.jsx";
 import { composeFullName } from "../../../components/PersonalDetails/personalDetails.js";
 import { MonitoringObservationFields } from "../../../components/Monitoring/Monitoring.jsx";
@@ -1122,8 +1123,8 @@ function TaskManagementModals({
                                     </div>
                                     <div className="workforce-field">
                                         <label htmlFor="assign-task-category">Category</label>
-                                        <datalist id="task-work-categories">{["Farm Inspection", "Livestock Feeding", "Harvesting", "Fertilization", "Vaccination"].map((category) => <option key={category} value={category} />)}</datalist>
-                                        <input list="task-work-categories" id="assign-task-category" required value={taskForm.category} onChange={(e)=>setTaskForm({...taskForm,category:e.target.value})}/>
+                                        <datalist id="task-work-categories">{WORK_TYPES.map((category) => <option key={category} value={category}>{workTypeLabel(category)}</option>)}</datalist>
+                                        <input list="task-work-categories" id="assign-task-category" required value={taskForm.category} onChange={(e)=>setTaskForm(taskCategoryUpdate(taskForm, e.target.value))}/>
                                     </div>
                                     <div className="workforce-field">
                                         <label htmlFor="assign-task-related">Related To</label>
@@ -1141,7 +1142,7 @@ function TaskManagementModals({
                                     <span className="material-symbols-outlined">inventory_2</span>
                                     <div>
                                         <h3>Farm Record & Resource</h3>
-                                        <p>Optionally link the assignment to a specific crop or livestock record. If the work consumes inventory, select the exact item and planned amount.</p>
+                                        <p>Link the task to its crop, livestock or restocking item. For work that consumes inventory, choose the same resource and planned amount used in Add Farm Event.</p>
                                     </div>
                                 </div>
                                 <div className="workforce-modal-form-grid">
@@ -1149,6 +1150,7 @@ function TaskManagementModals({
                                         <label htmlFor="assign-task-source-module">Farm Record Type</label>
                                         <select
                                             id="assign-task-source-module"
+                                            disabled={["Crop", "Livestock", "Inventory"].includes(eventDomain(taskForm.category))}
                                             value={taskForm.source_module}
                                             onChange={(event) => {
                                                 const module = event.target.value;
@@ -1167,8 +1169,10 @@ function TaskManagementModals({
                                             <option value="">General farm task</option>
                                             <option value="Crop">Crop / Field</option>
                                             <option value="Livestock">Livestock / Pen</option>
+                                            {taskForm.category === "Inventory Restocking" && <option value="Inventory">Inventory / Storage</option>}
                                         </select>
                                     </div>
+                                    {taskForm.source_module === "Inventory" && <p className="workforce-field-help">Restocking plans schedule a delivery. Record received stock in Inventory → Stock Adjustment; task approval does not change stock.</p>}
                                     <div className="workforce-field">
                                         <label htmlFor="assign-task-source-record">Related Farm Record</label>
                                         <select
@@ -1183,11 +1187,12 @@ function TaskManagementModals({
                                                 setTaskForm({
                                                     ...taskForm,
                                                     source_record_id: recordId,
+                                                    feeding_slot: "", planned_inventory_item_id: "", planned_quantity: "", planned_unit: "", planned_usage_type: "",
                                                     related_to: record
-                                                        ? (isCrop ? `${record.name} — ${record.field}` : record.recordName)
+                                                        ? (isCrop ? `${record.name} — ${record.field}` : taskForm.source_module === "Inventory" ? record.name : record.recordName)
                                                         : taskForm.related_to,
                                                     location: record
-                                                        ? (isCrop ? record.field : (record.penLocation || "Jorros Farm"))
+                                                        ? (isCrop ? record.field : taskForm.source_module === "Inventory" ? record.location : (record.penLocation || "Jorros Farm"))
                                                         : taskForm.location,
                                                 });
                                             }}
@@ -1197,6 +1202,7 @@ function TaskManagementModals({
                                                 <option key={record.id} value={record.id}>
                                                     {taskForm.source_module === "Crop"
                                                         ? `${record.cropCode || "Crop"} — ${record.name} · ${record.field}`
+                                                        : taskForm.source_module === "Inventory" ? `${record.itemCode || "Inventory"} — ${record.name} · ${record.location || "No storage location"}`
                                                         : `${record.animalId || "Livestock"} — ${record.recordName} · ${record.penLocation || "No pen"}`}
                                                 </option>
                                             ))}
@@ -1206,7 +1212,7 @@ function TaskManagementModals({
                                         <label htmlFor="assign-task-inventory-resource">Inventory Resource <span className="field-optional">(optional)</span></label>
                                         <select
                                             id="assign-task-inventory-resource"
-                                            disabled={!taskForm.source_module || !taskForm.source_record_id}
+                                            disabled={!["Crop", "Livestock"].includes(taskForm.source_module) || !taskForm.source_record_id || ["Weight Monitoring", "Crop Growth Monitoring"].includes(taskForm.category)}
                                             value={taskForm.planned_inventory_item_id}
                                             onChange={(event) => {
                                                 const item = inventoryItems.find((entry) => String(entry.id) === String(event.target.value));
@@ -1345,11 +1351,11 @@ function TaskManagementModals({
                                     </div>
                                     <div className="workforce-modal-checks full">
                                         <label>
-                                            <input type="checkbox" checked={Boolean(taskForm.employee_id) || taskForm.requires_review} disabled={Boolean(taskForm.employee_id)} onChange={(e)=>setTaskForm({...taskForm,requires_review:e.target.checked})}/>
+                                            <input type="checkbox" checked={Boolean(taskForm.employee_id) || taskForm.requires_review} disabled={Boolean(taskForm.employee_id) || ["Weight Monitoring", "Crop Growth Monitoring"].includes(taskForm.category)} onChange={(e)=>setTaskForm({...taskForm,requires_review:e.target.checked})}/>
                                             <span>{taskForm.employee_id ? "Manager review is required for assigned work" : "Requires manager review"}</span>
                                         </label>
                                         <label>
-                                            <input type="checkbox" checked={taskForm.requires_evidence} onChange={(e)=>setTaskForm({...taskForm,requires_evidence:e.target.checked})}/>
+                                            <input type="checkbox" checked={taskForm.requires_evidence} disabled={["Weight Monitoring", "Crop Growth Monitoring"].includes(taskForm.category)} onChange={(e)=>setTaskForm({...taskForm,requires_evidence:e.target.checked})}/>
                                             <span>Requires evidence</span>
                                         </label>
                                     </div>

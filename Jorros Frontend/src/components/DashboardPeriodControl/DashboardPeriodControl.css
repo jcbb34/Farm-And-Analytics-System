@@ -137,6 +137,40 @@
     font-weight: 700;
 }
 
+.dashboard-period-presets {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dashboard-period-presets button {
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #d8e4dc;
+    border-radius: 8px;
+    background: #f4faf6;
+    color: #166534;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.dashboard-period-presets button:hover {
+    background: #e7f4eb;
+}
+
+.dashboard-period-presets button:focus-visible {
+    outline: 2px solid #16a34a;
+    outline-offset: 2px;
+}
+
+html[data-theme="dark"] .dashboard-period-presets button {
+    border-color: #31503d;
+    background: #1a3827;
+    color: #a7f3bc;
+}
+
 .dashboard-period-custom input {
     width: 100%;
     min-width: 0;

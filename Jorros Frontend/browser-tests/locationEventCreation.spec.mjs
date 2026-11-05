@@ -101,7 +101,7 @@ for (const card of ["Recent Farm Activity", "Upcoming Tasks"]) {
         const state = await prepare(page);
         await page.goto("/dashboard");
         await page.locator("article").filter({ has: page.getByRole("heading", { name: card, exact: true }) }).getByRole("button", { name: /^View All/ }).click();
-        await page.getByRole("button", { name: /Add Activity$/ }).click();
+        await page.locator(".activity-list-modal, .task-list-modal").getByRole("button", { name: /Add Event$/ }).click();
         const dialog = page.getByRole("dialog", { name: "Add Farm Event", exact: true });
         await expect(dialog).toBeVisible();
         await expect(page.locator(".add-activity-modal, .activity-list-modal, .task-list-modal")).toHaveCount(0);
@@ -464,17 +464,27 @@ test("changing event type clears incompatible records and only offers the releva
     await expect(dialog.getByRole("option", { name: "Warehouse A", exact: true })).toHaveCount(0);
 });
 
-test("equipment maintenance offers equipment records and uses the equipment shed", async ({ page }) => {
+test("supported event choices include monitoring and watering and exclude equipment maintenance", async ({ page }) => {
     const { writes } = await prepare(page);
     const dialog = await openEvent(page);
-    await dialog.getByRole("button", { name: "Equipment Maintenance", exact: true }).click();
-    const equipment = dialog.getByLabel("Equipment / Tool", { exact: false });
-    await expect(equipment).not.toContainText("Grower Feed");
-    await equipment.selectOption("3");
-    await expect(dialog.getByRole("combobox", { name: "Location", exact: true })).toHaveValue("Equipment shed");
+    await expect(dialog.getByRole("button", { name: "Equipment Maintenance", exact: true })).toHaveCount(0);
+    for (const label of ["Crops", "Livestock", "Inventory", "General"]) await expect(dialog.getByRole("group", { name: `${label} event types` })).toBeVisible();
+    if (process.env.UI_QA_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.UI_QA_SCREENSHOT_DIR}/event-work-types.png` });
+    await dialog.getByRole("button", { name: "Watering / Irrigation", exact: true }).click();
+    await dialog.getByLabel("Related Record", { exact: false }).selectOption("1");
+    await expect(dialog.getByRole("combobox", { name: "Location", exact: true })).toHaveValue("Field A");
+    await dialog.getByRole("button", { name: "Weight Monitoring", exact: true }).click();
+    await dialog.getByLabel("Event Title", { exact: false }).fill("Weigh livestock after feeding");
+    await dialog.getByLabel("Assigned To", { exact: true }).selectOption("42");
+    await expect(dialog.getByLabel("Inventory Resource", { exact: false })).toHaveCount(0);
+    const record = dialog.getByLabel("Related Record", { exact: false });
+    await expect(record).toHaveAttribute("required", "");
+    await expect(record).not.toContainText("Eggplant");
+    await record.selectOption("7");
+    await expect(dialog.getByRole("combobox", { name: "Location", exact: true })).toHaveValue("Pen A");
     await dialog.getByRole("button", { name: "Save Event", exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    expect(writes[0].body).toMatchObject({ source_module: "Inventory", source_record_id: 3, source_type: "equipment_maintenance_plan", planned_inventory_item_id: null });
+    expect(writes[0].body).toMatchObject({ category: "Weight Monitoring", source_module: "Livestock", source_record_id: 7, source_type: "manual_work", planned_inventory_item_id: null });
 });
 
 test("loaded inventory warehouses remain available when both location lookup requests fail", async ({ page }) => {

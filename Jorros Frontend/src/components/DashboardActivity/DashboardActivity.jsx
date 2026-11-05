@@ -5,6 +5,7 @@ import { notify } from "../../context/NotificationContext.jsx";
 import {
     useCallback,
     useEffect,
+    useId,
     useMemo,
     useRef,
     useState,
@@ -12,6 +13,7 @@ import {
 
 import { activityService } from "../../services/activityService.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
+import useModalScrollLock from "../../hooks/useModalScrollLock.js";
 import {
     activityRequiresTaskWorkflow,
     buildTaskManagementPath,
@@ -20,22 +22,7 @@ import {
 
 import "./DashboardActivity.css";
 
-// Categories available in the activity list filters
-const categoryOptions = [
-    "Planting",
-    "Irrigation",
-    "Fertilization",
-    "Harvesting",
-    "Pest Control",
-    "Disease Treatment",
-    "Livestock Feeding",
-    "Livestock Health Check",
-    "Vaccination",
-    "Inventory Restocking",
-    "Equipment Maintenance",
-    "Farm Inspection",
-    "Other",
-];
+import { WORK_TYPES } from "../../services/eventPlanning.js";
 
 // Small helpers for cleaner dates and times on the dashboard
 function formatDate(dateValue) {
@@ -236,6 +223,10 @@ function DashboardActivity({ period = "month", onAddEvent }) {
     const [busyActivityIds, setBusyActivityIds] = useState(() => new Set());
     const [activities, setActivities] =
         useState([]);
+    const categoryOptions = useMemo(() => [...new Set([
+        ...WORK_TYPES, ...activities.map((activity) => activity.category).filter(Boolean),
+    ])].sort(), [activities]);
+
     const locationOptions = useMemo(() => [...new Set(activities.map((activity) => activity.location).filter(Boolean))]
         .sort((left, right) => left.localeCompare(right)), [activities]);
 
@@ -250,6 +241,53 @@ function DashboardActivity({ period = "month", onAddEvent }) {
 
     const [taskModalOpen, setTaskModalOpen] =
         useState(false);
+    const listDialogRef = useRef(null);
+    const listDialogTitleId = useId();
+    const closeListModal = useCallback(() => {
+        setActivityModalOpen(false);
+        setTaskModalOpen(false);
+    }, []);
+    const closeListFromBackdrop = useCallback((event) => {
+        if (event.target !== event.currentTarget) return;
+        // Do not let the backdrop's default mouse focus override focus return.
+        event.preventDefault();
+        closeListModal();
+    }, [closeListModal]);
+    useModalScrollLock(activityModalOpen || taskModalOpen);
+
+    useEffect(() => {
+        if (!activityModalOpen && !taskModalOpen) return;
+        const dialog = listDialogRef.current;
+        const previousFocus = document.activeElement;
+        dialog?.querySelector("input")?.focus();
+        const onKeyDown = (event) => {
+            // System confirmations own keyboard input while above this dialog.
+            if (document.querySelector(".app-dialog-overlay")) return;
+            if (event.key === "Escape") {
+                event.preventDefault();
+                closeListModal();
+            }
+            if (event.key !== "Tab" || !dialog) return;
+            const controls = [...dialog.querySelectorAll("button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]")]
+                .filter((node) => node.getClientRects().length);
+            const first = controls[0], last = controls.at(-1);
+            const outside = !dialog.contains(document.activeElement);
+            if (event.shiftKey && (document.activeElement === first || outside)) {
+                event.preventDefault();
+                last?.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || outside)) {
+                event.preventDefault();
+                first?.focus();
+            }
+        };
+        document.addEventListener("keydown", onKeyDown);
+        return () => {
+            document.removeEventListener("keydown", onKeyDown);
+            const anotherDialogOpen = [...document.querySelectorAll('[aria-modal="true"], dialog[open]')]
+                .some((node) => node.getClientRects().length);
+            if (!anotherDialogOpen) previousFocus?.focus?.();
+        };
+    }, [activityModalOpen, taskModalOpen, closeListModal]);
 
     const [activityFilters, setActivityFilters] =
         useState({
@@ -1091,19 +1129,21 @@ function DashboardActivity({ period = "month", onAddEvent }) {
             {activityModalOpen && (
                 <div
                     className="activity-modal-overlay"
-                    onMouseDown={() =>
-                        setActivityModalOpen(false)
-                    }
+                    onMouseDown={closeListFromBackdrop}
                 >
                     <div
                         className="activity-list-modal"
+                        ref={listDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby={listDialogTitleId}
                         onMouseDown={(event) =>
                             event.stopPropagation()
                         }
                     >
                         <div className="activity-modal-header">
                             <div>
-                                <h2>
+                                <h2 id={listDialogTitleId}>
                                     Recent Farm Activity
                                 </h2>
 
@@ -1115,11 +1155,7 @@ function DashboardActivity({ period = "month", onAddEvent }) {
 
                             <button
                                 type="button"
-                                onClick={() =>
-                                    setActivityModalOpen(
-                                        false
-                                    )
-                                }
+                                onClick={closeListModal}
                                 aria-label="Close recent farm activity"
                             >
                                 <span className="material-symbols-outlined">
@@ -1131,8 +1167,9 @@ function DashboardActivity({ period = "month", onAddEvent }) {
                         <div className="activity-modal-body">
                             <div className="activity-filter-box">
                                 <input
-                                    type="text"
+                                    type="search"
                                     name="search"
+                                    aria-label="Search recent farm activity"
                                     placeholder="Search activity..."
                                     value={
                                         activityFilters.search
@@ -1266,7 +1303,7 @@ function DashboardActivity({ period = "month", onAddEvent }) {
                                     <span className="material-symbols-outlined">
                                         add
                                     </span>
-                                    Add Activity
+                                    Add Event
                                 </button>
                             </div>
 
@@ -1490,33 +1527,31 @@ function DashboardActivity({ period = "month", onAddEvent }) {
             {taskModalOpen && (
                 <div
                     className="activity-modal-overlay"
-                    onMouseDown={() =>
-                        setTaskModalOpen(false)
-                    }
+                    onMouseDown={closeListFromBackdrop}
                 >
                     <div
                         className="task-list-modal"
+                        ref={listDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby={listDialogTitleId}
                         onMouseDown={(event) =>
                             event.stopPropagation()
                         }
                     >
                         <div className="activity-modal-header">
                             <div>
-                                <h2>Upcoming Tasks</h2>
+                                <h2 id={listDialogTitleId}>Upcoming Tasks</h2>
 
                                 <p>
-                                    Pending work that still
-                                    needs attention. Start a
-                                    task to move it into Recent
-                                    Farm Activity.
+                                    Review pending work, resolve assignments,
+                                    and open the correct task workflow.
                                 </p>
                             </div>
 
                             <button
                                 type="button"
-                                onClick={() =>
-                                    setTaskModalOpen(false)
-                                }
+                                onClick={closeListModal}
                                 aria-label="Close upcoming tasks"
                             >
                                 <span className="material-symbols-outlined">
@@ -1528,7 +1563,8 @@ function DashboardActivity({ period = "month", onAddEvent }) {
                         <div className="task-modal-body">
                             <div className="task-modal-filters">
                                 <input
-                                    type="text"
+                                    type="search"
+                                    aria-label="Search upcoming tasks"
                                     placeholder="Search task..."
                                     value={taskSearch}
                                     onChange={(event) =>
@@ -1545,7 +1581,7 @@ function DashboardActivity({ period = "month", onAddEvent }) {
                                     <span className="material-symbols-outlined">
                                         add
                                     </span>
-                                    Add Activity
+                                    Add Event
                                 </button>
                             </div>
 

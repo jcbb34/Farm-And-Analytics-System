@@ -1,7 +1,7 @@
 """Record and location domains for manually planned dashboard work."""
 
-CROP_EVENTS = {"Planting", "Fertilization", "Irrigation", "Harvesting", "Pest Control"}
-LIVESTOCK_EVENTS = {"Livestock Health Check", "Livestock Feeding", "Vaccination"}
+CROP_EVENTS = {"Planting", "Fertilization", "Irrigation", "Watering", "Harvesting", "Pest Control", "Crop Growth Monitoring"}
+LIVESTOCK_EVENTS = {"Livestock Health Check", "Livestock Feeding", "Vaccination", "Weight Monitoring"}
 EQUIPMENT_CATEGORIES = {
     "equipment",
     "tools",

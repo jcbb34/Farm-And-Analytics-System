@@ -1953,3 +1953,9 @@
     }
 }
 .calendar-choice-hint{color:var(--theme-text-muted,#66736b);font-size:.8125rem;line-height:1.5;margin:8px 0 0}.calendar-choice-error{color:var(--workforce-danger,#b42318);font-size:.8125rem;line-height:1.5}.calendar-choice-error button{padding:0 6px;border:0;background:transparent;font:inherit;color:var(--workforce-green-text,#256b2a);text-decoration:underline;cursor:pointer}.calendar-linked-work{border:1px solid var(--theme-border,#dce5df);border-radius:14px;padding:20px;background:var(--theme-surface-soft,#f7faf8)}.calendar-linked-work h3{margin:0 0 8px;color:var(--workforce-green-text,#256b2a);font-size:1rem}.calendar-linked-work>p{margin:0 0 16px;font-size:.8125rem;color:var(--theme-text-muted,#66736b);line-height:1.5}.calendar-save-button:disabled{opacity:.6;cursor:not-allowed}
+
+.calendar-work-types { display: grid; gap: 12px; }
+.calendar-work-type-group { display: grid; gap: 6px; min-width: 0; }
+.calendar-work-type-label { font-size: 13px; font-weight: 600; color: var(--text-secondary, #64748b); }
+.calendar-work-type-group .event-type-container { margin: 0; }
+.calendar-work-type-group .event-type-button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }

@@ -1,3 +1,4 @@
+import { WORK_TYPES } from '../src/services/eventPlanning.js';
 import { test, expect } from '@playwright/test';
 
 const today = '2026-11-04';
@@ -98,3 +99,29 @@ test('task-linked resource usage opens its task and does not offer independent e
     await expect(panel.getByTitle('Correct usage', { exact: true })).toHaveCount(0);
     await expect(panel.getByTitle('Request authorized void and restore stock')).toHaveCount(0);
 });
+
+for (const category of ['Crop Growth Monitoring', 'Inventory Restocking']) {
+    test(`Assign Task uses shared categories and the correct record for ${category}`, async ({ page }) => {
+        const state = await prepare(page);
+        await page.goto('/task-management');
+        await page.getByRole('button', { name: /Assign Task$/ }).click();
+        const dialog = page.getByRole('dialog', { name: 'Assign Task', exact: true });
+        expect(await dialog.locator('#task-work-categories option').evaluateAll((options) => options.map((option) => option.value))).toEqual(WORK_TYPES);
+        await dialog.locator('#assign-task-name').fill(category);
+        await dialog.locator('#assign-task-category').fill(category);
+        const inventory = category === 'Inventory Restocking';
+        await expect(dialog.locator('#assign-task-source-module')).toHaveValue(inventory ? 'Inventory' : 'Crop');
+        await expect(dialog.locator('#assign-task-source-module')).toBeDisabled();
+        await dialog.locator('#assign-task-source-record').selectOption(inventory ? '7' : '1');
+        await expect(dialog.locator('#assign-task-location')).toHaveValue(inventory ? 'Warehouse A' : 'Field A');
+        await dialog.locator('#assign-task-employee').selectOption('42');
+        if (!inventory) await expect(dialog.getByLabel('Requires evidence', { exact: true })).toBeDisabled();
+        await dialog.getByRole('button', { name: /Save Assignment/ }).click();
+        await expect(dialog).toHaveCount(0);
+        expect(state.writes).toHaveLength(1);
+        expect(state.writes[0].body).toMatchObject({ category,
+            source_module: inventory ? 'Inventory' : 'Crop', source_record_id: inventory ? 7 : 1,
+            source_type: inventory ? 'inventory_restock_plan' : 'manual_work',
+            source_path: inventory ? '/inventory' : '/crops', planned_inventory_item_id: null });
+    });
+}

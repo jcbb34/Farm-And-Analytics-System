@@ -223,8 +223,9 @@ function TaskManagement() {
     const taskSourceOptions = useMemo(() => {
         if (taskForm.source_module === "Crop") return farmCrops;
         if (taskForm.source_module === "Livestock") return farmLivestock;
+        if (taskForm.source_module === "Inventory") return inventoryItems;
         return [];
-    }, [taskForm.source_module, farmCrops, farmLivestock]);
+    }, [taskForm.source_module, farmCrops, farmLivestock, inventoryItems]);
 
     const manualTaskResourceItems = useMemo(() => {
         const taskText = [taskForm.name, taskForm.category, taskForm.instructions].filter(Boolean).join(" ");
@@ -544,7 +545,7 @@ function TaskManagement() {
                     source_module: taskForm.source_module || null,
                     source_type: taskForm.source_module ? (taskForm.source_type || "manual_work") : null,
                     source_record_id: taskForm.source_record_id ? Number(taskForm.source_record_id) : null,
-                    source_path: taskForm.source_module === "Crop" ? "/crops" : taskForm.source_module === "Livestock" ? "/livestock" : null,
+                    source_path: taskForm.source_module === "Crop" ? "/crops" : taskForm.source_module === "Livestock" ? "/livestock" : taskForm.source_module === "Inventory" ? "/inventory" : null,
                     feeding_slot: taskForm.feeding_slot || null,
                     backup_employee_id: taskForm.backup_employee_id ? Number(taskForm.backup_employee_id) : null,
                     time_sensitive: Boolean(taskForm.time_sensitive),

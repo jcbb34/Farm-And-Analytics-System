@@ -16,7 +16,7 @@ from app.models import Crop, FarmActivity, InventoryItem, Livestock, User
 from app.schemas.activity import FarmActivityCreate
 from app.services.code_counter_service import next_record_code
 from app.services.db_concurrency import acquire_transaction_lock
-from app.services.event_planning import event_domain, is_equipment_category
+from app.services.event_planning import event_domain
 from app.services.task_assignment import (
     record_assignment_change,
     recalculate_task_reassignment,
@@ -52,6 +52,10 @@ def create_manual_activity(
     max_delay_minutes=None,
     assignment_reason="Initial employee assignment.",
 ) -> FarmActivity:
+    if str(payload.category).strip().casefold() == "equipment maintenance" or payload.source_type == "equipment_maintenance_plan":
+        raise HTTPException(
+            422, "Equipment Maintenance is not a supported farm activity. Choose work from Crops, Livestock or Inventory."
+        )
     if payload.recurring_rule and payload.recurring_rule.strip():
         raise HTTPException(
             422,
@@ -63,8 +67,9 @@ def create_manual_activity(
         "manual_work",
         "crop_harvest",
         "livestock_feeding",
+        "crop_growth_check",
+        "livestock_growth_check",
         "inventory_restock_plan",
-        "equipment_maintenance_plan",
     }:
         raise HTTPException(
             422, "Use the crop or livestock scheduling screen for this task type."
@@ -119,7 +124,7 @@ def create_manual_activity(
             "Select a specific related farm record, or leave the record type empty.",
         )
     domain = event_domain(payload.category)
-    expected_module = "Inventory" if domain == "Equipment" else domain
+    expected_module = domain
     if (
         payload.source_record_id
         and domain != "General"
@@ -172,6 +177,8 @@ def create_manual_activity(
             "Select the related crop or livestock record before assigning this work.",
         )
     planning_inventory = payload.source_module == "Inventory" and target is not None
+    if payload.source_type == "inventory_restock_plan" and not planning_inventory:
+        raise HTTPException(422, "A restocking plan must link an inventory item.")
     record_location = (
         getattr(
             target,
@@ -190,31 +197,19 @@ def create_manual_activity(
             422,
             "The related record has no field, pen or warehouse. Set its location in the management page before scheduling the event.",
         )
-    if planning_inventory and domain not in {"Inventory", "Equipment"}:
+    if planning_inventory and domain != "Inventory":
         raise HTTPException(
             422,
-            "Inventory records can be linked to restocking or equipment maintenance events.",
-        )
-    if (
-        planning_inventory
-        and domain == "Equipment"
-        and not is_equipment_category(target.category)
-    ):
-        raise HTTPException(
-            422, "Select an equipment or tool record for equipment maintenance."
+            "Inventory records can be linked to restocking plans."
         )
     if planning_inventory and payload.planned_inventory_item_id:
         raise HTTPException(
             422,
-            "A restocking or equipment plan cannot deduct a consumption resource.",
+            "A restocking plan cannot deduct a consumption resource.",
         )
     event_location = record_location if target is not None else payload.location
     event_source_type = (
-        (
-            "inventory_restock_plan"
-            if domain == "Inventory"
-            else "equipment_maintenance_plan"
-        )
+        "inventory_restock_plan"
         if planning_inventory
         else (
             "manual_work"
@@ -370,6 +365,8 @@ def prepare_operational_occurrence(
     db: Session, task: FarmActivity, target, feeding_slot: str | None = None
 ) -> None:
     """Give planned operations the same identity used by their native module."""
+    if prepare_monitoring_occurrence(db, task, target):
+        return
     category = str(task.category or "").strip().casefold()
     feeding = task.source_module == "Livestock" and (
         category in {"livestock feeding", "feeding"}
@@ -475,6 +472,52 @@ def prepare_operational_occurrence(
             headers={"X-Existing-Task-Id": str(existing.id)},
         )
     task.requires_review = True
+
+
+def prepare_monitoring_occurrence(db: Session, task: FarmActivity, target) -> bool:
+    """Manual monitoring uses the same dated occurrence and review as its scheduler."""
+    types = {
+        "crop growth monitoring": ("Crop", "crop_growth_check"),
+        "weight monitoring": ("Livestock", "livestock_growth_check"),
+    }
+    selected = types.get(str(task.category or "").strip().casefold())
+    if selected is None:
+        if task.source_type in {"crop_growth_check", "livestock_growth_check"}:
+            raise HTTPException(422, "Select the matching monitoring category and farm record.")
+        return False
+    module, source_type = selected
+    if task.source_module != module or target is None:
+        raise HTTPException(422, "Select the related crop or livestock record before scheduling monitoring.")
+    if module == "Livestock" and target.lifecycle_status != "Active":
+        raise HTTPException(422, "Monitoring requires an active livestock record.")
+    if task.source_type in {"crop_growth_check", "livestock_growth_check"} and task.source_type != source_type:
+        raise HTTPException(422, "The monitoring type must match its related farm record.")
+    if task.status != "Pending":
+        raise HTTPException(422, "Monitoring work must start as Pending and use employee submission and review.")
+    if task.planned_inventory_item_id:
+        raise HTTPException(422, "Monitoring records observations. Schedule inventory usage as a separate task.")
+    base = target.planting_date if module == "Crop" else target.date_acquired
+    if task.activity_date < base or (target.monitoring_end_date and task.activity_date > target.monitoring_end_date):
+        raise HTTPException(422, "Choose a monitoring date after planting/acquisition and within the monitoring period.")
+    from app.models import CropGrowthRecord, LivestockGrowthRecord
+
+    history = CropGrowthRecord if module == "Crop" else LivestockGrowthRecord
+    parent = history.crop_id if module == "Crop" else history.livestock_id
+    recorded_date = history.update_date if module == "Crop" else history.measurement_date
+    if db.scalar(select(history.id).where(parent == target.id, recorded_date == task.activity_date)):
+        raise HTTPException(409, "This farm record already has a monitoring observation on that date. Review its existing history.")
+    task.source_type = source_type
+    task.source_key = f"{module.lower()}:growth-check:{target.id}:{task.activity_date.isoformat()}"
+    existing = db.scalar(select(FarmActivity).where(FarmActivity.source_key == task.source_key))
+    if existing is not None:
+        raise HTTPException(
+            409, f"This occurrence already exists as {existing.activity_code}. Open that task in Task Management; a duplicate was not created.",
+            headers={"X-Existing-Task-Id": str(existing.id)},
+        )
+    task.source_code = target.crop_code if module == "Crop" else target.animal_code
+    task.requires_review = True
+    task.requires_evidence = True
+    return True
 
 
 def assert_operational_workflow(task: FarmActivity) -> None:

@@ -15,28 +15,13 @@ import {
 import FarmLocationInput from "../FarmLocationInput/FarmLocationInput.jsx";
 import EventResourceFields from "./EventResourceFields.jsx";
 import EventContextFields from "./EventContextFields.jsx";
-import { eventDomain, eventRecordChoices, eventRecordLocation } from "../../services/eventPlanning.js";
+import { WORK_TYPE_GROUPS, workTypeLabel, eventDomain, eventRecordChoices, eventRecordLocation } from "../../services/eventPlanning.js";
 import { workforceService } from "../../services/workforceService.js";
 import { clearStableIdempotencyKey, stableIdempotencyKey } from "../../services/idempotencyKey.js";
 import { activeEventEmployees, eventNeedsResource, eventSourceModule } from "./eventFormHelpers.js";
 import { activityService } from "../../services/activityService.js";
 
 import "./DashboardCalendar.css";
-
-const eventTypes = [
-    "Planting",
-    "Fertilization",
-    "Irrigation",
-    "Harvesting",
-    "Pest Control",
-    "Livestock Health Check",
-    "Livestock Feeding",
-    "Vaccination",
-    "Equipment Maintenance",
-    "Inventory Restocking",
-    "Farm Inspection",
-    "Other",
-];
 
 const monthNames = [
     "January",
@@ -403,7 +388,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
     const eventTargets = eventRecordChoices(eventForm, eventResources);
     const selectedEventRecord = eventTargets.find((row) => String(row.id) === String(eventForm.sourceRecordId));
     const eventKind = eventDomain(eventForm.type);
-    const inventoryPlan = ["Inventory", "Equipment"].includes(eventKind);
+    const inventoryPlan = eventKind === "Inventory";
     const eventLocationOptions = selectedEventRecord
         ? [eventRecordLocation(selectedEventRecord, eventForm.sourceModule)]
         : eventKind === "General" && !needsResource
@@ -790,7 +775,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
             (currentForm) => ({
                 ...currentForm,
                 type: eventType,
-                sourceModule: eventSourceModule(eventType), sourceRecordId: "", inventoryItemId: "", plannedQuantity: "", location: "",
+                sourceModule: eventSourceModule(eventType), sourceRecordId: "", inventoryItemId: "", plannedQuantity: "", feedingSlot: "", location: "",
             })
         );
     };
@@ -811,7 +796,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
             assignedBy: user?.fullName || user?.full_name || "Farm Manager", assignedTo: employee?.full_name || "Unassigned", assignedEmployeeId: employee?.id || null,
             requiresReview: Boolean(employee), requiresEvidence: Boolean(employee), status: employee ? "Pending" : eventForm.status, priority: eventForm.priority,
             feedingSlot: eventForm.feedingSlot || null,
-            ...(target ? { sourceModule: eventForm.sourceModule, sourceType: inventoryPlan ? eventKind === "Inventory" ? "inventory_restock_plan" : "equipment_maintenance_plan" : "manual_work", sourceRecordId: Number(eventForm.sourceRecordId), sourcePath: eventForm.sourceModule === "Crop" ? "/crops" : eventForm.sourceModule === "Livestock" ? "/livestock" : "/inventory" } : {}),
+            ...(target ? { sourceModule: eventForm.sourceModule, sourceType: inventoryPlan ? "inventory_restock_plan" : "manual_work", sourceRecordId: Number(eventForm.sourceRecordId), sourcePath: eventForm.sourceModule === "Crop" ? "/crops" : eventForm.sourceModule === "Livestock" ? "/livestock" : "/inventory" } : {}),
             ...(needsResource ? { plannedInventoryItemId: Number(eventForm.inventoryItemId), plannedQuantity: Number(eventForm.plannedQuantity), plannedUnit: selectedEventInventory.unit } : {}) };
         eventSavingRef.current = true; setEventSaving(true); setExistingEventTaskId(null);
         try {
@@ -1940,34 +1925,22 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                     </span>
                                 </label>
 
-                                <div className="event-type-container">
-                                    {eventTypes.map(
-                                        (
-                                            eventType
-                                        ) => (
-                                            <button
-                                                type="button"
-                                                key={
-                                                    eventType
-                                                }
-                                                className={
-                                                    eventForm.type ===
-                                                    eventType
-                                                        ? "event-type-button active"
-                                                        : "event-type-button"
-                                                }
-                                                onClick={() =>
-                                                    selectEventType(
-                                                        eventType
-                                                    )
-                                                }
-                                            >
-                                                {
-                                                    eventType
-                                                }
-                                            </button>
-                                        )
-                                    )}
+                                <div className="calendar-work-types">
+                                    {WORK_TYPE_GROUPS.map((group) => (
+                                        <div className="calendar-work-type-group" key={group.label} role="group" aria-label={`${group.label} event types`}>
+                                            <span className="calendar-work-type-label">{group.label}</span>
+                                            <div className="event-type-container">
+                                                {group.types.map((eventType) => (
+                                                    <button type="button" key={eventType}
+                                                        className={eventForm.type === eventType ? "event-type-button active" : "event-type-button"}
+                                                        aria-pressed={eventForm.type === eventType}
+                                                        onClick={() => selectEventType(eventType)}>
+                                                        {workTypeLabel(eventType)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 

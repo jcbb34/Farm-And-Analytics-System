@@ -117,7 +117,7 @@ test('date picker dismissal preserves the applied period and Apply normalizes th
     for (const dismissal of ['Cancel', 'Close date picker', 'Escape', 'outside']) {
         await test.step(`dismiss with ${dismissal}`, async () => {
             await period.selectOption('custom');
-            await expect(period).toHaveValue('custom');
+            await expect(period).toHaveValue('today'); // The draft does not replace the applied period.
             await dialog.getByLabel('From', { exact: true }).fill('2026-11-09');
             if (dismissal === 'Escape') await page.keyboard.press('Escape');
             else if (dismissal === 'outside') await page.getByRole('heading', { name: 'Welcome to Joross Farm!' }).click();
@@ -213,3 +213,40 @@ test('an exact task outside the loaded page opens once after its delayed detail 
         releaseNextDetail();
     }
 });
+
+for (const width of [390, 1536]) {
+    test(`an applied custom range returns to every preset through the select and editor (${width}px)`, async ({ page }) => {
+        await prepare(page);
+        await page.setViewportSize({ width, height: 1000 });
+        await page.goto('/dashboard');
+        const period = page.getByRole('combobox', { name: 'Dashboard date period' });
+        const dialog = page.getByRole('dialog', { name: 'Custom Date Range' });
+        const presets = ['today', 'week', 'month', 'last30', 'year'];
+        const labels = ['Today', 'This Week', 'This Month', 'Last 30 Days', 'This Year'];
+        for (let index = 0; index < presets.length; index += 1) {
+            await period.selectOption('custom');
+            await dialog.getByLabel('From', { exact: true }).fill('2026-09-03');
+            await dialog.getByLabel('To', { exact: true }).fill('2026-11-27');
+            await dialog.getByRole('button', { name: 'Apply', exact: true }).click();
+            await expect(period).toHaveValue('custom');
+            await expect(period.locator('option:checked')).toHaveText('Custom Range');
+            // Real native keyboard selection, rather than dispatching a synthetic change.
+            await period.focus();
+            await page.keyboard.press('Home');
+            for (let step = 0; step < index; step += 1) await page.keyboard.press('ArrowDown');
+            await page.keyboard.press('Enter');
+            await expect(period).toHaveValue(presets[index]);
+            expect(await page.evaluate(() => localStorage.getItem('joross-dashboard-period'))).toBe(presets[index]);
+            await period.selectOption('custom');
+            await expect(dialog.getByRole('group', { name: 'Date presets' })).toBeVisible();
+            if (index === 0 && process.env.UI_QA_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.UI_QA_SCREENSHOT_DIR}/presets-${width}.png` });
+            await dialog.getByRole('button', { name: labels[index], exact: true }).click();
+            await expect(dialog).toHaveCount(0);
+            await expect(period).toHaveValue(presets[index]);
+            await expect(period).toBeFocused();
+        }
+        await page.reload();
+        await expect(period).toHaveValue('year');
+        await expect(dialog).toHaveCount(0);
+    });
+}

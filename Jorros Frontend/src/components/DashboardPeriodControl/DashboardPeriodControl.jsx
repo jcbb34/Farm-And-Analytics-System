@@ -57,6 +57,21 @@ function DashboardPeriodControl({
         triggerRef.current?.focus();
     };
 
+    const selectPreset = (period) => {
+        setShowCustomForm(false);
+        onChange?.(period);
+    };
+
+    const openCustomForm = (trigger) => {
+        triggerRef.current = trigger;
+        // Reopen the applied range, not an abandoned edit from a previous visit.
+        const [startDate = "", endDate = ""] = value?.includes(" to ")
+            ? value.split(" to ")
+            : [customRange?.startDate || "", customRange?.endDate || ""];
+        setDraftRange({ startDate, endDate });
+        setShowCustomForm(true);
+    };
+
     useEffect(() => {
         if (showCustomForm) startInputRef.current?.focus();
     }, [showCustomForm]);
@@ -86,13 +101,9 @@ function DashboardPeriodControl({
     const handleSelectChange = (event) => {
         const selected = event.target.value;
         if (selected === "custom") {
-            triggerRef.current = event.currentTarget;
-            setShowCustomForm(true);
+            openCustomForm(event.currentTarget);
         } else {
-            setShowCustomForm(false);
-            if (onChange) {
-                onChange(selected);
-            }
+            selectPreset(selected);
         }
     };
 
@@ -140,14 +151,15 @@ function DashboardPeriodControl({
 
                 <select
                     aria-label="Dashboard date period"
-                    value={showCustomForm || isCustom ? "custom" : value}
+                    value={isCustom ? "custom" : value}
                     aria-controls={showCustomForm ? popoverId : undefined}
                     title={isCustomValue ? customLabel : undefined}
                     onChange={handleSelectChange}
+                    onPointerDown={() => setShowCustomForm(false)}
                 >
                     {periodOptions.map((option) => (
                         <option key={option.value} value={option.value}>
-                            {option.value === "custom" && isCustomValue ? customLabel : option.label}
+                            {option.label}
                         </option>
                     ))}
                 </select>
@@ -157,9 +169,8 @@ function DashboardPeriodControl({
                         type="button"
                         className="dashboard-period-edit-btn"
                         onClick={(event) => {
-                            triggerRef.current = event.currentTarget;
                             if (showCustomForm) closeCustomForm();
-                            else setShowCustomForm(true);
+                            else openCustomForm(event.currentTarget);
                         }}
                         aria-haspopup="dialog"
                         aria-expanded={showCustomForm}
@@ -191,6 +202,15 @@ function DashboardPeriodControl({
                         >
                             <span className="material-symbols-outlined" aria-hidden="true">close</span>
                         </button>
+                    </div>
+
+                    <div className="dashboard-period-presets" role="group" aria-label="Date presets">
+                        {periodOptions.filter((option) => option.value !== "custom").map((option) => (
+                            <button type="button" key={option.value} onClick={() => {
+                                selectPreset(option.value);
+                                wrapRef.current?.querySelector("select")?.focus();
+                            }}>{option.label}</button>
+                        ))}
                     </div>
 
                     <label>

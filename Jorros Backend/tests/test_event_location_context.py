@@ -52,7 +52,7 @@ def test_selected_livestock_limits_locations_to_its_own_pen(events):
     )["items"] == ["Test pen"]
 
 
-def test_equipment_choices_exclude_consumable_stock_locations(events):
+def test_legacy_equipment_locations_remain_readable_but_new_work_is_unsupported(events):
     with Session(events.engine) as db:
         item = InventoryItem(
             item_code="EVENT-TOOL",
@@ -81,9 +81,8 @@ def test_equipment_choices_exclude_consumable_stock_locations(events):
             location="Fake field",
         ),
     )
-    assert result.status_code == 201, result.text
-    assert result.json()["location"] == "Equipment shed"
-    assert result.json()["source_type"] == "equipment_maintenance_plan"
+    assert result.status_code == 422, result.text
+    assert "not a supported farm activity" in result.text
 
 
 @pytest.mark.parametrize(
