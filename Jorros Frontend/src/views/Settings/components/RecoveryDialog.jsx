@@ -2,12 +2,12 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useModalScrollLock from '../../../hooks/useModalScrollLock.js';
-export function RecoveryDialog({ title, onClose, busy = false, children, wide = false }) {
+export function RecoveryDialog({ title, onClose, busy = false, children, wide = false, returnFocusRef }) {
     const id = useId(), ref = useRef(), latest = useRef({ onClose, busy }); latest.current = { onClose, busy };
     useModalScrollLock(true);
     useEffect(() => {
-        const previous = document.activeElement;
-        ref.current.querySelector('button,input,select')?.focus();
+        const previous = returnFocusRef?.current || document.activeElement;
+        ref.current.querySelector('button:not(:disabled),input:not(:disabled),select:not(:disabled)')?.focus();
         const keyboard = event => {
             if (event.key === 'Escape' && !latest.current.busy) { event.preventDefault(); latest.current.onClose(); }
             if (event.key !== 'Tab') return;
@@ -19,7 +19,12 @@ export function RecoveryDialog({ title, onClose, busy = false, children, wide = 
         document.addEventListener('keydown', keyboard);
         return () => { document.removeEventListener('keydown', keyboard); if (previous?.isConnected) previous.focus(); };
     }, []);
-    return createPortal(<div className="br-overlay" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}><section role="dialog" aria-modal="true" aria-labelledby={id} ref={ref} className={'br-dialog' + (wide ? ' br-wide-dialog' : '')}><header><h2 id={id}>{title}</h2><button type="button" aria-label={'Close ' + title} disabled={busy} onClick={onClose}>×</button></header><div className="br-dialog-body">{children}</div></section></div>, document.body);
+    useEffect(() => {
+        if (!busy && ref.current && !ref.current.contains(document.activeElement)) {
+            ref.current.querySelector('button:not(:disabled),input:not(:disabled),select:not(:disabled)')?.focus();
+        }
+    }, [busy]);
+    return createPortal(<div className="br-overlay" onMouseDown={event => { if (event.target === event.currentTarget && !busy) { event.preventDefault(); onClose(); } }}><section role="dialog" aria-modal="true" aria-labelledby={id} ref={ref} className={'br-dialog' + (wide ? ' br-wide-dialog' : '')}><header><h2 id={id}>{title}</h2><button type="button" aria-label={'Close ' + title} disabled={busy} onClick={onClose}>×</button></header><div className="br-dialog-body">{children}</div></section></div>, document.body);
 }
 export function CredentialsForm({ action, onSubmit, onBusy = () => {}, confirmation = false }) {
     const [password, setPassword] = useState(''), [otp, setOtp] = useState(''), [word, setWord] = useState(''), [agreed, setAgreed] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('');

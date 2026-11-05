@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import "./DashboardPeriodControl.css";
 
@@ -28,6 +28,9 @@ function DashboardPeriodControl({
     onCustomRangeChange,
 }) {
     const wrapRef = useRef(null);
+    const startInputRef = useRef(null);
+    const triggerRef = useRef(null);
+    const popoverId = useId();
     const [showCustomForm, setShowCustomForm] = useState(false);
     const [draftRange, setDraftRange] = useState(() => ({
         startDate: customRange?.startDate || (value?.includes(" to ") ? value.split(" to ")[0] : ""),
@@ -49,6 +52,15 @@ function DashboardPeriodControl({
         }
     }, [customRange?.startDate, customRange?.endDate, value]);
 
+    const closeCustomForm = () => {
+        setShowCustomForm(false);
+        triggerRef.current?.focus();
+    };
+
+    useEffect(() => {
+        if (showCustomForm) startInputRef.current?.focus();
+    }, [showCustomForm]);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (wrapRef.current && !wrapRef.current.contains(event.target)) {
@@ -57,8 +69,9 @@ function DashboardPeriodControl({
         };
 
         const handleKeyDown = (event) => {
-            if (event.key === "Escape") {
-                setShowCustomForm(false);
+            if (event.key === "Escape" && showCustomForm) {
+                event.preventDefault();
+                closeCustomForm();
             }
         };
 
@@ -68,11 +81,12 @@ function DashboardPeriodControl({
             document.removeEventListener("mousedown", handleClickOutside);
             document.removeEventListener("keydown", handleKeyDown);
         };
-    }, []);
+    }, [showCustomForm]);
 
     const handleSelectChange = (event) => {
         const selected = event.target.value;
         if (selected === "custom") {
+            triggerRef.current = event.currentTarget;
             setShowCustomForm(true);
         } else {
             setShowCustomForm(false);
@@ -105,7 +119,7 @@ function DashboardPeriodControl({
         if (onCustomRangeChange) {
             onCustomRangeChange({ startDate, endDate });
         }
-        setShowCustomForm(false);
+        closeCustomForm();
     };
 
     const isCustomValue = typeof value === "string" && value.includes(" to ");
@@ -122,11 +136,13 @@ function DashboardPeriodControl({
     return (
         <div className="dashboard-period-wrap" ref={wrapRef}>
             <div className="dashboard-period-control">
-                <span className="material-symbols-outlined">date_range</span>
+                <span className="material-symbols-outlined" aria-hidden="true">date_range</span>
 
                 <select
                     aria-label="Dashboard date period"
-                    value={isCustom ? "custom" : value}
+                    value={showCustomForm || isCustom ? "custom" : value}
+                    aria-controls={showCustomForm ? popoverId : undefined}
+                    title={isCustomValue ? customLabel : undefined}
                     onChange={handleSelectChange}
                 >
                     {periodOptions.map((option) => (
@@ -140,11 +156,18 @@ function DashboardPeriodControl({
                     <button
                         type="button"
                         className="dashboard-period-edit-btn"
-                        onClick={() => setShowCustomForm((prev) => !prev)}
+                        onClick={(event) => {
+                            triggerRef.current = event.currentTarget;
+                            if (showCustomForm) closeCustomForm();
+                            else setShowCustomForm(true);
+                        }}
+                        aria-haspopup="dialog"
+                        aria-expanded={showCustomForm}
+                        aria-controls={showCustomForm ? popoverId : undefined}
                         title="Edit custom date range"
                         aria-label="Edit custom date range"
                     >
-                        <span className="material-symbols-outlined">edit_calendar</span>
+                        <span className="material-symbols-outlined" aria-hidden="true">edit_calendar</span>
                     </button>
                 )}
             </div>
@@ -152,17 +175,21 @@ function DashboardPeriodControl({
             {showCustomForm && (
                 <form
                     className="dashboard-period-custom"
+                    data-ignore-dirty="true"
+                    id={popoverId}
+                    role="dialog"
+                    aria-labelledby={`${popoverId}-title`}
                     onSubmit={applyCustomRange}
                 >
                     <div className="dashboard-period-custom-header">
-                        <span>Custom Date Range</span>
+                        <h3 id={`${popoverId}-title`}>Custom Date Range</h3>
                         <button
                             type="button"
                             className="close-btn"
-                            onClick={() => setShowCustomForm(false)}
+                            onClick={closeCustomForm}
                             aria-label="Close date picker"
                         >
-                            <span className="material-symbols-outlined">close</span>
+                            <span className="material-symbols-outlined" aria-hidden="true">close</span>
                         </button>
                     </div>
 
@@ -170,6 +197,7 @@ function DashboardPeriodControl({
                         <span>From</span>
                         <input
                             type="date"
+                            ref={startInputRef}
                             value={draftRange.startDate}
                             onChange={(event) =>
                                 setDraftRange((current) => ({
@@ -200,7 +228,7 @@ function DashboardPeriodControl({
                         <button
                             type="button"
                             className="cancel-btn"
-                            onClick={() => setShowCustomForm(false)}
+                            onClick={closeCustomForm}
                         >
                             Cancel
                         </button>

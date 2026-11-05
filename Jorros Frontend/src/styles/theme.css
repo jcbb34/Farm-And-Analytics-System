@@ -3504,7 +3504,7 @@ main button:disabled {
 main :is(
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
     select
-) {
+):not(:where(.login-input-wrapper > input, .dashboard-period-control > select)) {
     min-height: var(--ui-input-height);
 
     border-radius: var(--ui-control-radius) !important;
@@ -3521,12 +3521,12 @@ main input:not(
     [type="range"]
 ):not(
     [type="file"]
-) {
+):not(:where(.login-input-wrapper > input, .dashboard-period-control > select)) {
     padding-left: 13px;
     padding-right: 13px;
 }
 
-main select {
+main select:not(:where(.login-input-wrapper > input, .dashboard-period-control > select)) {
     padding-left: 12px;
     padding-right: 34px;
 }
@@ -3546,7 +3546,7 @@ html:not([data-theme="dark"]) main :is(
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
     select,
     textarea
-) {
+):not(:where(.login-input-wrapper > input, .dashboard-period-control > select)) {
     border-color: var(--ui-border-strong);
     background: #ffffff;
     color: var(--ui-text);
@@ -3556,7 +3556,7 @@ main :is(
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
     select,
     textarea
-):focus {
+):not(:where(.login-input-wrapper > input, .dashboard-period-control > select)):focus {
     border-color: #16a34a !important;
     outline: none !important;
 
@@ -3906,8 +3906,8 @@ main label {
 
 main button:focus-visible,
 main a:focus-visible,
-main input:focus-visible,
-main select:focus-visible,
+main input:not(:where(.login-input-wrapper > input, .dashboard-period-control > select)):focus-visible,
+main select:not(:where(.login-input-wrapper > input, .dashboard-period-control > select)):focus-visible,
 main textarea:focus-visible {
     outline: 2px solid #16a34a;
     outline-offset: 2px;

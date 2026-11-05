@@ -167,6 +167,7 @@ function TaskManagement() {
         router.replace(`/task-management${nextParams.size ? `?${nextParams.toString()}` : ""}`, { scroll: false });
     }, [router, searchParams]);
     const deepLinkEmployeeOpenedRef = useRef("");
+    const deepLinkAssistedOpenedRef = useRef("");
     const [taskForm, setTaskForm] = useState(EMPTY_TASK);
     const [employeeForm, setEmployeeForm] = useState(EMPTY_EMPLOYEE);
     useEffect(() => {
@@ -455,7 +456,11 @@ function TaskManagement() {
         setAssistedForm(EMPTY_ASSISTED_SUBMISSION);
         setAssistedSaving(false);
         setAssistedCorrectionMode(false);
-    }, []);
+        if (searchParams.get("action") !== "assisted-submission") return;
+        const nextParams = new URLSearchParams(searchParams.toString());
+        nextParams.delete("action");
+        router.replace(`/task-management${nextParams.size ? `?${nextParams.toString()}` : ""}`, { scroll: false });
+    }, [router, searchParams]);
 
     useEffect(() => {
         if (!showTaskForm && !showEmployeeForm && !viewEmployee && !employeeAction && !reassignTask && !assistedTask) return undefined;
@@ -1175,23 +1180,34 @@ function TaskManagement() {
     }, [tab, focusedTaskId, loading, visibleTasks]);
 
     useEffect(() => {
+        if (navigation.action !== "assisted-submission") {
+            deepLinkAssistedOpenedRef.current = "";
+            return;
+        }
+        const focusKey = `${navigation.taskId}:${navigation.action}`;
         if (
             tab !== "tasks"
-            || navigation.action !== "assisted-submission"
             || !focusedTaskId
+            || focusedTaskId !== navigation.taskId
             || loading
             || assistedTask
+            || deepLinkAssistedOpenedRef.current === focusKey
         ) return;
-        const task = tasks.find((item) => String(item.id) === String(focusedTaskId)) || focusedTaskRecord;
+        const task = tasks.find((item) => String(item.id) === String(focusedTaskId))
+            || (String(focusedTaskRecord?.id) === String(focusedTaskId) ? focusedTaskRecord : null);
         if (
             !task
             || !REASSIGNABLE_TASK_STATUSES.has(task.status)
             || task.activity_date > today()
+            || task.work_suspended
             || task.needs_reassignment
             || !task.assigned_employee_id
         ) return;
+        // Closing clears modal state before the router finishes replacing the
+        // URL. Consume the action first so that render cannot reopen the form.
+        deepLinkAssistedOpenedRef.current = focusKey;
         openAssistedSubmission(task);
-    }, [tab, navigation.action, focusedTaskId, loading, tasks, assistedTask, focusedTaskRecord]);
+    }, [tab, navigation.action, navigation.taskId, focusedTaskId, loading, tasks, assistedTask, focusedTaskRecord]);
 
     return (
         <div className="workforce-layout">

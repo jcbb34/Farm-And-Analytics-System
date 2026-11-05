@@ -513,3 +513,14 @@ html[data-theme="dark"] .login-back-button:hover:not(:disabled) {
 .login-shared-language button { min-height: 42px; border: 0; background: #fff; color: #31513a; font: inherit; font-weight: 700; }
 .login-shared-language button.active { background: #006400; color: #fff; }
 .login-shared-language button:focus-visible { outline: 3px solid rgba(0,100,0,.25); outline-offset: -3px; }
+
+/* The wrapper owns the text field focus ring, including its leading icon. */
+.login-password-toggle:focus-visible {
+    outline: 2px solid #16a34a;
+    outline-offset: -5px;
+}
+
+html[data-theme="dark"] .login-input-wrapper:focus-within {
+    border-color: #72dd8d;
+    box-shadow: 0 0 0 3px rgba(114, 221, 141, 0.18);
+}

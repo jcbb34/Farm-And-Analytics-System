@@ -10,7 +10,7 @@ const labels = { zip: 'ZIP', bak: 'BAK', assets: 'Photos & Manifest', kit: 'Reco
 export default function BackupRecoveryPanel() {
     const [data, setData] = useState(empty), [draft, setDraft] = useState(null), [busy, setBusy] = useState(''), [error, setError] = useState(''), [dialog, setDialog] = useState(null);
     const [backup, setBackup] = useState(null), [storage, setStorage] = useState(null), [folderName, setFolderName] = useState('Joross Farm Backups');
-    const alive = useRef(true), initialized = useRef(false), commandKey = useRef('');
+    const alive = useRef(true), initialized = useRef(false), commandKey = useRef(''), driveTrigger = useRef(null);
     const load = useCallback(async () => {
         const value = await api.overview();
         if (alive.current) { setData({ ...empty, ...value }); if (!initialized.current && value.options) { setDraft(value.options); initialized.current = true; } setError(''); }
@@ -29,6 +29,25 @@ export default function BackupRecoveryPanel() {
         finally { if (alive.current) setBusy(''); }
     };
     const change = (key, value) => setDraft(current => ({ ...current, [key]: value }));
+    const connectDrive = async () => {
+        const needsSetup = await perform('connect', async () => {
+            // Recheck the running server after a configuration change or restart.
+            // The backend remains the OAuth authority.
+            const current = await load();
+            if (!current.drive?.configured) {
+                return true;
+            }
+            const result = await api.connectDrive();
+            let url;
+            try { url = new URL(result?.authorization_url); }
+            catch { throw new Error('The server did not return a valid Google sign-in address. Check the server configuration and try again.'); }
+            if (url.origin !== 'https://accounts.google.com' || url.username || url.password) throw new Error('Unexpected Google authorization address.');
+            window.location.assign(url.href);
+        });
+        // Open after the request clears its busy state so the dialog can focus
+        // its enabled controls. Restore focus to the reconnect trigger on close.
+        if (needsSetup) setDialog({ type: 'drive-setup' });
+    };
     const prepare = async (record, format) => { const candidate = await perform('prepare', () => api.prepare(record.id, format)); if (candidate) setDialog({ type: 'restore', candidate }); };
     const download = (record, kind, decrypt = false) => perform('download', async () => {
         if (decrypt && !await confirmAction({ title: 'Download Unencrypted Backup', message: 'This copy will not be encrypted. Keep it in a secure location. Continue?', confirmText: 'Download', type: 'warning' })) return;
@@ -38,6 +57,21 @@ export default function BackupRecoveryPanel() {
     const newest = data.sets.find(value => value.created_at === data.last_local)?.id;
     const tested = [...data.sets].filter(value => value.restore_tested_at).sort((a, b) => b.restore_tested_at.localeCompare(a.restore_tested_at))[0]?.id;
     return <div className="br-root">
+        {dialog?.type === 'drive-setup' && <RecoveryDialog title="Google Drive Server Setup" onClose={() => setDialog(null)} busy={!!busy} returnFocusRef={driveTrigger}>
+            <div className="br-form br-drive-setup">
+                <p>{data.drive.configured ? 'The server has loaded its Google settings. Continue to Google to approve backup access.' : 'The running server has not loaded all the Google settings needed to connect or reconnect.'}</p>
+                <ol className="br-drive-setup-list">
+                    <li>On the computer running the system, open <code>Jorros Backend/.env</code>.</li>
+                    <li>Restore these settings from your previous configuration, using the matching credentials from Google Cloud:
+                        <ul><li><code>BACKUP_GOOGLE_CLIENT_ID</code></li><li><code>BACKUP_GOOGLE_CLIENT_SECRET</code></li><li><code>BACKUP_GOOGLE_REDIRECT_URI</code></li></ul>
+                    </li>
+                    <li>Save the file and restart the application so the backend loads the settings. Then check again.</li>
+                </ol>
+                <p className="br-note">Use the redirect address registered for that Google OAuth client. Local backups remain available while completing setup.</p>
+                {error && <p className="br-error" role="alert">{error}</p>}
+                <footer className="br-actions"><button type="button" disabled={!!busy} onClick={() => setDialog(null)}>Close</button><button type="button" className="br-primary" disabled={!!busy} onClick={connectDrive}>{busy === 'connect' ? 'Checking...' : data.drive.configured ? 'Continue to Google' : 'Check Again and Connect'}</button></footer>
+            </div>
+        </RecoveryDialog>}
         <div className="br-overview">{[['Last local backup', data.last_local, 'No complete backup yet'], ['Last cloud upload', data.last_cloud, 'No verified upload yet'], ['Next automatic backup', data.next_backup, 'Automatic backup is off'], ['Last restore test', data.last_test, 'No restore tested yet']].map(([label, value, fallback]) => <article className="br-stat" key={label}><p>{label}</p><strong>{backupDate(value, fallback, data.options?.timezone)}</strong></article>)}</div>
         <div className="br-toolbar"><div><h3>Backup & Recovery</h3><p>Protect farm records and evidence photos with local and cloud recovery sets.</p></div><div className="br-actions"><button type="button" className="br-primary" disabled={!!busy || !draft} onClick={() => { commandKey.current = globalThis.crypto?.randomUUID?.() || String(Date.now()) + Math.random(); setBackup({ format: draft.format, destination: draft.destination, encrypted: draft.encrypted }); setDialog({ type: 'backup' }); }}>Back Up Now</button><button type="button" disabled={!!busy} onClick={() => setDialog({ type: 'restore' })}>Restore Backup</button></div></div>
         {error && <div className="br-error br-banner" role="alert">{error}<button type="button" disabled={!!busy} onClick={() => perform('refresh', load)}>Refresh</button></div>}
@@ -46,8 +80,8 @@ export default function BackupRecoveryPanel() {
         {!!active.length && <section className="br-card" aria-label="Backup and recovery progress"><h4>Current jobs</h4>{active.map(value => <div className="br-job" key={value.id}><div><strong>{value.kind.replaceAll('_', ' ')}</strong><p role="status">{value.stage}</p>{value.error && <small>{value.error}</small>}</div><Status value={value.status}/></div>)}</section>}
         <div className="br-columns"><section className="br-card"><div className="br-heading"><div><h4>Google Drive</h4><p>Keep an off-computer copy in the account you authorize.</p></div><Status value={data.drive.status || 'Not connected'}/></div>
             <dl className="br-details"><div><dt>Google account</dt><dd>{data.drive.email || 'Not connected'}</dd></div><div><dt>Backup folder</dt><dd>{data.drive.folder_name || 'Created when you connect'}</dd></div></dl>
-            {!data.drive.configured && <p className="br-note">Google OAuth must be configured on the server before connecting. Local backups are available.</p>}
-            <div className="br-actions"><button type="button" disabled={!!busy || !data.drive.configured} onClick={() => perform('connect', async () => { const result = await api.connectDrive(); const url = new URL(result.authorization_url); if (url.protocol !== 'https:' || url.hostname !== 'accounts.google.com') throw new Error('Unexpected Google authorization address.'); window.location.assign(url.href); })}>{data.drive.status ? 'Reconnect Google Drive' : 'Connect Google Drive'}</button>
+            {data.drive.configured === false && <p className="br-note">Google Drive setup is missing on the server. Connect or Reconnect opens setup instructions. Local backups are available.</p>}
+            <div className="br-actions"><button type="button" ref={driveTrigger} disabled={!!busy} onClick={connectDrive}>{busy === 'connect' ? 'Checking Google Drive...' : data.drive.status ? 'Reconnect Google Drive' : 'Connect Google Drive'}</button>
                 {data.drive.status === 'Connected' && <button type="button" disabled={!!busy} onClick={() => perform('storage', async () => { setStorage(await api.driveStorage()); setDialog({ type: 'folder' }); })}>Change Folder / Storage</button>}
                 {data.drive.status && <button type="button" disabled={!!busy} onClick={async () => { if (await confirmAction({ title: 'Disconnect Google Drive', message: 'Revoke backup access to this Google account? Local backup files remain available.', confirmText: 'Disconnect' })) perform('disconnect', () => api.disconnectDrive()); }}>Disconnect</button>}</div>
         </section><section className="br-card"><h4>Local Storage & Recovery</h4><dl className="br-details"><div><dt>Local free space</dt><dd>{backupSize(data.storage.free_bytes)}</dd></div><div><dt>SQL Server BAK readiness</dt><dd>{data.readiness.available ? 'Available' : 'Needs setup'}</dd></div></dl><p>{data.readiness.reason}</p><div className="br-actions"><button type="button" disabled={!!busy} onClick={() => perform('readiness', async () => { const value = await api.readiness(); setStorage(current => ({ ...current, estimate: value.estimated_bytes })); })}>{busy === 'readiness' ? 'Checking...' : 'Check SQL Server'}</button><button type="button" disabled={!!busy} onClick={() => setDialog({ type: 'key' })}>Download Recovery Key</button></div>{storage?.estimate && <small>Estimated database and photos: {backupSize(storage.estimate)}</small>}<p className="br-note">Each recovery kit contains matching application source and instructions. Keep the recovery key separately.</p></section></div>

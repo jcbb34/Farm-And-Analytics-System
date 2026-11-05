@@ -1,13 +1,17 @@
 .dashboard-period-wrap {
     position: relative;
-    z-index: 40;
+    z-index: var(--layer-dropdown, 300);
+    min-width: 0;
+    max-width: 100%;
 }
 
 .dashboard-period-control {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 44px;
+    width: 220px;
+    max-width: 100%;
+    height: 44px;
     padding: 0 12px;
     border: 1px solid #d8e4dc;
     border-radius: 12px;
@@ -15,19 +19,31 @@
     color: #1b7d39;
 }
 
+.dashboard-period-control:focus-within {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14);
+}
+
 .dashboard-period-control > .material-symbols-outlined {
     font-size: 20px;
 }
 
 .dashboard-period-control select {
-    min-width: 140px;
-    min-height: 42px;
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    padding: 0 2px;
+    border-radius: 0;
+    box-shadow: none;
     border: 0;
     outline: 0;
     background: transparent;
     color: #26362d;
     font: inherit;
-    font-weight: 700;
+    font-size: var(--ui-body-size, 0.875rem);
+    font-weight: 600;
     cursor: pointer;
 }
 
@@ -35,7 +51,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 4px;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
     border: 0;
     background: transparent;
     color: #166534;
@@ -51,11 +70,15 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 310px;
+    width: min(360px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    padding: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 16px;
+    color: #26362d;
+    font-size: var(--ui-body-size, 0.875rem);
     border: 1px solid #dce7df;
     border-radius: 14px;
     background: #ffffff;
@@ -72,9 +95,10 @@
     margin-bottom: 4px;
 }
 
-.dashboard-period-custom-header span {
-    font-size: 13px;
-    font-weight: 700;
+.dashboard-period-custom-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 650;
     color: #166534;
 }
 
@@ -82,14 +106,21 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
     padding: 0;
     border: 0;
     background: transparent;
     color: #64748b;
     border-radius: 6px;
     cursor: pointer;
+}
+
+.dashboard-period-custom-header .close-btn .material-symbols-outlined,
+.dashboard-period-edit-btn .material-symbols-outlined {
+    font-size: 20px;
+    line-height: 1;
 }
 
 .dashboard-period-custom-header .close-btn:hover {
@@ -99,7 +130,8 @@
 
 .dashboard-period-custom label {
     display: grid;
-    gap: 5px;
+    min-width: 0;
+    gap: 6px;
     color: #52615a;
     font-size: 12px;
     font-weight: 700;
@@ -107,7 +139,10 @@
 
 .dashboard-period-custom input {
     width: 100%;
-    height: 38px;
+    min-width: 0;
+    max-width: 100%;
+    height: var(--ui-input-height, 43px);
+    box-sizing: border-box;
     padding: 0 9px;
     border: 1px solid #d8e4dc;
     border-radius: 9px;
@@ -118,14 +153,16 @@
 
 .dashboard-period-actions {
     grid-column: 1 / -1;
-    display: flex;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
     margin-top: 4px;
 }
 
 .dashboard-period-actions button {
-    flex: 1;
-    height: 38px;
+    min-width: 0;
+    width: 100%;
+    height: var(--ui-control-height, 42px);
     border: 0;
     border-radius: 9px;
     font: inherit;
@@ -190,7 +227,7 @@ html[data-theme="dark"] .dashboard-period-custom-header {
     border-color: #274533;
 }
 
-html[data-theme="dark"] .dashboard-period-custom-header span {
+html[data-theme="dark"] .dashboard-period-custom-header h3 {
     color: #72dd8d;
 }
 
@@ -222,14 +259,36 @@ html[data-theme="dark"] .dashboard-period-actions .cancel-btn:hover {
     background: #234732;
 }
 
-@media (max-width: 760px) {
-    .dashboard-period-control select {
-        min-width: 112px;
+@media (max-width: 520px) {
+    .dashboard-header-right {
+        position: relative;
+        width: 100%;
+        z-index: var(--layer-dropdown, 300);
+    }
+
+    .dashboard-period-wrap {
+        position: static;
+        flex: 0 1 220px;
+        max-width: calc(100% - 56px);
+    }
+
+    .dashboard-period-control {
+        width: 100%;
     }
 
     .dashboard-period-custom {
-        right: auto;
-        left: 0;
-        width: min(310px, calc(100vw - 32px));
+        grid-template-columns: minmax(0, 1fr);
+        width: min(320px, 100%);
     }
+}
+
+html[data-theme="dark"] .dashboard-period-control:focus-within {
+    border-color: #72dd8d;
+    box-shadow: 0 0 0 3px rgba(114, 221, 141, 0.18);
+}
+
+.dashboard-period-edit-btn:focus-visible,
+.dashboard-period-custom .close-btn:focus-visible {
+    outline: 2px solid #16a34a;
+    outline-offset: -2px;
 }
