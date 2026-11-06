@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
 test.use({ timezoneId: "America/Los_Angeles" });
@@ -13,11 +14,12 @@ async function prepare(page, initialToday = "2026-10-29") {
     // The computer/browser clock is behind the farm's date. The API date wins.
     await page.clock.install({ time: new Date("2026-10-28T15:30:00Z") });
     await page.addInitScript((profile) => {
-        localStorage.setItem("joross-auth-session-v1", JSON.stringify({
+        sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({
             accessToken: "leave-browser-test-token", user: profile, expiresAt: Date.now() + 86400000,
         }));
     }, user);
     await page.route("**/api/v1/**", async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const path = new URL(route.request().url()).pathname;
         if (path === "/api/v1/auth/me") return route.fulfill({ json: user });
         if (path === "/api/v1/workforce/calendar/config") return route.fulfill({ json: { timezone: "Asia/Manila", today } });

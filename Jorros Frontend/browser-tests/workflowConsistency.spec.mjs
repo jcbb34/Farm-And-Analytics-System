@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { WORK_TYPES } from '../src/services/eventPlanning.js';
 import { test, expect } from '@playwright/test';
 
@@ -13,8 +14,9 @@ async function prepare(page, { resourceError = false, retryTask = false, linkedU
     let release;
     const gate = new Promise((resolve) => { release = resolve; });
     await page.clock.install({ time: new Date(`${today}T02:00:00Z`) });
-    await page.addInitScript((user) => localStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-workflow-token', user, expiresAt: Date.now() + 86400000 })), admin);
+    await page.addInitScript((user) => sessionStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-workflow-token', user, expiresAt: Date.now() + 86400000 })), admin);
     await page.route('**/api/v1/**', async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request();
         const url = new URL(request.url());
         const path = url.pathname;

@@ -93,12 +93,13 @@ test("shared-device inactivity policy locks after ten minutes and the UI logs ou
 });
 
 
-test("shared-device authentication is session-only while normal desktop authentication remains persistent", () => {
+test("all authentication uses temporary browser storage, including shared-device and two-factor login", () => {
     assert.match(loginSource, /sharedDevice:\s*sharedLogin/);
-    assert.match(authContextSource, /sessionOnly:\s*Boolean\(credentials\?\.sharedDevice\)/);
-    assert.match(authContextSource, /const targetStorageName = sessionOnly \? "sessionStorage" : "localStorage"/);
+    assert.match(authContextSource, /sessionOnly:\s*true/);
+    assert.match(authContextSource, /const targetStorageName = "sessionStorage"/);
     assert.match(authContextSource, /safeStorageRemove\(otherStorageName, storageKeys\.authSession\)/);
     assert.match(httpClientSource, /sessionStorage\.getItem\(storageKeys\.authSession\)/);
+    assert.doesNotMatch(httpClientSource, /localStorage\.getItem\(storageKeys\.authSession\)/);
     assert.match(twoFactorSource, /sharedDevice:\s*Boolean\(challenge\.sharedDevice\)/);
 });
 

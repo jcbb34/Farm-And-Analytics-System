@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
 const admin = { id: 1, username: "archive.admin", fullName: "Archive Administrator", role: "System Administrator", permissions: ["*"], status: "Active" };
@@ -29,8 +30,9 @@ async function setup(page, { viewer = false, legacyEggplant = false, populated =
     if (legacyEggplant) rows = [record("Crop", 27, { code: "CRP-1027", recordName: "Eggplant (CRP-1027)", archivedDate: null, archivedBy: "Not recorded", reason: "Not recorded" })];
     const user = viewer ? { ...admin, permissions: ["crops:view"], role: "Viewer" } : admin;
     await page.clock.install({ time: new Date(`${today}T04:00:00Z`) });
-    await page.addInitScript((profile) => localStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-archive-token", user: profile, expiresAt: Date.now() + 86400000 })), user);
+    await page.addInitScript((profile) => sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-archive-token", user: profile, expiresAt: Date.now() + 86400000 })), user);
     await page.route("**/api/v1/**", async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), url = new URL(request.url()), path = url.pathname;
         if (request.method() === "GET") reads.push({ path, query: url.searchParams.toString() });
         if (path.endsWith("/events/stream")) return route.fulfill({ status: 503, json: {} });
@@ -313,7 +315,7 @@ test("a viewer can inspect permitted archives without restore or delete controls
 });
 
 for (const [path, endpoint] of [["/task-management", "/api/v1/workforce/tasks/page"], ["/staff-calendar", "/api/v1/workforce/calendar"], ["/my-tasks", "/api/v1/workforce/my-tasks/page"]]) {
-    test(`${path} removes routine Refresh and updates when returning to the page`, async ({ page }) => {
+    test(`${path} hides routine Refresh and updates when returning to the page`, async ({ page }) => {
         const state = await setup(page); await page.goto(path);
         await expect.poll(() => state.count(endpoint)).toBeGreaterThan(0);
         await expect(page.getByRole("button", { name: /Refresh/i })).toHaveCount(0);

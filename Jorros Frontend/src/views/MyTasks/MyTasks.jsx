@@ -117,6 +117,7 @@ function MyTasks() {
     const [focusedTaskId, setFocusedTaskId] = useState(initialDeepLink.taskId);
     const [dashboardReturnTo, setDashboardReturnTo] = useState(initialDeepLink.returnTo);
     const [tasks, setTasks] = useState([]);
+    const [expandedTaskIds, setExpandedTaskIds] = useState(() => new Set());
     const [taskTotal, setTaskTotal] = useState(0);
     const [activeTaskSnapshot, setActiveTaskSnapshot] = useState([]);
     const taskCacheRef = useRef(new Map());
@@ -238,6 +239,7 @@ function MyTasks() {
         taskSummaryRequestRef.current = null;
         taskCacheRef.current.clear();
         setTasks([]);
+        setExpandedTaskIds(new Set());
         setTaskTotal(0);
         setActiveTaskSnapshot([]);
         setTaskSummary(null);
@@ -944,37 +946,62 @@ function MyTasks() {
                     {filteredTasks.map((task) => {
                         const futureTask = isFutureTaskForView(task, todayKey);
                         const canWorkTask = canWorkTaskForView(task, todayKey);
+                        const relatedTo = String(task.related_to || "").trim();
+                        const stockShortage = canWorkTask && task.resource_required && task.resource_linked
+                            && task.planned_quantity != null && task.planned_inventory_available_quantity != null
+                            && Number.isFinite(Number(task.planned_quantity)) && Number.isFinite(Number(task.planned_inventory_available_quantity))
+                            && Number(task.planned_inventory_available_quantity) < Number(task.planned_quantity);
                         return <article id={`my-task-${task.id}`} className={`task-card ${String(task.id) === String(focusedTaskId) ? "task-card-deep-link" : ""}`.trim()} tabIndex={String(task.id) === String(focusedTaskId) ? -1 : undefined} key={task.id}>
                         <div className="my-task-card-heading"><div><h3>{task.name}</h3><div className="task-meta"><span>Scheduled {task.activity_date} {task.start_time}</span><span>{task.location}</span><span>{task.priority}</span></div></div><div className="my-task-status-stack"><span className={`task-status ${futureTask ? "upcoming" : statusClass(task.status)}`}>{futureTask ? "Upcoming" : task.status === "Submitted for Review" ? "Awaiting Manager Review" : task.status}</span>{task.is_archived && <span className="task-status archived">Archived</span>}</div></div>
+                        {relatedTo && !String(task.name || "").toLowerCase().includes(relatedTo.toLowerCase()) && <p className="my-task-target">{relatedTo}</p>}
                         {task.work_suspended && <div className="farm-task-held"><strong>Held — {task.suspension_holds?.some((x) => x.state === "Review Required") ? "Awaiting reopening review" : "Farm declaration"}</strong><p>{task.suspension_holds?.map((x) => x.title).join("; ")}. Ask the Owner/Admin to review this work or authorize essential duty.</p></div>}
                         {task.assignment_source === "Leave Coverage" && <div className="coverage-task-banner" aria-label={`Leave Coverage — originally assigned to ${task.original_employee_name || "another employee"}`}><span className="material-symbols-outlined">swap_horiz</span><div><strong>Coverage Task — originally assigned to {task.original_employee_name || "another employee"}</strong><span>{task.coverage_start_date} to {task.coverage_end_date}{task.coverage_reason ? ` · ${task.coverage_reason}` : ""}</span></div></div>}
                         {task.assignment_source === "Rest-Day Coverage" && <div className="coverage-task-banner"><span className="material-symbols-outlined">event_available</span><div><strong>Rest-Day Coverage</strong><span>This task is temporarily assigned to you while the default employee is on a scheduled rest day.</span></div></div>}
                         {task.needs_reassignment && <div className="task-missed-banner"><span className="material-symbols-outlined">warning</span><div><strong>Availability Warning / Needs Coverage</strong><span>The manager kept this assignment despite an availability conflict. The task remains visible to you.</span></div></div>}
                         {isMissedTask(task, todayKey) && <div className="task-missed-banner"><span className="material-symbols-outlined">warning</span><div><strong>Missed / Overdue</strong><span>Due {task.activity_date} · {daysOverdue(task, todayKey)} day{daysOverdue(task, todayKey) === 1 ? "" : "s"} overdue. Complete it now or report the problem.</span></div></div>}
                         {futureTask && !READ_ONLY_TASK_STATUSES.has(task.status) && !task.is_archived && <div className="task-upcoming-lock-note" role="note"><span className="material-symbols-outlined" aria-hidden="true">lock_clock</span><div><strong>Upcoming Task</strong><span>This task is scheduled for {formatDateKey(task.activity_date, { month: "short", day: "numeric", year: "numeric" })}. Start and Submit Work will appear on that day.</span></div></div>}
-                        {task.status === "Completed" && task.latest_submission?.submitted_at && String(task.latest_submission.submitted_at).slice(0,10) > task.activity_date && <div className="task-late-completion"><span className="material-symbols-outlined">schedule</span>Completed late · submitted {String(task.latest_submission.submitted_at).slice(0,10)}</div>}
-                        {task.instructions && <div className="task-note"><strong>Instructions:</strong> {task.instructions}</div>}
-                        {task.description && <p className="workforce-card-subtitle">{task.description}</p>}
-                        {task.resource_required && task.resource_linked && <div className="task-note"><strong>Inventory resource:</strong> {task.planned_inventory_item_name || "Linked item"}{task.planned_quantity != null ? <> · Planned <strong>{task.planned_quantity} {task.planned_inventory_unit || task.planned_unit || ""}</strong></> : null}{task.planned_inventory_available_quantity != null ? <> · Available <strong>{task.planned_inventory_available_quantity} {task.planned_inventory_unit || ""}</strong></> : null}</div>}
+                        {task.resource_required && task.resource_linked && <div className="task-note my-task-resource-summary"><strong>Inventory resource:</strong> {task.planned_inventory_item_name || "Linked item"}{task.planned_quantity != null ? <> · Planned <strong>{task.planned_quantity} {task.planned_inventory_unit || task.planned_unit || ""}</strong></> : null}</div>}
+                        {stockShortage && <div className="task-missed-banner" role="note" aria-label="Stock check needed"><span className="material-symbols-outlined" aria-hidden="true">inventory_2</span><div><strong>Stock check needed</strong><span>{task.planned_inventory_available_quantity} {task.planned_inventory_unit || task.planned_unit || ""} available against {task.planned_quantity} {task.planned_inventory_unit || task.planned_unit || ""} planned. Check with your manager before using this resource.</span></div></div>}
                         {task.resource_required && !task.resource_linked && !READ_ONLY_TASK_STATUSES.has(task.status) && !task.is_archived && <div className="workforce-error" style={{marginTop:10,marginBottom:0}}><strong>Inventory resource not linked.</strong> Ask the manager to link the appropriate feed, vaccine, fertilizer, medicine, or other allowed resource before submitting this task.</div>}
                         {!task.resource_required && task.planned_quantity != null && <div className="task-note">Planned quantity: <strong>{task.planned_quantity} {task.planned_unit || ""}</strong></div>}
-                        {task.status === "Completed" ? <>
-                            <div className="task-note"><strong>Completion date:</strong> {task.completed_at ? new Date(task.completed_at).toLocaleString() : "Not recorded"}</div>
-                            <div className="task-note"><strong>Actual quantity:</strong> {task.latest_submission?.actual_quantity != null ? `${task.latest_submission.actual_quantity} ${task.latest_submission.actual_unit || ""}`.trim() : "Not recorded"}</div>
-                            <ObservationSummary observation={task.latest_submission?.monitoring} />
-                    <div className="task-note"><strong>Employee notes:</strong> {task.latest_submission?.worker_notes || "No notes provided."}</div>
-                            <div className="task-note"><strong>Manager feedback:</strong> {task.latest_submission?.review_feedback || "No feedback provided."}</div>
-                            {task.latest_submission?.evidence_url && <div className="task-note my-task-evidence-history"><strong>Evidence:</strong> <EvidenceViewButton evidenceUrl={task.latest_submission.evidence_url} compact/></div>}
-                            <div className="task-readonly-note">Completed work is read-only.</div>
-                        </> : <>
-                            {task.latest_submission?.review_feedback && <div className="workforce-error" style={{marginTop:10,marginBottom:0}}><strong>Manager feedback:</strong> {task.latest_submission.review_feedback}</div>}
-                            {task.latest_submission?.actual_quantity != null && <div className="task-note">Last actual usage: <strong>{task.latest_submission.actual_quantity} {task.latest_submission.actual_unit || ""}</strong></div>}
-                            {task.latest_submission?.worker_notes && <div className="task-note"><strong>Employee notes:</strong> {task.latest_submission.worker_notes}</div>}
-                            {task.latest_submission?.submitted_at && task.status === "Submitted for Review" && <div className="task-note"><strong>Submitted:</strong> {new Date(task.latest_submission.submitted_at).toLocaleString()}</div>}
-                            {task.latest_submission?.evidence_url && <div className="task-note my-task-evidence-history"><strong>Evidence:</strong> <EvidenceViewButton evidenceUrl={task.latest_submission.evidence_url} compact/></div>}
-                            {task.status === "Submitted for Review" && <div className="task-note"><strong>Awaiting Manager Review:</strong> Your submitted work is waiting for a manager or reviewer. You cannot submit another attempt unless it is returned for correction.{task.resource_required ? " The reported inventory quantity is reserved; stock will be deducted only if the work is approved." : ""}</div>}
-                            {(READ_ONLY_TASK_STATUSES.has(task.status) || task.is_archived) && <div className="task-readonly-note">Historical work is read-only.</div>}
-                        </>}
+                        {task.status === "Returned" && task.latest_submission?.review_feedback && <div className="workforce-error my-task-correction-note"><strong>Manager feedback:</strong> {task.latest_submission.review_feedback}</div>}
+                        {task.status === "Completed" ? <div className="task-readonly-note">Completed work is read-only.</div> : (READ_ONLY_TASK_STATUSES.has(task.status) || task.is_archived) && <div className="task-readonly-note">Historical work is read-only.</div>}
+                        <details className="my-task-details" open={expandedTaskIds.has(String(task.id))} onToggle={(event) => {
+                            const open = event.currentTarget.open;
+                            setExpandedTaskIds((current) => {
+                                const id = String(task.id);
+                                if (current.has(id) === open) return current;
+                                const next = new Set(current);
+                                if (open) next.add(id); else next.delete(id);
+                                return next;
+                            });
+                        }}>
+                            <summary aria-label={`Details for ${task.name}`}>
+                                <span className="my-task-details-show">View details</span>
+                                <span className="my-task-details-hide">Hide details</span>
+                            </summary>
+                            <div className="my-task-details-content">
+                                {task.instructions && <div className="task-note"><strong>Instructions:</strong> {task.instructions}</div>}
+                                {task.description && <p className="workforce-card-subtitle">{task.description}</p>}
+                                {!task.instructions && !task.description && <p className="workforce-card-subtitle">No additional instructions provided.</p>}
+                                {task.resource_required && task.resource_linked && task.planned_inventory_available_quantity != null && <div className="task-note"><strong>Available stock:</strong> {task.planned_inventory_available_quantity} {task.planned_inventory_unit || task.planned_unit || ""}</div>}
+                                {task.status === "Completed" && task.latest_submission?.submitted_at && String(task.latest_submission.submitted_at).slice(0,10) > task.activity_date && <div className="task-late-completion"><span className="material-symbols-outlined" aria-hidden="true">schedule</span>Completed late · submitted {String(task.latest_submission.submitted_at).slice(0,10)}</div>}
+                                {task.status === "Completed" ? <>
+                                    <div className="task-note"><strong>Completion date:</strong> {task.completed_at ? new Date(task.completed_at).toLocaleString() : "Not recorded"}</div>
+                                    <div className="task-note"><strong>Actual quantity:</strong> {task.latest_submission?.actual_quantity != null ? `${task.latest_submission.actual_quantity} ${task.latest_submission.actual_unit || ""}`.trim() : "Not recorded"}</div>
+                                    <ObservationSummary observation={task.latest_submission?.monitoring} />
+                                    <div className="task-note"><strong>Employee notes:</strong> {task.latest_submission?.worker_notes || "No notes provided."}</div>
+                                    <div className="task-note"><strong>Manager feedback:</strong> {task.latest_submission?.review_feedback || "No feedback provided."}</div>
+                                </> : <>
+                                    {task.status !== "Returned" && task.latest_submission?.review_feedback && <div className="task-note"><strong>Manager feedback:</strong> {task.latest_submission.review_feedback}</div>}
+                                    {task.latest_submission?.actual_quantity != null && <div className="task-note">Last actual usage: <strong>{task.latest_submission.actual_quantity} {task.latest_submission.actual_unit || ""}</strong></div>}
+                                    {task.latest_submission?.worker_notes && <div className="task-note"><strong>Employee notes:</strong> {task.latest_submission.worker_notes}</div>}
+                                    {task.latest_submission?.submitted_at && task.status === "Submitted for Review" && <div className="task-note"><strong>Submitted:</strong> {new Date(task.latest_submission.submitted_at).toLocaleString()}</div>}
+                                    {task.status === "Submitted for Review" && <div className="task-note"><strong>Awaiting Manager Review:</strong> Your submitted work is waiting for a manager or reviewer. You cannot submit another attempt unless it is returned for correction.{task.resource_required ? " The reported inventory quantity is reserved; stock will be deducted only if the work is approved." : ""}</div>}
+                                </>}
+                                {task.latest_submission?.evidence_url && <div className="task-note my-task-evidence-history"><strong>Evidence:</strong> <EvidenceViewButton evidenceUrl={task.latest_submission.evidence_url} compact/></div>}
+                            </div>
+                        </details>
                         {(canWorkTask || task.latest_submission || task.problem_report) && <div className="task-actions">
                             {!futureTask && canWorkTask && ["Pending","Returned"].includes(task.status) && <button className="workforce-button secondary" onClick={() => startTask(task)}>Start</button>}
                             {!futureTask && canWorkTask && ["Pending","In Progress","Returned"].includes(task.status) && <button className="workforce-button" disabled={task.resource_required && !task.resource_linked} onClick={() => openSubmit(task)}>{task.resource_required && !task.resource_linked ? "Resource Link Needed" : task.status === "Returned" ? "Correct & Submit" : "Submit Work"}</button>}
@@ -1088,7 +1115,6 @@ function MyTasks() {
                     {reportTask.latest_submission.evidence_url && <div className="task-note my-task-evidence-history"><strong>Evidence:</strong> <EvidenceViewButton evidenceUrl={reportTask.latest_submission.evidence_url} compact/></div>}
                 </div> : <div className="workforce-empty compact">No submitted work report is recorded for this task yet.</div>}
             </div>
-            <footer className="my-task-submit-footer"><button type="button" className="my-task-submit-cancel" onClick={() => setReportId(null)}><span className="material-symbols-outlined">close</span>Close Report</button></footer>
         </div>
     </div>}
     {submitTask && <div

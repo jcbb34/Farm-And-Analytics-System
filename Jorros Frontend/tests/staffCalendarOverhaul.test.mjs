@@ -146,7 +146,7 @@ test("calendar editor portal owns modal layering, focus, typography, and mobile 
     assert.match(page, /document\.body\.style\.position = "fixed"/);
     assert.match(page, /window\.scrollTo\(0, scrollY\)/);
     assert.match(page, /previousFocus\?\.isConnected/);
-    assert.match(page, /taskNeedsCoverage\(task\) \? goToCoverage\(anchor\) : goToTask\(task\)/);
+    assert.match(page, /taskNeedsCoverage\(task\) \? goToCoverage\(editor\.dateKey\) : goToTask\(task\)/);
     assert.match(header, /joross:modal-open/);
 
     assert.match(globals, /--layer-sticky-navigation:\s*100/);

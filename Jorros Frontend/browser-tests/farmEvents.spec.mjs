@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 const today = "2026-11-02";
 const admin = { id: 10, username: "event.admin", fullName: "Farm Administrator", role: "System Administrator", permissions: ["*"], status: "Active" };
@@ -9,8 +10,9 @@ async function prepare(page, { employee = false, preexisting = false, rejectFirs
     let taskRow = { id: 9, activity_id: 71, name: "Morning Feeding", code: "ACT-71", date: today, start_time: "08:00", status: "Pending", assigned_to: "Event Employee", resolution: "Held", version: 1, essential_review: true, time_sensitive: true, original: { date: today, start_time: "08:00", status: "Pending" }, can_review: true };
     const work = { id: 71, name: "Morning Feeding", activity_code: "ACT-71", activity_date: today, start_time: "08:00", status: "Pending", priority: "Medium", assigned_employee_id: 1, location: "Field A", work_suspended: true, suspension_holds: [{ id: 9, event_id: 5, title: eventSeed.title, state: "Held" }] };
     await page.clock.install({ time: new Date(`${today}T01:00:00Z`) });
-    await page.addInitScript((profile) => localStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-event-token", user: profile, expiresAt: Date.now() + 86400000 })), user);
+    await page.addInitScript((profile) => sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-event-token", user: profile, expiresAt: Date.now() + 86400000 })), user);
     await page.route("**/api/v1/**", async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const req = route.request(), path = new URL(req.url()).pathname, body = req.method() === "GET" ? null : req.postDataJSON();
         if (req.method() !== "GET") writes.push({ path, body });
         if (path === "/api/v1/auth/me") return route.fulfill({ json: user });

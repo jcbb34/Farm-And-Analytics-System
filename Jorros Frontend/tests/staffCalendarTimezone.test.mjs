@@ -29,10 +29,10 @@ test("month navigation uses calendar months and clamps month-end boundaries", ()
     assert.deepEqual(calendarModule.monthRange("2028-02-18"), ["2028-02-01", "2028-02-29"]);
 });
 
-test("Staff Calendar defaults to Month and exposes Month, Week, Day navigation", () => {
+test("Staff Calendar defaults to Day and exposes Month, Week, Day navigation", () => {
     const source = readStaffCalendarSource();
-    assert.equal(viewModule.normalizeCalendarView(""), "month");
-    assert.equal(viewModule.normalizeCalendarView("invalid"), "month");
+    assert.equal(viewModule.normalizeCalendarView(""), "day");
+    assert.equal(viewModule.normalizeCalendarView("invalid"), "day");
     assert.deepEqual(viewModule.monthGridRange("2026-09-12"), ["2026-08-31", "2026-10-04"]);
     assert.match(source, /id:\s*"month"[\s\S]*label:\s*"Month"/);
     assert.match(source, /id:\s*"week"[\s\S]*label:\s*"Week"/);

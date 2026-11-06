@@ -11,8 +11,8 @@ const service = () => import(`../src/services/locationReferenceService.js?test=$
 test.beforeEach(() => {
     invalidateReadCache();
     globalThis.window = { location: { origin: "http://farm.local:3000" }, setTimeout, clearTimeout };
-    globalThis.localStorage = { getItem: () => JSON.stringify({ accessToken: "synthetic-location-token" }) };
-    globalThis.sessionStorage = { getItem: () => null };
+    globalThis.sessionStorage = { getItem: () => JSON.stringify({ accessToken: "synthetic-location-token" }) };
+    globalThis.localStorage = { getItem: () => null };
 });
 test.after(() => Object.assign(globalThis, original));
 

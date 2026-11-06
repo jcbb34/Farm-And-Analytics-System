@@ -82,6 +82,7 @@ test("Staff Calendar and My Schedule consume backend availability and expose one
         src("src/views/StaffCalendar/StaffCalendarDetailsModal.jsx"),
         src("src/views/StaffCalendar/StaffCalendarToolbar.jsx"),
         src("src/views/StaffCalendar/StaffCalendarViews.jsx"),
+        src("src/views/StaffCalendar/staffAttendance.js"),
     ].join("\n");
     const myTasks = src("src/views/MyTasks/MyTasks.jsx");
     assert.match(calendar, /data\.availability/);

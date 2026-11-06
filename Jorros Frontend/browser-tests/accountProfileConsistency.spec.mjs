@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
 const initialDetails = { first_name: "Casey Ana", middle_name: "Reyes", surname: "De la Cruz", suffix: "Jr.", address: { street: "12 Sample Street", subdivision: "Sample Village", province: "Custom Province", province_code: null, city: "Custom City", city_code: null, barangay: "Custom Barangay", barangay_code: null, postal_code: "0450" } };
@@ -10,9 +11,10 @@ async function setup(page) {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.addInitScript(() => {
-        if (!localStorage.getItem("joross-auth-session-v1")) localStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-account-profile", expiresAt: Date.now() + 86400000, user: { id: 77, username: "casey.admin", fullName: "Stale profile", role: "System Administrator", permissions: ["*"], status: "Active" } }));
+        if (!sessionStorage.getItem("joross-auth-session-v1")) sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-account-profile", expiresAt: Date.now() + 86400000, user: { id: 77, username: "casey.admin", fullName: "Stale profile", role: "System Administrator", permissions: ["*"], status: "Active" } }));
     });
-    await page.route("**/api/v1/**", route => {
+    await page.route("**/api/v1/**", async route => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (path.endsWith("/events/stream")) return route.fulfill({ status: 503, json: {} });
         if (path === "/api/v1/auth/me") return route.fulfill({ json: record });
@@ -74,7 +76,7 @@ test("editing the current user updates Account and the saved session without ano
     await expect(accountField(page, "Contact Number")).toHaveText("09987654321");
     await expect(accountField(page, "Position")).toHaveText("Farm Operations Manager");
     await expect(accountField(page, "House/Building Number and Street")).toHaveText("34 Updated Street");
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("joross-auth-session-v1")).user.personalDetails.first_name)).toBe("Casey Marie");
+    expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem("joross-auth-session-v1")).user.personalDetails.first_name)).toBe("Casey Marie");
     await page.reload();
     await expect(accountField(page, "First name")).toHaveText("Casey Marie");
     expect(state.current().personal_details.first_name).toBe("Casey Marie");

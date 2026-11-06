@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
 const today = "2026-11-02";
@@ -22,8 +23,9 @@ async function prepare(page, { locationFailure = false, emptyLocations = false, 
     let failEmployee = employeeFailure, reject = rejectFirst, release;
     const gate = holdSave || holdInventorySave || holdCropReload || holdCropSave ? new Promise((resolve) => { release = resolve; }) : null;
     await page.clock.install({ time: new Date(`${today}T01:00:00Z`) });
-    await page.addInitScript((user) => localStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-location-event-token", user, expiresAt: Date.now() + 86400000 })), admin);
+    await page.addInitScript((user) => sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-location-event-token", user, expiresAt: Date.now() + 86400000 })), admin);
     await page.route("**/api/v1/**", async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const req = route.request(), url = new URL(req.url()), path = url.pathname;
         if (path.endsWith("/events/stream")) return route.fulfill({ status: 503, json: {} });
         if (path === "/api/v1/auth/me") return route.fulfill({ json: admin });

@@ -36,6 +36,8 @@ from app.core.security import (
     verify_password,
 )
 from app.services.db_concurrency import acquire_transaction_lock
+from app.core.session_policy import IDLE_TIMEOUT_SECONDS, utc_now
+from app.services.auth_sessions import check_session, renew_session, session_status
 from app.models import (
     LoginHistory,
     User,
@@ -110,7 +112,7 @@ def get_current_user(
         or (
             user.active_session_expires_at is not None
             and (
-                user.active_session_expires_at <= datetime.now(timezone.utc).replace(tzinfo=None)
+                user.active_session_expires_at <= utc_now()
                 or user.active_session_auth_version != token_auth_version
             )
         )
@@ -120,6 +122,11 @@ def get_current_user(
             detail="User account or session is unavailable.",
         )
 
+    from app.core.security import decode_session_access_token
+    session_claims = decode_session_access_token(credentials.credentials)
+    if session_claims is None:
+        raise HTTPException(401, "Please sign in again to start a temporary session.")
+    check_session(db, user, session_claims)
     return user
 
 
@@ -208,9 +215,10 @@ def _record_login(
 
 
 def _has_active_session(user: User) -> bool:
+    now = utc_now()
     return (
         user.active_session_expires_at is not None
-        and user.active_session_expires_at > datetime.now(timezone.utc).replace(tzinfo=None)
+        and now < user.active_session_expires_at <= now + timedelta(seconds=IDLE_TIMEOUT_SECONDS + 5)
         and user.active_session_auth_version == user.auth_version
     )
 
@@ -218,8 +226,10 @@ def _has_active_session(user: User) -> bool:
 def _claim_login_session(db: Session, user: User) -> None:
     """Claim this account atomically, even when API requests reach different workers."""
     acquire_transaction_lock(db, f"auth:login:{user.id}")
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    expires_at = now + timedelta(minutes=settings.jwt_access_token_expire_minutes)
+    now = utc_now()
+    expires_at = now + timedelta(seconds=min(
+        IDLE_TIMEOUT_SECONDS, settings.jwt_access_token_expire_minutes * 60,
+    ))
     result = db.execute(
         update(User)
         .where(
@@ -228,6 +238,10 @@ def _claim_login_session(db: Session, user: User) -> None:
             or_(
                 User.active_session_expires_at.is_(None),
                 User.active_session_expires_at <= now,
+                # Pre-policy leases used the full JWT lifetime. A fresh login
+                # replaces these without a schema/data migration.
+                User.active_session_expires_at > now + timedelta(seconds=IDLE_TIMEOUT_SECONDS + 5),
+                User.active_session_auth_version.is_(None),
                 User.active_session_auth_version != User.auth_version,
             ),
         )
@@ -702,9 +716,25 @@ def logout(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    current_user.auth_version = int(current_user.auth_version or 0) + 1
+    db.execute(update(User).where(User.id == current_user.id, User.auth_version == current_user.auth_version)
+        .values(auth_version=User.auth_version + 1, active_session_expires_at=None, active_session_auth_version=None)
+        .execution_options(synchronize_session=False))
     db.commit()
     return {
         "success": True,
         "message": "Logout successful. The current access token has been revoked.",
     }
+
+
+@router.get("/session")
+def current_session(current_user: User = Depends(get_current_user)):
+    """Check deadlines without extending inactivity, including during polling."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse(session_status(current_user), headers={"Cache-Control": "no-store"})
+
+
+@router.post("/session/activity")
+def session_activity(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Called only in response to user interaction, never by background polls."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse(renew_session(db, current_user), headers={"Cache-Control": "no-store"})

@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 
 import { formatDateKey } from "../../utils/farmCalendar.js";
 import { attendanceStatusForSchedule } from "../../utils/attendanceSchedule.js";
+import { formatStaffTime, staffAttendanceLabel } from "./staffAttendance.js";
+import { calendarShiftLabel, coverageState, isTemporarilyCoveredTask, taskNeedsCoverage } from "./staffCalendarView.js";
 
 
 
@@ -38,6 +40,7 @@ function AttendanceEditor({
     saveAttendance,
     setAttendanceForm,
     todayKey,
+    farmTimezone,
 }) {
     const isToday = editor.dateKey === todayKey;
     const needsWorkingDayOverride = ["Rest Day", "Special Day Off"].includes(availability?.status);
@@ -50,6 +53,7 @@ function AttendanceEditor({
 
     return (
         <section className="calendar-drawer-section calendar-inline-editor attendance-editor">
+            <fieldset className="calendar-editor-lock" disabled={Boolean(attendanceBusy)}>
             <div className="calendar-section-heading">
                 <div>
                     <h3>Review Attendance</h3>
@@ -64,11 +68,11 @@ function AttendanceEditor({
                 <div><span>Source</span><strong>{attendance?.attendance_source || "Not recorded"}</strong></div>
                 <div>
                     <span>Check In</span>
-                    <strong>{attendance?.check_in_at ? new Date(attendance.check_in_at).toLocaleString() : "Not recorded"}</strong>
+                    <strong>{attendance?.check_in_at ? formatStaffTime(attendance.check_in_at, farmTimezone) : "Not recorded"}</strong>
                 </div>
                 <div>
                     <span>Check Out</span>
-                    <strong>{attendance?.check_out_at ? new Date(attendance.check_out_at).toLocaleString() : "Not recorded"}</strong>
+                    <strong>{attendance?.check_out_at ? formatStaffTime(attendance.check_out_at, farmTimezone) : "Not recorded"}</strong>
                 </div>
             </div>
             {availability?.status === "Possible Absence" && (
@@ -150,7 +154,7 @@ function AttendanceEditor({
                     />
                 </label>
                 <div className="calendar-editor-actions">
-                    <button type="button" className="workforce-button secondary" onClick={onCancel}>Cancel</button>
+                    <button type="button" className="workforce-button secondary" disabled={Boolean(attendanceBusy)} onClick={onCancel}>Cancel</button>
                     <button className="workforce-button" disabled={Boolean(attendanceBusy)}>
                         {attendanceBusy === "correction" ? "Saving…" : "Save Correction"}
                     </button>
@@ -167,15 +171,17 @@ function AttendanceEditor({
                     ))}
                 </div>
             )}
+            </fieldset>
         </section>
     );
 }
 
 
-function ShiftEditor({ employee, onCancel, saveShift, setShiftForm, shiftForm }) {
+function ShiftEditor({ employee, onCancel, saveShift, setShiftForm, shiftForm, attendanceBusy }) {
     const dayOff = ["Rest Day Override", "Special Day Off"].includes(shiftForm.exception_type);
     return (
         <section className="calendar-drawer-section calendar-inline-editor">
+            <fieldset className="calendar-editor-lock" disabled={Boolean(attendanceBusy)}>
             <div className="calendar-section-heading">
                 <h3>{shiftForm.id ? "Edit Shift / Schedule Exception" : "Add Shift / Schedule Exception"}</h3>
                 <strong>{employee?.full_name || "Selected employee"}</strong>
@@ -254,10 +260,11 @@ function ShiftEditor({ employee, onCancel, saveShift, setShiftForm, shiftForm })
                     />
                 </label>
                 <div className="calendar-editor-actions">
-                    <button type="button" className="workforce-button secondary" onClick={onCancel}>Cancel</button>
-                    <button className="workforce-button">{shiftForm.id ? "Update Shift" : "Add Shift"}</button>
+                    <button type="button" className="workforce-button secondary" disabled={Boolean(attendanceBusy)} onClick={onCancel}>Cancel</button>
+                    <button className="workforce-button" disabled={Boolean(attendanceBusy)}>{shiftForm.id ? "Update Shift" : "Add Shift"}</button>
                 </div>
             </form>
+            </fieldset>
         </section>
     );
 }
@@ -268,6 +275,8 @@ export default function StaffCalendarDetailsModal({
     closeDateDetails, detailsModalRef, editor, employees, onRequestWorkingDayOverride,
     portalReady, runAttendanceAction, saveAttendance, saveShift, selectedDate,
     setAttendanceForm, setShiftForm, shiftForm, todayKey,
+    actionError, canManage, row, onReviewAttendance, farmTimezone,
+    goToCoverage, goToLeave, goToTask, goToTasksForDate,
 }) {
     const bodyRef = useRef(null);
     const editorKey = editor ? `${editor.type}:${editor.employeeId}:${editor.dateKey}` : "";
@@ -285,6 +294,8 @@ export default function StaffCalendarDetailsModal({
     const attendance = attendanceByEmployeeDate.get(`${editor.employeeId}:${editor.dateKey}`) || null;
     const availability = availabilityByEmployeeDate.get(`${editor.employeeId}:${editor.dateKey}`) || null;
     const employee = employees.find((item) => Number(item.id) === Number(editor.employeeId));
+    const relevantLeave = (row?.leave || []).filter((leave) => ["Pending", "Approved"].includes(leave.status));
+    const coverage = (row?.tasks || []).filter((task) => taskNeedsCoverage(task) || isTemporarilyCoveredTask(task));
 
     return createPortal(
         <div className="calendar-modal-portal workforce-layout">
@@ -298,20 +309,46 @@ export default function StaffCalendarDetailsModal({
                             weekday: "long", month: "long", day: "numeric", year: "numeric",
                         })}</h2>
                     </div>
-                    <button type="button" className="calendar-drawer-close" onClick={closeDateDetails} aria-label="Close calendar editor">
+                    <button type="button" className="calendar-drawer-close" onClick={closeDateDetails} disabled={Boolean(attendanceBusy)} aria-label="Close calendar editor">
                         <span className="material-symbols-outlined" aria-hidden="true">close</span>
                     </button>
                 </header>
                 <div className="calendar-details-body" ref={bodyRef}>
+                    {actionError && <div className="workforce-error" role="alert">{actionError}</div>}
+                    {editor.type === "view" && row && <section className="calendar-drawer-section staff-attendance-readonly">
+                        <h3>{employee?.full_name || "Employee"}</h3><p>Read-only attendance details · {farmTimezone}</p>
+                        <div className="attendance-detail-grid">
+                            <div><span>Scheduled Shift</span><strong>{calendarShiftLabel(row.shift, row.availability)}</strong></div>
+                            <div><span>Attendance</span><strong>{staffAttendanceLabel(row, todayKey)}</strong></div>
+                            <div><span>Source</span><strong>{attendance?.attendance_source || "Not recorded"}</strong></div>
+                            <div><span>Check In</span><strong>{editor.dateKey <= todayKey ? formatStaffTime(attendance?.check_in_at, farmTimezone) : "—"}</strong></div>
+                            <div><span>Check Out</span><strong>{editor.dateKey <= todayKey ? formatStaffTime(attendance?.check_out_at, farmTimezone) : "—"}</strong></div>
+                        </div>
+                        <div className="staff-attendance-related">
+                            <h4>Tasks &amp; Coverage</h4>
+                            <div className="staff-row-details-content">
+                                <button type="button" className="calendar-inline-record" onClick={() => goToTasksForDate(editor.dateKey, row.employee.id)}>Active tasks: {row.assignedTasks.length}</button>
+                                {relevantLeave.map((leave) => <button type="button" className="calendar-inline-record" key={leave.id} onClick={() => goToLeave(leave)}>{leave.status === "Pending" ? "Pending Leave" : "On Leave"}</button>)}
+                                {coverage.map((task) => <button type="button" className="calendar-inline-record" key={task.id} onClick={() => taskNeedsCoverage(task) ? goToCoverage(editor.dateKey) : goToTask(task)}>{coverageState(task)} · {task.name}</button>)}
+                                {!coverage.length && <span>No coverage issue</span>}
+                            </div>
+                        </div>
+                        <details className="staff-row-details"><summary>Notes and correction history</summary>
+                            <p>{attendance?.notes || "No attendance notes recorded."}</p>
+                            {attendance?.audit?.length ? <ul>{attendance.audit.map((item) => <li key={item.id}>{item.action} · {item.actor_name || "System"} · {item.created_at?.replace("T", " ")}{item.reason ? ` · ${item.reason}` : ""}</li>)}</ul> : <p>No correction history recorded.</p>}
+                        </details>
+                        {canManage && <button type="button" className="workforce-button" disabled={editor.dateKey > todayKey} onClick={() => onReviewAttendance(row)}>Review / Correct Attendance</button>}
+                        {editor.dateKey > todayKey && <p>Attendance can be reviewed on or after this date.</p>}
+                    </section>}
                     {editor.type === "attendance" && <AttendanceEditor
                         attendance={attendance} attendanceBusy={attendanceBusy} attendanceForm={attendanceForm}
                         availability={availability} editor={editor} employee={employee}
                         onCancel={closeDateDetails} onRequestWorkingDayOverride={onRequestWorkingDayOverride}
                         runAttendanceAction={runAttendanceAction} saveAttendance={saveAttendance}
-                        setAttendanceForm={setAttendanceForm} todayKey={todayKey}
+                        setAttendanceForm={setAttendanceForm} todayKey={todayKey} farmTimezone={farmTimezone}
                     />}
                     {editor.type === "shift" && <ShiftEditor employee={employee} onCancel={closeDateDetails}
-                        saveShift={saveShift} setShiftForm={setShiftForm} shiftForm={shiftForm}
+                        saveShift={saveShift} setShiftForm={setShiftForm} shiftForm={shiftForm} attendanceBusy={attendanceBusy}
                     />}
                 </div>
             </section>

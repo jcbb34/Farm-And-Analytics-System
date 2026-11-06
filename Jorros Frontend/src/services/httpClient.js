@@ -1,5 +1,7 @@
 import { appConfig, storageKeys } from "../config/appConfig.js";
 
+import { publishSessionSignal, sessionIdentity } from "./sessionPolicy.js";
+
 export class ApiError extends Error {
     constructor(
         message,
@@ -20,26 +22,10 @@ export class ApiError extends Error {
 }
 
 export function getStoredAccessToken() {
-    // An invalid entry in one storage area must not hide a valid login in
-    // the other (shared-device sessions use sessionStorage).
-    let sessionToken = "";
     try {
-        sessionToken = JSON.parse(
-            sessionStorage.getItem(storageKeys.authSession) || "null"
-        )?.accessToken || "";
-    } catch {
-        // Try the persistent session independently.
-    }
+        return JSON.parse(sessionStorage.getItem(storageKeys.authSession) || "null")?.accessToken || "";
+    } catch { return ""; }
 
-    if (sessionToken) return sessionToken;
-
-    try {
-        return JSON.parse(
-            localStorage.getItem(storageKeys.authSession) || "null"
-        )?.accessToken || "";
-    } catch {
-        return "";
-    }
 }
 
 
@@ -49,13 +35,13 @@ function clearStoredAuthSession() {
     }
 
     try {
-        localStorage.removeItem(storageKeys.authSession);
-        localStorage.removeItem(storageKeys.legacyAuthenticated);
-        sessionStorage.removeItem(storageKeys.authSession);
-        sessionStorage.removeItem(storageKeys.profile);
-        sessionStorage.removeItem(storageKeys.legacyAuthenticated);
-    } catch {
-        // Authentication state will still be cleared in memory below.
+        const current = JSON.parse(sessionStorage.getItem(storageKeys.authSession) || "null");
+        publishSessionSignal("logout", sessionIdentity(current));
+    } catch { /* Corrupt browser state must still be cleared below. */ }
+    for (const storageName of ["localStorage", "sessionStorage"]) {
+        for (const key of [storageKeys.authSession, storageKeys.legacyAuthenticated, storageKeys.profile]) {
+            try { (storageName === "localStorage" ? localStorage : sessionStorage).removeItem(key); } catch { /* Continue clearing the other storage. */ }
+        }
     }
 
     window.dispatchEvent(

@@ -219,7 +219,10 @@ export const authService =
         },
 
 
-        async logout() {
+        async getSessionPolicy() { return httpClient.get("/auth/session", { cache: "no-store" }); },
+        async reportActivity() { return httpClient.post("/auth/session/activity", {}); },
+
+        async logout(accessToken) {
             if (
                 appConfig.useMockApi
             ) {
@@ -230,7 +233,8 @@ export const authService =
 
             return httpClient.post(
                 "/auth/logout",
-                {}
+                {},
+                accessToken ? { includeAuth: false, headers: { Authorization: `Bearer ${accessToken}` } } : {}
             );
         },
 

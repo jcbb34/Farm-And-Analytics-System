@@ -41,6 +41,13 @@ def get_stream_user(
 
 def load_authorized_events(db: Session, user: User, employee_id: int | None, after_id: int):
     """Recheck status, role and token version on each poll; emit only allowed modules."""
+    from app.core.recovery_runtime import session_epoch
+    token_epoch = getattr(user, "_session_epoch", None)
+    if token_epoch is not None and token_epoch != session_epoch():
+        raise HTTPException(401, "Your session expired. Please sign in again.")
+    absolute = getattr(user, "_session_absolute_deadline", None)
+    if absolute is not None and absolute <= datetime.now(timezone.utc).replace(tzinfo=None):
+        raise HTTPException(401, "Your session expired. Please sign in again.")
     account = db.scalar(select(User).options(joinedload(User.role)).where(User.id == user.id))
     if (not account or account.status != "Active" or not account.role or
             not account.role.is_active or account.auth_version != user.auth_version or

@@ -1,15 +1,18 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from '@playwright/test';
 const profile = { id: 77, username: 'recovery.admin', fullName: 'Recovery Administrator', role: 'System Administrator', permissions: ['*'], status: 'Active' };
 const options = { format: 'both', destination: 'local', encrypted: true, recovery_key_acknowledged: true, schedule_enabled: false, frequency: 'daily', hour: 2, minute: 0, weekday: 0, month_day: 1, interval_days: 7, timezone: 'Asia/Manila', reminder_enabled: true, reminder_days: 7, retention_enabled: false, retain_count: 10 };
 const backup = { id: 'synthetic-backup', created_at: '2026-11-04T02:00:00Z', actor: 'recovery.admin', status: 'Completed', format: 'both', encrypted: true, file_validated: true, tested_formats: ['zip'], restore_tested_at: '2026-11-04T03:00:00Z', cloud_status: 'Needs attention', artifacts: { zip: { name: 'synthetic-backup.recovery.zip', size: 1024, encrypted: true }, bak: { name: 'synthetic-backup.bak', size: 2048, encrypted: true }, assets: { name: 'synthetic-backup.photos.zip', size: 1024, encrypted: true } } };
 const candidate = { id: 'candidate123', format: 'zip', status: 'Validated', file_validated: true, row_count: 42, table_count: 8, photo_count: 2, source_date: backup.created_at };
-async function setup(page, { ready = true, activation = false, dark = false } = {}) {
+async function setup(page, { ready = true, activation = false, dark = false, failSave = false } = {}) {
     const errors = [], requests = [];
+    let rejectSave = failSave;
     const data = { options: structuredClone(options), sets: [structuredClone(backup)], jobs: [], drills: [], rollbacks: [], audit: [], recovery_key_exported: true, storage: { free_bytes: 2 ** 34 }, readiness: { available: ready, activation_enabled: activation }, drive: { status: 'Connected', configured: true, email: 'synthetic@example.test', folder_name: 'Farm Backups' }, last_local: backup.created_at, last_test: backup.restore_tested_at };
     page.on('pageerror', error => errors.push(error.message));
     await page.mouse.move(1000, 650);
-    await page.addInitScript(({ profile, dark }) => { localStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-browser-token', expiresAt: Date.now() + 86400000, user: profile })); localStorage.setItem('joross-theme', dark ? 'dark' : 'light'); }, { profile, dark });
-    await page.route('**/api/v1/**', route => {
+    await page.addInitScript(({ profile, dark }) => { sessionStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-browser-token', expiresAt: Date.now() + 86400000, user: profile })); localStorage.setItem('joross-theme', dark ? 'dark' : 'light'); }, { profile, dark });
+    await page.route('**/api/v1/**', async route => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (path.endsWith('/events/stream')) return route.fulfill({ status: 503, json: {} });
         if (path === '/api/v1/auth/me') return route.fulfill({ json: profile });
@@ -20,7 +23,7 @@ async function setup(page, { ready = true, activation = false, dark = false } = 
         const payload = request.headers()['content-type']?.includes('application/json') ? request.postDataJSON() : undefined;
         requests.push({ endpoint, payload, key: request.headers()['idempotency-key'] });
         if (endpoint === '/backups') { const job = { id: 'backup-job', kind: 'backup', status: 'Queued', stage: 'Waiting for worker' }; data.jobs.push(job); return route.fulfill({ status: 202, json: job }); }
-        if (endpoint === '/settings') { data.options = payload; return route.fulfill({ json: payload }); }
+        if (endpoint === '/settings') { if (rejectSave) return route.fulfill({ status: 422, json: { detail: 'Schedule could not be saved. Please retry.' } }); data.options = payload; return route.fulfill({ json: payload }); }
         if (endpoint === '/readiness') return route.fulfill({ json: { ...data.readiness, estimated_bytes: 10000 } });
         if (endpoint.endsWith('/prepare') || endpoint === '/candidates/import') { data.drills = [structuredClone(candidate)]; return route.fulfill({ json: data.drills[0] }); }
         if (endpoint.endsWith('/test')) { data.drills[0] = { ...data.drills[0], status: 'Ready', restore_tested: true, tested_at: '2026-11-04T03:00:00Z', expires_at: '2099-01-01T00:00:00Z' }; const job = { id: 'test-job', kind: 'test', status: 'Completed', result: { id: candidate.id } }; data.jobs.push(job); return route.fulfill({ status: 202, json: job }); }
@@ -33,7 +36,7 @@ async function setup(page, { ready = true, activation = false, dark = false } = 
     await page.mouse.move(page.viewportSize().width - 10, 60);
     await expect(page.locator('.sidebar')).toHaveCSS('width', '80px');
     await expect(page.getByRole('button', { name: 'Back Up Now', exact: true })).toBeEnabled();
-    return { data, requests, errors };
+    return { data, requests, errors, allowSave: () => { rejectSave = false; } };
 }
 async function openRestore(page) {
     const row = page.getByRole('row').filter({ hasText: backup.id.slice(0, 12) });
@@ -61,9 +64,21 @@ test('ZIP works while native server setup is incomplete', async ({ page }) => {
     await expect(dialog.getByRole('button', { name: 'Create Backup', exact: true })).toBeDisabled(); await dialog.getByRole('combobox', { name: 'Backup format', exact: true }).selectOption('zip'); await expect(dialog.getByRole('button', { name: 'Create Backup', exact: true })).toBeEnabled();
 });
 test('Schedule drafts survive refresh and save custom timing and retention', async ({ page }) => {
-    const state = await setup(page); await page.getByLabel('Enable automatic backups', { exact: true }).check(); await page.getByRole('combobox', { name: 'Frequency', exact: true }).selectOption('monthly'); await page.getByRole('spinbutton', { name: /Day of month/ }).fill('31'); await page.getByLabel('Backup time', { exact: true }).fill('03:45'); await page.getByLabel('Automatically clean up older backup sets', { exact: true }).check();
-    await page.getByRole('button', { name: 'Check SQL Server', exact: true }).click(); await expect(page.getByRole('spinbutton', { name: /Day of month/ })).toHaveValue('31'); await page.getByRole('button', { name: 'Save Backup Settings', exact: true }).click();
-    await expect.poll(() => state.requests.some(value => value.endpoint === '/settings')).toBe(true); expect(state.requests.find(value => value.endpoint === '/settings').payload).toMatchObject({ frequency: 'monthly', month_day: 31, hour: 3, minute: 45, timezone: 'Asia/Manila', retention_enabled: true });
+    const state = await setup(page);
+    const schedule = page.locator('.br-schedule-card'), summary = schedule.locator('summary');
+    await expect(schedule).not.toHaveAttribute('open', '');
+    await expect(schedule.getByRole('button', { name: 'Save Backup Settings', exact: true })).toBeHidden();
+    expect(state.requests.some(value => value.endpoint === '/settings')).toBe(false);
+    await summary.focus(); await page.keyboard.press('Enter');
+    await expect(schedule).toHaveAttribute('open', '');
+    await page.getByLabel('Enable automatic backups', { exact: true }).check(); await page.getByRole('combobox', { name: 'Frequency', exact: true }).selectOption('monthly'); await page.getByRole('spinbutton', { name: /Day of month/ }).fill('31'); await page.getByLabel('Backup time', { exact: true }).fill('03:45'); await page.getByLabel('Automatically clean up older backup sets', { exact: true }).check();
+    await summary.focus(); await page.keyboard.press('Space');
+    await expect(schedule).not.toHaveAttribute('open', '');
+    await page.getByRole('button', { name: 'Check SQL Server', exact: true }).click();
+    await expect(schedule).not.toHaveAttribute('open', '');
+    await summary.click();
+    await expect(page.getByRole('spinbutton', { name: /Day of month/ })).toHaveValue('31'); await page.getByRole('button', { name: 'Save Backup Settings', exact: true }).click();
+    await expect.poll(() => state.requests.some(value => value.endpoint === '/settings')).toBe(true); expect(state.requests.filter(value => value.endpoint === '/settings')).toHaveLength(1); expect(state.requests.find(value => value.endpoint === '/settings').payload).toMatchObject({ frequency: 'monthly', month_day: 31, hour: 3, minute: 45, timezone: 'Asia/Manila', retention_enabled: true });
 });
 test('Activation requires a completed test and deliberate fresh Admin confirmation', async ({ page }) => {
     const state = await setup(page, { activation: true }), dialog = await openRestore(page); await expect(dialog.getByRole('button', { name: 'Restore and Activate', exact: true })).toHaveCount(0); await dialog.getByRole('button', { name: 'Test Restore', exact: true }).click(); await expect(dialog.getByText('Restore test passed', { exact: true })).toBeVisible(); const activate = dialog.getByRole('button', { name: 'Restore and Activate', exact: true }); await expect(activate).toBeDisabled();
@@ -82,6 +97,35 @@ test('Key export rejects wrong credentials, clears secrets and downloads after v
 });
 for (const dark of [false, true]) test(`Recovery fits a phone in ${dark ? 'dark' : 'light'} mode with modal focus trapping`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 }); const state = await setup(page, { dark }); await expect(page.locator('html')).toHaveAttribute('data-theme', dark ? 'dark' : 'light'); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+    const schedule = page.locator('.br-schedule-card');
+    await expect(schedule).not.toHaveAttribute('open', '');
+    await schedule.locator('summary').click();
+    expect(await schedule.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+    await schedule.locator('summary').click();
     await page.getByRole('button', { name: 'Restore Backup', exact: true }).click(); const dialog = page.getByRole('dialog', { name: 'Restore Backup', exact: true }), bounds = await dialog.boundingBox(); expect(bounds.x).toBeGreaterThanOrEqual(0); expect(bounds.x + bounds.width).toBeLessThanOrEqual(390); expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
     await dialog.getByRole('button', { name: 'Validate Backup', exact: true }).focus(); await page.keyboard.press('Tab'); await expect(dialog.getByRole('button', { name: 'Close Restore Backup', exact: true })).toBeFocused(); await page.keyboard.press('Escape'); await expect(dialog).toHaveCount(0); expect(state.errors).toEqual([]);
+});
+
+
+test('folding schedule settings preserves failed edits and retry sends the same payload', async ({ page }) => {
+    await page.clock.install();
+    const state = await setup(page, { failSave: true });
+    const schedule = page.locator('.br-schedule-card'), summary = schedule.locator('summary');
+    await summary.click();
+    await schedule.getByRole('combobox', { name: 'Frequency', exact: true }).selectOption('weekly');
+    await schedule.getByRole('combobox', { name: 'Day of week', exact: true }).selectOption('2');
+    await schedule.getByRole('button', { name: 'Save Backup Settings', exact: true }).click();
+    await expect(page.locator('.br-banner[role=alert]')).toContainText('Schedule could not be saved. Please retry.');
+    await summary.click(); await page.clock.runFor(4500);
+    await expect(schedule).not.toHaveAttribute('open', '');
+    await summary.click();
+    await expect(schedule.getByRole('combobox', { name: 'Frequency', exact: true })).toHaveValue('weekly');
+    await expect(schedule.getByRole('combobox', { name: 'Day of week', exact: true })).toHaveValue('2');
+    state.allowSave();
+    await schedule.getByRole('button', { name: 'Save Backup Settings', exact: true }).click();
+    await expect(page.locator('.br-banner[role=alert]')).toHaveCount(0);
+    const saves = state.requests.filter(value => value.endpoint === '/settings');
+    expect(saves).toHaveLength(2); expect(saves[1].payload).toEqual(saves[0].payload);
+    expect(state.data.options).toMatchObject({ frequency: 'weekly', weekday: 2, schedule_enabled: false });
+    expect(state.errors).toEqual([]);
 });

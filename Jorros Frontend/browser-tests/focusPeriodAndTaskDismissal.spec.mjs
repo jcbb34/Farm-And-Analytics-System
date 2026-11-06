@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from '@playwright/test';
 
 // All API traffic is isolated. These checks never use the farm database.
@@ -12,9 +13,10 @@ async function prepare(page, { authenticated = true, taskInPage = true, holdDeta
     const detailGate = new Promise((resolve) => { state.releaseDetail = resolve; });
     await page.clock.install({ time: new Date(`${today}T02:00:00Z`) });
     if (authenticated) await page.addInitScript((user) => {
-        localStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-ui-token', user, expiresAt: Date.now() + 86400000 }));
+        sessionStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-ui-token', user, expiresAt: Date.now() + 86400000 }));
     }, admin);
     await page.route('**/api/v1/**', async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request();
         const url = new URL(request.url());
         const path = url.pathname;

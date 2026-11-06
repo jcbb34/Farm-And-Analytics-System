@@ -2171,3 +2171,117 @@ body.calendar-modal-open {
 [data-theme="dark"] .attendance-correction-form,
 [data-theme="dark"] .attendance-audit-list { border-color: var(--theme-border, #34493b); color: var(--theme-text-muted, #b7c5bc); }
 @media (max-width:760px) { .attendance-detail-grid { grid-template-columns:1fr; } }
+
+/* Attendance overview follows the shared workforce controls and theme. */
+.staff-calendar-page .staff-attendance-overview { margin:20px 0 16px; padding:20px; border:1px solid var(--workforce-border); border-radius:14px; background:var(--workforce-surface); color:var(--workforce-text); box-shadow:0 3px 12px rgb(0 0 0 / 4%); }
+.staff-attendance-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.staff-attendance-heading > div:first-child { min-width:0; }
+.staff-attendance-heading h2 { margin:0 0 6px; font-size:1.15rem; line-height:1.35; color:var(--workforce-green-text); }
+.staff-attendance-heading p,.staff-calendar-page .staff-attendance-freshness,.staff-day-time-note { margin:0; font-size:var(--workforce-small-size); line-height:1.5; color:var(--workforce-muted); }
+.staff-attendance-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.staff-calendar-page .staff-attendance-freshness { margin:12px 0; }
+.staff-attendance-counts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.staff-attendance-count { min-width:0; display:flex; align-items:flex-start; gap:10px; padding:12px; border:1px solid var(--workforce-border); border-radius:12px; background:var(--workforce-surface-soft); color:var(--workforce-text); text-align:left; font:inherit; cursor:pointer; transition:border-color .15s,background-color .15s; }
+.staff-attendance-count:hover:not(:disabled) { border-color:var(--workforce-green-text); background:var(--workforce-green-soft); }
+.staff-attendance-count:disabled { cursor:default; }
+.staff-attendance-count > span:last-child { min-width:0; }
+.staff-attendance-count-icon { flex:0 0 30px; width:30px; height:30px; display:grid; place-items:center; border-radius:9px; background:var(--workforce-green-soft); color:var(--workforce-green-text); font-size:20px; }
+.staff-attendance-count-label { display:block; color:var(--workforce-muted); font-size:var(--workforce-small-size); font-weight:600; line-height:1.4; }
+.staff-attendance-count strong { display:block; margin:3px 0; font-size:1.35rem; line-height:1.1; color:var(--workforce-text); }
+.staff-attendance-count small { display:block; color:var(--workforce-muted); font-size:.75rem; line-height:1.35; }
+.staff-attendance-review { margin-top:16px; padding-top:10px; border-top:1px solid var(--workforce-border); }
+.staff-attendance-review > summary,.staff-row-details > summary { min-height:44px; padding:10px 4px; color:var(--workforce-green-text); font-size:var(--workforce-control-font-size); font-weight:600; cursor:pointer; border-radius:6px; }
+.staff-attendance-review > summary > span { display:inline-block; min-width:24px; margin-left:8px; padding:2px 7px; border-radius:20px; background:var(--workforce-green-soft); text-align:center; }
+.staff-attendance-review p,.staff-row-details p { color:var(--workforce-muted); font-size:var(--workforce-small-size); line-height:1.5; }
+.staff-attendance-review ul { display:grid; gap:10px; max-height:300px; padding:0; overflow:auto; list-style:none; }
+.staff-attendance-review li { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:12px; background:var(--workforce-surface-soft); border:1px solid var(--workforce-border); border-radius:10px; }
+.staff-attendance-review li > div { min-width:0; flex:1 1 200px; overflow-wrap:anywhere; }
+.staff-attendance-review li strong { display:block; font-size:var(--workforce-body-size); }
+.staff-attendance-review li span { display:block; margin-top:4px; color:var(--workforce-muted); font-size:var(--workforce-small-size); }
+.staff-calendar-save-message { padding:12px 16px; color:var(--workforce-green-text); background:var(--workforce-green-soft); border:1px solid var(--workforce-border); border-radius:10px; font-size:var(--workforce-body-size); }
+.staff-calendar-page .staff-calendar-toolbar { padding:16px; border-color:var(--workforce-border); background:var(--workforce-surface); }
+.staff-calendar-date-navigation { display:flex; flex:1 1 300px; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px 16px; }
+.staff-calendar-current-period { color:var(--workforce-text); font-size:var(--workforce-body-size); font-weight:600; }
+.staff-calendar-page .staff-calendar-toolbar-filters { grid-template-columns:repeat(3,minmax(0,1fr)) auto; align-items:end; }
+.staff-calendar-filter-actions { display:flex; align-items:flex-end; }
+.staff-calendar-page .staff-calendar-filter { color:var(--workforce-muted); }
+.staff-calendar-page .staff-calendar-view-tabs { background:var(--workforce-surface-soft); border-color:var(--workforce-border); }
+.staff-calendar-page .staff-calendar-filter :is(input,select) { min-height:var(--workforce-control-height); border-radius:var(--workforce-control-radius); background:var(--workforce-input-bg); color:var(--workforce-text); border-color:var(--workforce-border); }
+.staff-calendar-page .staff-calendar-shell { background:var(--workforce-surface); border-color:var(--workforce-border); scroll-margin-top:16px; }
+.staff-calendar-page .staff-calendar-title-row h2 { font-size:1.1rem; }
+.staff-calendar-page .staff-calendar-title-row p { display:block; padding:0; background:transparent; font-size:var(--workforce-small-size); line-height:1.5; color:var(--workforce-muted); }
+.staff-calendar-page .staff-attendance-day-wrap { overflow-x:auto; border-color:var(--workforce-border); }
+.staff-calendar-page .staff-attendance-table { min-width:880px; width:100%; table-layout:fixed; }
+.staff-attendance-table :is(th,td) { overflow-wrap:anywhere; }
+.staff-attendance-table th:first-child { width:24%; }
+.staff-attendance-table th:nth-child(2) { width:15%; }
+.staff-attendance-table th:nth-child(3) { width:16%; }
+.staff-attendance-table th:nth-child(4) { width:16%; }
+.staff-attendance-table th:last-child { width:29%; }
+.staff-attendance-table .calendar-row-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.staff-attendance-table .calendar-row-actions .workforce-button { padding:9px 10px; font-size:.8rem; white-space:normal; }
+.staff-attendance-table td > small { display:block; margin-top:6px; color:var(--workforce-muted); font-size:.75rem; line-height:1.4; }
+.staff-clock-times { display:grid; gap:6px; font-size:var(--workforce-small-size); white-space:nowrap; }
+.staff-clock-times span { display:flex; justify-content:space-between; gap:8px; color:var(--workforce-muted); }
+.staff-clock-times strong { color:var(--workforce-text); }
+.staff-day-time-note { margin:0 0 12px; }
+.staff-row-details-content { display:grid; gap:8px; color:var(--workforce-muted); font-size:var(--workforce-small-size); line-height:1.5; }
+.staff-row-details-content .calendar-task-count { justify-self:start; }
+.staff-row-details-content :is(button,span) { max-width:100%; overflow-wrap:anywhere; white-space:normal; }
+.staff-attendance-table .calendar-state-badge { white-space:normal; line-height:1.4; }
+.staff-attendance-table .calendar-state-badge.not-checked-in,.staff-attendance-table .calendar-state-badge.schedule-needs-setup,.staff-attendance-table .calendar-state-badge.work-suspended,.staff-attendance-table .calendar-state-badge.authorized-day-off { background:var(--workforce-surface-soft); color:var(--workforce-text); border:1px solid var(--workforce-border); }
+.staff-attendance-table .calendar-state-badge.missing-check-out { background:var(--workforce-warning-bg); color:var(--workforce-warning); }
+.staff-attendance-readonly h3 { margin:0; color:var(--workforce-text); }
+.staff-attendance-readonly > p { font-size:var(--workforce-small-size); color:var(--workforce-muted); }
+.staff-attendance-readonly .attendance-detail-grid { margin:16px 0; }
+.staff-attendance-related { margin:16px 0; padding:14px; border:1px solid var(--workforce-border); border-radius:var(--workforce-control-radius); background:var(--workforce-surface-soft); }
+.staff-attendance-related h4 { margin:0 0 10px; color:var(--workforce-text); font-size:var(--workforce-control-font-size); }
+.staff-attendance-related .calendar-inline-record { min-height:44px; width:100%; text-align:left; }
+.staff-attendance-readonly > .workforce-button { margin-top:16px; }
+.staff-attendance-readonly li { font-size:var(--workforce-small-size); color:var(--workforce-muted); line-height:1.6; overflow-wrap:anywhere; }
+.staff-calendar-page :is(.staff-attendance-count,summary):focus-visible,.calendar-modal-portal summary:focus-visible { outline:2px solid var(--workforce-green-text); outline-offset:3px; box-shadow:var(--workforce-focus-ring); }
+.staff-calendar-page .calendar-employee-link { color:var(--workforce-green-text); }
+.staff-calendar-page .calendar-legend { color:var(--workforce-muted); }
+.staff-calendar-page .staff-attendance-table tbody td { background:transparent; }
+.calendar-editor-lock { display:contents; min-inline-size:0; }
+@media (max-width:1100px) {
+ .staff-attendance-counts { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .staff-calendar-date-navigation { justify-content:flex-start; }
+ .staff-calendar-page .staff-calendar-toolbar-filters { grid-template-columns:repeat(3,minmax(0,1fr)); }
+ .staff-calendar-filter-actions { grid-column:1 / -1; justify-content:flex-end; }
+}
+@media (max-width:900px) {
+ .staff-calendar-page .staff-attendance-table { min-width:0; table-layout:auto; }
+ .staff-attendance-table,.staff-attendance-table tbody { display:block; }
+ .staff-attendance-table thead { position:absolute; width:1px; height:1px; margin:-1px; clip-path:inset(50%); overflow:hidden; }
+ .staff-attendance-table tbody { display:grid; gap:12px; }
+ .staff-attendance-table tbody tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:14px; border:1px solid var(--workforce-border); border-radius:12px; background:var(--workforce-surface); }
+ .staff-attendance-table tbody td { display:block; min-width:0; padding:0; border:0; }
+ .staff-attendance-table tbody td::before { display:block; margin-bottom:6px; content:attr(data-label); font-size:.75rem; font-weight:600; color:var(--workforce-muted); }
+ .staff-attendance-table tbody td:first-child,.staff-attendance-table tbody td:last-child,.staff-attendance-table tbody td[data-label="Details"] { grid-column:1 / -1; }
+ .staff-attendance-table tbody td:first-child::before,.staff-attendance-table tbody td[data-label="Details"]::before { display:none; }
+ .staff-clock-times { max-width:160px; }
+ .staff-attendance-table .calendar-row-actions > button { flex:1 1 135px; }
+}
+@media (max-width:720px) {
+ .workforce-page.staff-calendar-page { width:calc(100% - var(--sidebar-collapsed-width,80px)); margin-left:var(--sidebar-collapsed-width,80px); padding-inline:12px; }
+ .staff-calendar-page .staff-attendance-overview,.staff-calendar-page .staff-calendar-toolbar,.staff-calendar-page .staff-calendar-shell { padding:12px; }
+ .staff-attendance-heading,.staff-attendance-actions { align-items:stretch; width:100%; }
+ .staff-attendance-heading { overflow-wrap:anywhere; }
+ .staff-attendance-actions > button { flex:1 1 150px; }
+ .staff-attendance-count { display:block; padding:10px; }
+ .staff-attendance-count-icon { margin-bottom:6px; }
+ .staff-attendance-count small { display:none; }
+ .staff-calendar-page .staff-calendar-toolbar-filters { grid-template-columns:1fr; }
+ .staff-calendar-date-navigation { flex-basis:100%; flex-direction:column; align-items:stretch; }
+ .staff-calendar-nav { justify-content:space-between; }
+ .staff-calendar-page .staff-calendar-nav > .workforce-button { flex:0 1 auto; min-width:44px; padding-inline:10px; }
+ .staff-calendar-nav-label { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+ .staff-calendar-page .staff-calendar-view-tabs { width:100%; }
+ .staff-calendar-page .staff-calendar-view-tabs .workforce-tab { flex:1 1 0; min-width:0; padding-inline:6px; }
+ .staff-calendar-page .staff-calendar-view-tabs .material-symbols-outlined { display:none; }
+ .staff-calendar-page .staff-calendar-toolbar-actions .workforce-button { white-space:normal; text-align:center; }
+ .staff-calendar-filter-actions { grid-column:auto; }
+ .staff-calendar-filter-actions > button,.staff-attendance-review li .workforce-button { width:100%; }
+}
+@media (max-width:380px) { .staff-attendance-table tbody tr { grid-template-columns:minmax(0,1fr); } }

@@ -8,7 +8,6 @@ import AppHeaderActions from "../../components/AppHeaderActions/AppHeaderActions
 import { workforceService } from "../../services/workforceService.js";
 import useFarmModuleUpdates from "../../hooks/useFarmModuleUpdates.js";
 import { useAuth } from "../../context/AuthContext.jsx";
-import { useNotification } from "../../context/NotificationContext.jsx";
 import {
     DEFAULT_FARM_TIMEZONE,
     dateKeysBetween,
@@ -18,18 +17,17 @@ import {
 import {
     buildCalendarReturnPath,
     calendarDisplayRange,
-    coverageState,
     employeeMatchesAvailabilityFilter,
-    attendanceDisplayState,
     isActiveCalendarTask,
     isScheduledCalendarRow,
     isTemporarilyCoveredTask,
-    leaveForEmployeeDate,
     normalizeAvailabilityFilter,
     normalizeCalendarView,
     taskNeedsCoverage,
 } from "./staffCalendarView.js";
 import StaffCalendarViews from "./StaffCalendarViews.jsx";
+import StaffAttendanceSummary from "./StaffAttendanceSummary.jsx";
+import { indexStaffCalendar, matchesAttendanceFilter, staffDayRow, summarizeStaffAttendance, validateStaffCalendarPayload } from "./staffAttendance.js";
 import StaffCalendarDetailsModal from "./StaffCalendarDetailsModal.jsx";
 import { StaffCalendarHeading, StaffCalendarToolbar } from "./StaffCalendarToolbar.jsx";
 import "./StaffCalendar.css";
@@ -40,7 +38,6 @@ function StaffCalendar() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { hasPermission } = useAuth();
-    const notification = useNotification();
     const canManage = hasPermission("workforce:manage") || hasPermission("workforce:attendance");
     const canManageSchedule = hasPermission("workforce:manage");
 
@@ -57,6 +54,17 @@ function StaffCalendar() {
     // selectedDate is an editor target. Older selectedDate links resolve to Day view above.
     const [selectedDate, setSelectedDate] = useState("");
     const [employees, setEmployees] = useState([]);
+    const [employeesReady, setEmployeesReady] = useState(false);
+    const [employeesError, setEmployeesError] = useState("");
+    const [configReady, setConfigReady] = useState(false);
+    const [configError, setConfigError] = useState("");
+    const [todayData, setTodayData] = useState(null);
+    const [todayError, setTodayError] = useState("");
+    const [loadedRange, setLoadedRange] = useState("");
+    const [updatedAt, setUpdatedAt] = useState(null);
+    const [actionMessage, setActionMessage] = useState("");
+    const [actionError, setActionError] = useState("");
+    const actionBusyRef = useRef(false);
     const [data, setData] = useState(emptyCalendar);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -78,6 +86,7 @@ function StaffCalendar() {
     });
     const requestSequenceRef = useRef(0);
     const detailsModalRef = useRef(null);
+    const calendarSectionRef = useRef(null);
     const previousFocusRef = useRef(null);
     const [portalReady, setPortalReady] = useState(false);
     const initialDateProvidedRef = useRef(Boolean(searchParams.get("date") || searchParams.get("selectedDate")));
@@ -91,56 +100,76 @@ function StaffCalendar() {
         setPortalReady(true);
     }, []);
 
-    useEffect(() => {
-        let cancelled = false;
-        workforceService.getCalendarConfig()
-            .then((config) => {
-                if (cancelled || !config) return;
-                const nextTimezone = config.timezone || DEFAULT_FARM_TIMEZONE;
-                const nextToday = config.today || farmDateKey(new Date(), nextTimezone);
-                setFarmTimezone(nextTimezone);
-                setTodayKey(nextToday);
-                if (!initialDateProvidedRef.current) setAnchor(nextToday);
-            })
-            .catch(() => {});
-        return () => { cancelled = true; };
+    const loadConfig = useCallback(async () => {
+        try {
+            const config = await workforceService.getCalendarConfig();
+            const nextTimezone = config.timezone || DEFAULT_FARM_TIMEZONE;
+            const nextToday = config.today || farmDateKey(new Date(), nextTimezone);
+            setFarmTimezone(nextTimezone);
+            setTodayKey(nextToday);
+            setConfigError("");
+            if (!initialDateProvidedRef.current) {
+                setAnchor(nextToday);
+                initialDateProvidedRef.current = true;
+            }
+            setConfigReady(true);
+        } catch (err) {
+            setConfigError(err?.message || "Unable to confirm the farm date.");
+        }
     }, []);
-
-    useEffect(() => {
+    const loadEmployees = useCallback(async () => {
         if (!canManage) return;
-        let cancelled = false;
-        workforceService.getEmployees()
-            .then((rows) => { if (!cancelled) setEmployees(rows || []); })
-            .catch((err) => { if (!cancelled) notification.error(err?.message || "Unable to load employees.", "Calendar Error"); });
-        return () => { cancelled = true; };
-    }, [canManage, notification]);
-
+        try {
+            const rows = await workforceService.getEmployees();
+            setEmployees(rows || []);
+            setEmployeesReady(true);
+            setEmployeesError("");
+        } catch (err) {
+            setEmployeesError(err?.message || "Unable to load employees.");
+        }
+    }, [canManage]);
+    useEffect(() => { loadConfig(); }, [loadConfig]);
+    useEffect(() => { loadEmployees(); }, [loadEmployees]);
+    const rangeKey = range.join(":");
     const loadCalendar = useCallback(async ({ background = false } = {}) => {
+        if (!configReady || !canManage) return;
         const requestId = ++requestSequenceRef.current;
         if (background) setRefreshing(true);
         else setLoading(true);
-        setError("");
-        try {
-            const calendar = await workforceService.getCalendar(range[0], range[1], null);
-            if (requestId !== requestSequenceRef.current) return;
-            setData(calendar || emptyCalendar());
-        } catch (err) {
-            if (requestId !== requestSequenceRef.current || err?.code === "REQUEST_ABORTED") return;
-            const message = err?.message || "Unable to load staff calendar.";
-            setError(message);
-            notification.error(message, "Calendar Error");
-        } finally {
-            if (requestId === requestSequenceRef.current) {
-                setLoading(false);
-                setRefreshing(false);
-            }
-        }
-    }, [range, notification]);
-
-    useEffect(() => { loadCalendar(); }, [loadCalendar]);
-    useFarmModuleUpdates(["calendar", "tasks", "employees"], () => loadCalendar({ background: true }), {
-        editing: Boolean(editor || eventPanel),
-    });
+        const todayInRange = range[0] <= todayKey && range[1] >= todayKey;
+        // One bounded request for the calendar, plus today only when outside that range.
+        const ranges = [range, ...(!todayInRange ? [[todayKey, todayKey]] : [])];
+        const results = await Promise.allSettled(ranges.map(([from, to]) => workforceService.getCalendar(from, to, null).then(validateStaffCalendarPayload)));
+        if (requestId !== requestSequenceRef.current) return;
+        if (results[0].status === "fulfilled") {
+            setData(results[0].value);
+            setLoadedRange(rangeKey);
+            setUpdatedAt(new Date().toISOString());
+            setError("");
+        } else setError(results[0].reason?.message || "Unable to load staff calendar.");
+        const todayResult = results[todayInRange ? 0 : 1];
+        if (todayResult.status === "fulfilled") {
+            setTodayData({ date: todayKey, data: todayResult.value, updatedAt: new Date().toISOString() });
+            setTodayError("");
+        } else setTodayError(todayResult.reason?.message || "Unable to load today’s attendance.");
+        setLoading(false);
+        setRefreshing(false);
+    }, [range, rangeKey, todayKey, configReady, canManage]);
+    useEffect(() => {
+        loadCalendar();
+        return () => { requestSequenceRef.current += 1; };
+    }, [loadCalendar]);
+    const refreshCalendar = useCallback(async () => {
+        if (actionBusyRef.current) return;
+        await Promise.all([loadConfig(), loadEmployees(), loadCalendar({ background: true })]);
+    }, [loadConfig, loadEmployees, loadCalendar]);
+    useFarmModuleUpdates(["calendar", "tasks", "employees"], refreshCalendar, { editing: Boolean(editor || eventPanel) });
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            if (!editor && !eventPanel && document.visibilityState === "visible") refreshCalendar();
+        }, 60000);
+        return () => window.clearInterval(timer);
+    }, [editor, eventPanel, refreshCalendar]);
 
     useEffect(() => {
         const nextPath = buildCalendarReturnPath({
@@ -153,66 +182,23 @@ function StaffCalendar() {
         if (current !== nextPath) window.history.replaceState(window.history.state, "", nextPath);
     }, [mode, anchor, employeeId, availabilityFilter]);
 
-    const tasksByDate = useMemo(() => {
-        const map = new Map();
-        (data.tasks || []).forEach((task) => {
-            if (!map.has(task.activity_date)) map.set(task.activity_date, []);
-            map.get(task.activity_date).push(task);
-        });
-        return map;
-    }, [data.tasks]);
-
-    const attendanceByEmployeeDate = useMemo(() => new Map(
-        (data.attendance || []).map((row) => [`${row.employee_id}:${row.attendance_date}`, row]),
-    ), [data.attendance]);
-
-    const shiftByEmployeeDate = useMemo(() => {
-        const map = new Map();
-        (data.shifts || []).forEach((row) => {
-            if (row.status !== "Cancelled") map.set(`${row.employee_id}:${row.work_date}`, row);
-        });
-        return map;
-    }, [data.shifts]);
-
-    const availabilityByEmployeeDate = useMemo(() => new Map(
-        (data.availability || []).map((row) => [`${row.employee_id}:${row.work_date}`, row]),
-    ), [data.availability]);
-
-    const selectedEmployees = useMemo(() => {
-        if (!employeeId) return activeEmployees;
-        return activeEmployees.filter((employee) => String(employee.id) === String(employeeId));
-    }, [activeEmployees, employeeId]);
-
-    const employeeDayRow = useCallback((employee, dateKey) => {
-        const allTasks = (tasksByDate.get(dateKey) || []).filter((task) => (
-            Number(task.assigned_employee_id) === Number(employee.id)
-            || Number(task.original_employee_id) === Number(employee.id)
-            || Number(task.covering_employee_id) === Number(employee.id)
-        ));
-        const assignedTasks = allTasks.filter((task) => Number(task.assigned_employee_id) === Number(employee.id) && isActiveCalendarTask(task));
-        const attendance = attendanceByEmployeeDate.get(`${employee.id}:${dateKey}`) || null;
-        const shift = shiftByEmployeeDate.get(`${employee.id}:${dateKey}`) || null;
-        const leave = leaveForEmployeeDate(data.leave, employee.id, dateKey);
-        const approvedLeave = leave.find((item) => item.status === "Approved") || null;
-        const pendingLeave = leave.filter((item) => item.status === "Pending");
-        const availability = availabilityByEmployeeDate.get(`${employee.id}:${dateKey}`) || null;
-        const state = attendanceDisplayState({
-            dateKey,
-            todayKey,
-            attendance,
-            approvedLeave,
-            shift,
-            employee,
-            availability,
-            activeTaskCount: assignedTasks.length,
-        });
-        return { employee, dateKey, tasks: allTasks, assignedTasks, attendance, shift, availability, leave, approvedLeave, pendingLeave, state };
-    }, [tasksByDate, attendanceByEmployeeDate, shiftByEmployeeDate, availabilityByEmployeeDate, data.leave, todayKey]);
+    const dataIndex = useMemo(() => indexStaffCalendar(data), [data]);
+    const todayIndex = useMemo(() => indexStaffCalendar(todayData?.data), [todayData]);
+    const tasksByDate = dataIndex.tasks;
+    const selectedEmployees = useMemo(() => employeeId
+        ? activeEmployees.filter((employee) => String(employee.id) === String(employeeId))
+        : activeEmployees, [activeEmployees, employeeId]);
+    const employeeDayRow = useCallback((employee, dateKey) => staffDayRow(dataIndex, employee, dateKey, todayKey), [dataIndex, todayKey]);
+    const todayRows = useMemo(() => selectedEmployees.map((employee) => staffDayRow(todayIndex, employee, todayKey, todayKey)), [selectedEmployees, todayIndex, todayKey]);
+    const todaySummary = useMemo(() => summarizeStaffAttendance(todayRows,
+        (todayIndex.tasks.get(todayKey) || []).filter((task) => !employeeId || [task.assigned_employee_id, task.original_employee_id, task.covering_employee_id].some((id) => String(id) === String(employeeId))), todayKey), [todayRows, todayIndex, todayKey, employeeId]);
+    const todayReady = employeesReady && !employeesError && configReady && !configError && todayData?.date === todayKey && !todayError;
+    const editorIndex = editor?.dateKey === todayKey && todayData?.date === todayKey ? todayIndex : dataIndex;
 
     const rowsForDate = useCallback((dateKey) => selectedEmployees
         .map((employee) => employeeDayRow(employee, dateKey))
-        .filter((row) => employeeMatchesAvailabilityFilter({ filter: availabilityFilter, state: row.state, tasks: row.tasks })),
-    [selectedEmployees, employeeDayRow, availabilityFilter]);
+        .filter((row) => employeeMatchesAvailabilityFilter({ filter: availabilityFilter, state: row.state, tasks: row.tasks }) && matchesAttendanceFilter(row, availabilityFilter, todayKey)),
+    [selectedEmployees, employeeDayRow, availabilityFilter, todayKey]);
 
     const summaryForDate = useCallback((dateKey) => {
         const rows = rowsForDate(dateKey);
@@ -280,23 +266,29 @@ function StaffCalendar() {
     const goToLeave = (leave) => router.push(taskManagementUrl({ tab: "leave", leaveRequestId: String(leave.id) }));
     const goToEmployee = (employee) => router.push(taskManagementUrl({ tab: "employees", employeeId: String(employee.id) }));
     const closeDateDetails = useCallback(() => {
+        if (actionBusyRef.current) return;
+        setActionError("");
         setSelectedDate("");
         setEditor(null);
     }, []);
 
     const move = (direction) => {
+        initialDateProvidedRef.current = true;
         closeDateDetails();
         setAnchor((current) => moveCalendarAnchor(current, mode, direction));
     };
     const goToday = () => {
+        initialDateProvidedRef.current = true;
         closeDateDetails();
         setAnchor(todayKey);
     };
     const changeView = (nextMode) => {
+        initialDateProvidedRef.current = true;
         closeDateDetails();
         setMode(nextMode);
     };
     const openDate = (dateKey) => {
+        initialDateProvidedRef.current = true;
         closeDateDetails();
         setAnchor(dateKey);
         setMode("day");
@@ -364,7 +356,7 @@ function StaffCalendar() {
             if (event.key !== "Tab") return;
 
             const focusable = Array.from(modal.querySelectorAll(
-                'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+                'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
             )).filter((element) => !element.hasAttribute("hidden") && element.getAttribute("aria-hidden") !== "true");
 
             if (!focusable.length) {
@@ -405,7 +397,22 @@ function StaffCalendar() {
         };
     }, [selectedDate, portalReady, closeDateDetails]);
 
+    const beginAttendanceView = (row) => {
+        rememberDetailsFocus();
+        setSelectedDate(row.dateKey);
+        setEditor({ type: "view", employeeId: row.employee.id, dateKey: row.dateKey });
+    };
+    const showTodayAttendance = (filter = "all") => {
+        openDate(todayKey);
+        setAvailabilityFilter(filter);
+        window.requestAnimationFrame(() => {
+            calendarSectionRef.current?.scrollIntoView({ behavior: "instant", block: "start" });
+            calendarSectionRef.current?.focus({ preventScroll: true });
+        });
+    };
     const beginAttendanceEdit = (row) => {
+        if (!canManage || row.dateKey > todayKey) return;
+        setActionError("");
         rememberDetailsFocus();
         setSelectedDate(row.dateKey);
         setAttendanceForm({
@@ -419,6 +426,8 @@ function StaffCalendar() {
     };
 
     const beginShiftEdit = (row, exceptionType = null) => {
+        if (!canManageSchedule) return;
+        setActionError("");
         rememberDetailsFocus();
         setSelectedDate(row.dateKey);
         setShiftForm({
@@ -437,32 +446,38 @@ function StaffCalendar() {
     };
 
     const runAttendanceAction = async (action) => {
-        if (attendanceBusy) return;
+        if (actionBusyRef.current || !canManage || !editor || editor.dateKey > todayKey) return;
         const employee = Number(attendanceForm.employee_id);
         const workDate = attendanceForm.attendance_date;
+        actionBusyRef.current = true;
+        setActionError("");
         setAttendanceBusy(action);
         try {
             if (action === "check-in") await workforceService.assistedCheckIn(employee, attendanceForm.notes || null);
             else if (action === "check-out") await workforceService.assistedCheckOut(employee, attendanceForm.notes || null);
             else if (action === "absent") await workforceService.setAttendanceStatus(employee, workDate, "Absent", attendanceForm.notes || null);
             else if (action === "sick") await workforceService.setAttendanceStatus(employee, workDate, "Sick", attendanceForm.notes || null);
-            notification.success("Attendance recorded using the farm server workflow.", "Attendance");
+            actionBusyRef.current = false;
+            setActionMessage("Attendance updated.");
             closeDateDetails();
             await loadCalendar({ background: true });
         } catch (err) {
-            notification.error(err?.message || "Unable to record attendance.", "Attendance Error");
+            setActionError(err?.message || "Unable to record attendance. Please retry.");
         } finally {
+            actionBusyRef.current = false;
             setAttendanceBusy("");
         }
     };
 
     const saveAttendance = async (event) => {
         event.preventDefault();
-        if (attendanceBusy) return;
+        if (actionBusyRef.current || !canManage || !editor || editor.dateKey > todayKey) return;
         if (!attendanceForm.correction_reason.trim()) {
-            notification.error("A correction reason is required.", "Attendance Correction");
+            setActionError("A correction reason is required.");
             return;
         }
+        actionBusyRef.current = true;
+        setActionError("");
         setAttendanceBusy("correction");
         try {
             await workforceService.correctAttendance(
@@ -470,18 +485,24 @@ function StaffCalendar() {
                 attendanceForm.attendance_date,
                 { status: attendanceForm.status, notes: attendanceForm.notes || null, correction_reason: attendanceForm.correction_reason },
             );
-            notification.success("Attendance correction saved with audit history.", "Attendance");
+            actionBusyRef.current = false;
+            setActionMessage("Attendance correction saved with audit history.");
             closeDateDetails();
             await loadCalendar({ background: true });
         } catch (err) {
-            notification.error(err?.message || "Unable to correct attendance.", "Attendance Error");
+            setActionError(err?.message || "Unable to correct attendance. Please retry.");
         } finally {
+            actionBusyRef.current = false;
             setAttendanceBusy("");
         }
     };
 
     const saveShift = async (event) => {
         event.preventDefault();
+        if (actionBusyRef.current || !canManageSchedule) return;
+        actionBusyRef.current = true;
+        setActionError("");
+        setAttendanceBusy("shift");
         const payload = {
             employee_id: Number(shiftForm.employee_id),
             work_date: shiftForm.work_date,
@@ -500,11 +521,15 @@ function StaffCalendar() {
         try {
             if (shiftForm.id) await workforceService.updateShift(shiftForm.id, payload);
             else await workforceService.createShift(payload);
-            notification.success(shiftForm.id ? "Roster shift updated." : "Roster shift added.", "Staff Roster");
+            actionBusyRef.current = false;
+            setActionMessage(shiftForm.id ? "Roster shift updated." : "Roster shift added.");
             closeDateDetails();
             await loadCalendar({ background: true });
         } catch (err) {
-            notification.error(err?.message || "Unable to save roster shift.", "Roster Error");
+            setActionError(err?.message || "Unable to save roster shift. Please retry.");
+        } finally {
+            actionBusyRef.current = false;
+            setAttendanceBusy("");
         }
     };
 
@@ -528,7 +553,13 @@ function StaffCalendar() {
                     <div className="workforce-actions"><AppHeaderActions /></div>
                 </header>
 
-                {error && <div className="workforce-error" role="alert">{error} <button type="button" className="workforce-button secondary compact" disabled={refreshing} onClick={() => loadCalendar({ background: true })}>Retry</button></div>}
+                {actionMessage && <p className="staff-calendar-save-message" role="status">{actionMessage}</p>}
+                <StaffAttendanceSummary todayKey={todayKey} timezone={farmTimezone} summary={todaySummary}
+                    ready={todayReady} busy={(loading || refreshing || !configReady) && !configError && !employeesError}
+                    error={configError || employeesError || todayError} updatedAt={todayData?.updatedAt}
+                    employeeName={employeeId ? selectedEmployees[0]?.full_name || "No matching employee" : ""}
+                    onRefresh={refreshCalendar} onViewToday={() => showTodayAttendance()}
+                    onFilter={showTodayAttendance} onViewRow={beginAttendanceView} onTask={goToTask} />
 
                 <StaffCalendarToolbar
                     activeEmployees={activeEmployees}
@@ -539,30 +570,32 @@ function StaffCalendar() {
                     goToday={goToday}
                     mode={mode}
                     move={move}
-                    setAnchor={setAnchor}
+                    setAnchor={(date) => { initialDateProvidedRef.current = true; setAnchor(date); }}
                     setAvailabilityFilter={setAvailabilityFilter}
                     setEmployeeId={setEmployeeId}
                     closeEditor={closeDateDetails}
+                    onClearFilters={() => { setEmployeeId(""); setAvailabilityFilter("all"); closeDateDetails(); }}
                     openFarmEvents={() => { closeDateDetails(); setEventPanel({}); }}
                 />
 
-                <section className="staff-calendar-shell">
-                    <StaffCalendarHeading anchor={anchor} mode={mode} range={range} />
+                <section id="staff-calendar-content" className="staff-calendar-shell" ref={calendarSectionRef} tabIndex={-1} aria-label="Selected calendar dates">
+                    <StaffCalendarHeading anchor={anchor} mode={mode} range={range} todayKey={todayKey} />
+                    <p className="staff-attendance-freshness" role="status">{loading || refreshing ? "Updating calendar…" : error ? "Calendar could not be updated." : updatedAt ? `Calendar updated ${new Intl.DateTimeFormat("en-GB", { timeZone: farmTimezone, hour: "2-digit", minute: "2-digit" }).format(new Date(updatedAt))} (farm time)` : ""}</p>
+                    {(error || employeesError || configError) && <div className="workforce-error" role="alert">Unable to load calendar. {error || employeesError || configError} <button type="button" className="workforce-button secondary compact" disabled={refreshing} onClick={refreshCalendar}>Retry calendar</button></div>}
                     {mode !== "month" && <CalendarEventBands events={data.farm_events || []} date={mode === "day" ? anchor : null} timezone={farmTimezone} onOpen={(id) => setEventPanel({ id })} />}
-                    {loading ? (
+                    {(loading && !configError) || (!configReady && !configError) || (!employeesReady && !employeesError) ? (
                         <div className={`calendar-skeleton calendar-skeleton-${mode}`} aria-label="Loading calendar">
                             <span /><span /><span /><span /><span /><span />
                         </div>
-                    ) : (
+                    ) : loadedRange !== rangeKey || error || employeesError || configError ? <p className="workforce-empty">Attendance and staffing totals are unavailable. Please retry.</p> : (
                         <StaffCalendarViews
                             events={data.farm_events || []}
                             timezone={farmTimezone}
                             openEvent={(id) => setEventPanel({ id })}
                             anchor={anchor}
                             availabilityFilter={availabilityFilter}
-                            beginAttendanceEdit={beginAttendanceEdit}
+                            beginAttendanceView={beginAttendanceView}
                             beginShiftEdit={beginShiftEdit}
-                            canManage={canManage}
                             canManageSchedule={canManageSchedule}
                             days={days}
                             employeeDayRow={employeeDayRow}
@@ -585,9 +618,16 @@ function StaffCalendar() {
                 {eventPanel && <FarmEventPanel date={anchor} timezone={farmTimezone} initial={eventPanel.initial} initialId={eventPanel.id} events={data.farm_events || []} employees={activeEmployees} canManage={canManageSchedule} onClose={() => setEventPanel(null)} onChanged={() => loadCalendar({ background: true })} />}
                 <StaffCalendarDetailsModal
                     attendanceBusy={attendanceBusy}
-                    attendanceByEmployeeDate={attendanceByEmployeeDate}
+                    actionError={actionError} canManage={canManage} farmTimezone={farmTimezone}
+                    row={editor ? staffDayRow(editorIndex, employees.find((item) => Number(item.id) === Number(editor.employeeId)) || {}, editor.dateKey, todayKey) : null}
+                    onReviewAttendance={beginAttendanceEdit}
+                    goToCoverage={goToCoverage}
+                    goToLeave={goToLeave}
+                    goToTask={goToTask}
+                    goToTasksForDate={goToTasksForDate}
+                    attendanceByEmployeeDate={editorIndex.attendance}
                     attendanceForm={attendanceForm}
-                    availabilityByEmployeeDate={availabilityByEmployeeDate}
+                    availabilityByEmployeeDate={editorIndex.availability}
                     closeDateDetails={closeDateDetails}
                     detailsModalRef={detailsModalRef}
                     editor={editor}

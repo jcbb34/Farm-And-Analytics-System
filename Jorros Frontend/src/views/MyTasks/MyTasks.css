@@ -671,8 +671,8 @@
    changing them after client-side navigation. */
 .my-tasks-page .task-card,
 .my-tasks-page .task-card:hover {
-    border-color: #e5e7eb !important;
-    background: #ffffff !important;
+    border-color: var(--my-task-card-border, #e5e7eb) !important;
+    background: var(--my-task-card-bg, #ffffff) !important;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.045) !important;
     transform: none !important;
     transition: none !important;
@@ -2048,6 +2048,90 @@ html[data-theme="dark"] .my-leave-tab-stack .my-leave-history-heading h2 {
 .my-attendance-copy strong { color: #166534; font-size: .86rem; }
 .my-attendance-copy span { color: #4b5563; font-size: .82rem; }
 .my-attendance-error { width: 100%; color: #b91c1c; font-size: .76rem; }
+
+/* Keep the next action visible; supporting information is opt-in per task. */
+.my-tasks-page .my-assigned-work-card .workforce-grid { align-items: start; }
+.my-tasks-page .my-assigned-work-card .task-meta { color: #667085; }
+.my-tasks-page .my-task-card-heading > div:first-child { min-width: 0; }
+.my-tasks-page .my-task-card-heading h3 { overflow-wrap: anywhere; }
+.my-tasks-page .my-task-target {
+    margin: 8px 0 0;
+    color: var(--theme-text-muted, #64748b);
+    font-size: var(--ui-small-size, .78rem);
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+.my-tasks-page .my-task-resource-summary,
+.my-tasks-page .my-task-correction-note { overflow-wrap: anywhere; }
+.my-tasks-page .my-task-correction-note { margin-top: 10px; margin-bottom: 0; }
+.my-tasks-page .my-task-details {
+    min-width: 0;
+    margin-top: 10px;
+    border-top: 1px solid var(--theme-border, #e5e7eb);
+}
+.my-tasks-page .my-task-details > summary {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 10px 2px;
+    color: #166534;
+    font-size: .82rem;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    list-style: none;
+    border-radius: 4px;
+}
+.my-tasks-page .my-task-details > summary::-webkit-details-marker { display: none; }
+.my-tasks-page .my-task-details > summary::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    margin-right: 6px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+}
+.my-tasks-page .my-task-details[open] > summary::after { transform: rotate(225deg); }
+.my-tasks-page .my-task-details > summary:hover { background: #f0fdf4; }
+.my-tasks-page .my-task-details > summary:focus-visible { outline: 2px solid #16803d; outline-offset: 2px; }
+.my-tasks-page .my-task-details-hide { display: none; }
+.my-tasks-page .my-task-details[open] .my-task-details-show { display: none; }
+.my-tasks-page .my-task-details[open] .my-task-details-hide { display: inline; }
+.my-tasks-page .my-task-details-content {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    padding: 2px 0 8px;
+    overflow-wrap: anywhere;
+}
+.my-tasks-page .my-task-details-content > :is(.task-note, .workforce-card-subtitle, .task-late-completion) { margin: 0; }
+.my-tasks-page .my-task-details-content > .workforce-card-subtitle { color: #64748b; }
+html[data-theme="dark"] .my-tasks-page .my-task-details { border-color: #334038; }
+html[data-theme="dark"] .my-tasks-page .my-task-target { color: #b5cbbd; }
+html[data-theme="dark"] .my-tasks-page .my-task-details > summary { color: #86efac; }
+html[data-theme="dark"] .my-tasks-page .my-task-details > summary:hover { background: #17351f; }
+html[data-theme="dark"] .my-tasks-page .my-task-details > summary:focus-visible { outline-color: #86efac; }
+html[data-theme="dark"] .my-tasks-page .my-assigned-work-card .task-card {
+    --my-task-card-bg: #10271b;
+    --my-task-card-border: #31503d;
+    color: #e2eee7;
+}
+html[data-theme="dark"] .my-tasks-page .my-assigned-work-card .task-card h3,
+html[data-theme="dark"] .my-tasks-page .my-assigned-work-card .task-note strong { color: #edf8f0; }
+html[data-theme="dark"] .my-tasks-page .my-assigned-work-card .task-meta,
+html[data-theme="dark"] .my-tasks-page .my-assigned-work-card .task-readonly-note { color: #b5cbbd; }
+html[data-theme="dark"] .my-tasks-page .my-assigned-work-card .task-note {
+    background: #173524;
+    border-color: #31503d;
+    color: #bed3c5;
+}
+html[data-theme="dark"] .my-tasks-page .my-task-details-content > .workforce-card-subtitle { color: #bed3c5; }
+
 @media (max-width: 700px) {
     .my-attendance-bar { align-items: stretch; flex-direction: column; }
     .my-attendance-bar .workforce-button { width: 100%; justify-content: center; }

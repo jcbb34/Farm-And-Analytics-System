@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
 // The browser tests intercept API traffic so they never connect to, or write
@@ -11,11 +12,12 @@ const link = (url, kind = "lan") => ({ kind, label: kind === "lan" ? "Same Wi-Fi
 
 async function prepare(page, phoneHandler) {
     await page.addInitScript((profile) => {
-        localStorage.setItem("joross-auth-session-v1", JSON.stringify({
+        sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({
             accessToken: "qr-browser-test-token", user: profile, expiresAt: Date.now() + 3600000,
         }));
     }, user);
     await page.route("**/api/v1/**", async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const path = new URL(route.request().url()).pathname;
         if (path === "/api/v1/system/phone-access") return phoneHandler(route);
         if (path === "/api/v1/auth/me") return route.fulfill({ json: user });

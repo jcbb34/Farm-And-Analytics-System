@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from '@playwright/test';
 
 const profile = { id: 77, username: 'drive.admin', fullName: 'Drive Test Administrator', role: 'System Administrator', permissions: ['*'], status: 'Active' };
@@ -11,11 +12,12 @@ async function prepare(page, { configured = false, status = 'Needs reconnection'
         drive: { configured, status, email: status ? 'owner@example.test' : null, folder_name: status ? 'Farm Backups' : null },
         storage: { free_bytes: 2 ** 34 }, readiness: { available: true },
     };
-    await page.addInitScript((user) => localStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-drive-token', user, expiresAt: Date.now() + 86400000 })), profile);
+    await page.addInitScript((user) => sessionStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-drive-token', user, expiresAt: Date.now() + 86400000 })), profile);
     // Google navigation is fulfilled locally: these tests never contact Google
     // or request real credentials, and every farm API request is intercepted.
     await page.route('https://accounts.google.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Synthetic Google sign-in</title><p>Test authorization page</p>' }));
-    await page.route('**/api/v1/**', (route) => {
+    await page.route('**/api/v1/**', async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (path === '/api/v1/auth/me') return route.fulfill({ json: profile });
         if (path.endsWith('/events/stream')) return route.fulfill({ status: 503, json: {} });

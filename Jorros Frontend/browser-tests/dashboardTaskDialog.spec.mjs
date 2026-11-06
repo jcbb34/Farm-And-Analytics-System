@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from '@playwright/test';
 
 // API requests are intercepted; no farm database is used by these checks.
@@ -15,8 +16,9 @@ const activities = [
 async function prepare(page) {
     const mutations = [];
     await page.clock.install({ time: new Date(`${today}T02:00:00Z`) });
-    await page.addInitScript((user) => localStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-dialog-token', user, expiresAt: Date.now() + 86400000 })), admin);
+    await page.addInitScript((user) => sessionStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-dialog-token', user, expiresAt: Date.now() + 86400000 })), admin);
     await page.route('**/api/v1/**', async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request();
         const path = new URL(request.url()).pathname;
         if (!['GET', 'HEAD'].includes(request.method())) mutations.push({ path, method: request.method() });

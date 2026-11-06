@@ -1,12 +1,10 @@
+import { formatStaffTime, matchesAttendanceFilter, staffAttendanceLabel } from "./staffAttendance.js";
 import { CalendarEventBands } from "../../components/FarmEvents/FarmEvents.jsx";
 import { formatDateKey } from "../../utils/farmCalendar.js";
 import {
-    coverageState,
     calendarShiftLabel,
     employeeMatchesAvailabilityFilter,
-    isTemporarilyCoveredTask,
     sameCalendarMonth,
-    taskNeedsCoverage,
 } from "./staffCalendarView.js";
 
 
@@ -144,6 +142,7 @@ function WeekView({
     goToTasksForDate,
     openDate,
     selectedEmployees,
+    todayKey,
 }) {
     return (
         <div className="staff-week-wrap">
@@ -177,7 +176,7 @@ function WeekView({
                                     filter: availabilityFilter,
                                     state: row.state,
                                     tasks: row.tasks,
-                                });
+                                }) && matchesAttendanceFilter(row, availabilityFilter, todayKey);
                                 if (!visible) return <td key={dateKey} className="filtered-cell">—</td>;
 
                                 return (
@@ -216,107 +215,26 @@ function WeekView({
 }
 
 
-function DayView({
-    anchor,
-    beginAttendanceEdit,
-    beginShiftEdit,
-    canManage,
-    canManageSchedule,
-    goToCoverage,
-    goToEmployee,
-    goToLeave,
-    goToTask,
-    goToTasksForDate,
-    rows,
-    todayKey,
-}) {
-    const showActions = canManage || canManageSchedule;
-    return (
-        <div className="staff-day-wrap">
-            <table className="staff-day-table">
-                <thead>
-                    <tr>
-                        <th>Employee</th>
-                        <th>Shift</th>
-                        <th>Attendance / Availability</th>
-                        <th>Leave</th>
-                        <th>Active Tasks</th>
-                        <th>Coverage</th>
-        {showActions && <th>Actions</th>}
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.length ? rows.map((row) => {
-                        const relevantLeave = row.leave.filter((leave) => ["Pending", "Approved"].includes(leave.status));
-                        const coverage = row.tasks.filter((task) => taskNeedsCoverage(task) || isTemporarilyCoveredTask(task));
-                        return (
-                            <tr key={row.employee.id}>
-                                <td>
-                                    <button type="button" className="calendar-employee-link" onClick={() => goToEmployee(row.employee)}>
-                                        {row.employee.full_name}
-                                    </button>
-                                    <small>{row.employee.position || "Employee"}</small>
-                                </td>
-                                <td>{calendarShiftLabel(row.shift, row.availability)}</td>
-                                <td><span className={`calendar-state-badge ${statusClass(row.state)}`}>{row.state}</span></td>
-                                <td>
-                                    {relevantLeave.length
-                                        ? relevantLeave.map((leave) => (
-                                            <button
-                                                type="button"
-                                                key={leave.id}
-                                                className={`calendar-inline-record leave-${leave.status.toLowerCase()}`}
-                                                onClick={() => goToLeave(leave)}
-                                            >
-                                                {leave.status === "Pending" ? "Pending Leave" : "On Leave"}
-                                            </button>
-                                        ))
-                                        : "—"}
-                                </td>
-                                <td>
-                                    <button type="button" className="calendar-task-count" onClick={() => goToTasksForDate(anchor, row.employee.id)}>
-                                        {row.assignedTasks.length}
-                                    </button>
-                                </td>
-                                <td>
-                                    {coverage.length
-                                        ? coverage.map((task) => (
-                                            <button
-                                                type="button"
-                                                className={`calendar-inline-record ${statusClass(coverageState(task))}`}
-                                                key={task.id}
-                                                onClick={() => taskNeedsCoverage(task) ? goToCoverage(anchor) : goToTask(task)}
-                                            >
-                                                {coverageState(task)}
-                                            </button>
-                                        ))
-                                        : <span className="calendar-resolved-text">No coverage issue</span>}
-                                </td>
-                                {showActions && (
-                                    <td>
-                                        <div className="calendar-row-actions">
-                                            {canManage && <button type="button" className="workforce-button secondary"
-                                                aria-label={`Review attendance for ${row.employee.full_name}`}
-                                                disabled={anchor > todayKey}
-                                                title={anchor > todayKey ? "Attendance is available for today and past dates." : `Review attendance for ${row.employee.full_name}`}
-                                                onClick={() => beginAttendanceEdit(row)}>Review Attendance</button>}
-                                            {canManageSchedule && <button type="button" className="workforce-button secondary" onClick={() => beginShiftEdit(row)}>Day Exception</button>}
-                                        </div>
-                                    </td>
-                                )}
-                            </tr>
-                        );
-                    }) : (
-                        <tr>
-                            <td colSpan={showActions ? 7 : 6}>
-                                <div className="workforce-empty">No employees match the selected filters.</div>
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-        </div>
-    );
+function DayView({ anchor, beginAttendanceView, beginShiftEdit, canManageSchedule, rows, todayKey, timezone }) {
+    return <div className="staff-day-wrap staff-attendance-day-wrap">
+        <p className="staff-day-time-note">Times use {timezone}. Future dates show the schedule only.</p>
+        <table className="staff-day-table staff-attendance-table">
+            <thead><tr><th scope="col">Employee</th><th scope="col">Shift</th><th scope="col">Attendance</th><th scope="col">Check In / Out</th><th scope="col">Actions</th></tr></thead>
+            <tbody>{rows.length ? rows.map((row) => {
+                const label = staffAttendanceLabel(row, todayKey);
+                return <tr key={row.employee.id}>
+                    <td data-label="Employee"><button type="button" className="calendar-employee-link" onClick={() => beginAttendanceView(row)}>{row.employee.full_name}</button><small>{row.employee.position || "Employee"}</small></td>
+                    <td data-label="Shift">{calendarShiftLabel(row.shift, row.availability)}{["Rest Day", "Special Day Off", "Authorized Day Off", "Work Suspended"].includes(row.state) && <small>Not scheduled to check in</small>}</td>
+                    <td data-label="Attendance"><span className={`calendar-state-badge ${statusClass(label)}`}>{label}</span></td>
+                    <td data-label="Check In / Out"><div className="staff-clock-times"><span>In <strong>{anchor <= todayKey ? formatStaffTime(row.attendance?.check_in_at, timezone) : "—"}</strong></span><span>Out <strong>{anchor <= todayKey ? formatStaffTime(row.attendance?.check_out_at, timezone) : "—"}</strong></span></div></td>
+                    <td data-label="Actions"><div className="calendar-row-actions">
+                        <button type="button" className="workforce-button secondary" aria-label={`View attendance for ${row.employee.full_name}`} onClick={() => beginAttendanceView(row)}>View Attendance</button>
+                        {canManageSchedule && <button type="button" className="workforce-button secondary" onClick={() => beginShiftEdit(row)}>Day Exception</button>}
+                    </div></td>
+                </tr>;
+            }) : <tr><td colSpan={5}><div className="workforce-empty">No employees match the selected filters.</div></td></tr>}</tbody>
+        </table>
+    </div>;
 }
 
 

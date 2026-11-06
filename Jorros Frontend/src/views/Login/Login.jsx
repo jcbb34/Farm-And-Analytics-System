@@ -21,7 +21,7 @@ import "./Login.css";
 
 function Login() {
     const router = useRouter();
-    const { login, isLoading: authIsLoading } = useAuth();
+    const { login, isLoading: authIsLoading, authError } = useAuth();
     const {
         success,
         error: showErrorNotification,
@@ -274,7 +274,7 @@ function Login() {
                         </div>
                     </div>
 
-                    {formError && (
+                    {(formError || authError) && (
                         <div
                             className="login-error-message"
                             role="alert"
@@ -283,7 +283,7 @@ function Login() {
                             <span className="material-symbols-outlined">
                                 error
                             </span>
-                            <p>{formError}</p>
+                            <p>{formError || authError}</p>
                         </div>
                     )}
 

@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
 const data = JSON.parse(readFileSync(new URL("../../Jorros Backend/reference_data/philippine_locations.json", import.meta.url), "utf8"));
@@ -13,11 +14,12 @@ async function setup(page, { worker = false, failApproval = false, failLocations
     let task = { id: 42, activity_code: "PERSON-VOID", name: "Approved test work", category: "Maintenance", activity_date: today, start_time: "08:00", location: "Test Farm", related_to: "Test resource", assigned_employee_id: 10, assigned_to: user.fullName, employee_name: user.fullName,
         status: "Completed", can_void: true, priority: "Medium", requires_review: true, requires_evidence: false, is_archived: false, resource_required: false, source_type: "manual", latest_submission: { id: 77, employee_id: 10, employee_name: user.fullName, review_status: "Approved", actual_quantity: 2, actual_unit: "kg", submitted_at: `${today}T08:00:00`, worker_notes: "Test performed work", attempt_number: 1 } };
     await page.clock.install({ time: new Date(`${today}T04:00:00Z`) });
-    await page.addInitScript((profile) => localStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-profile-token", user: profile, expiresAt: Date.now() + 86400000 })), user);
+    await page.addInitScript((profile) => sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-profile-token", user: profile, expiresAt: Date.now() + 86400000 })), user);
     await page.route("**/reference-data/philippine_locations.2026-Q3.json", (route) => bundleUnavailable
         ? route.fulfill({ status: 503, json: { detail: "Synthetic bundled reference failure" } })
         : route.continue());
     await page.route("**/api/v1/**", async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), url = new URL(request.url()), path = url.pathname;
         if (path.endsWith("/events/stream")) return route.fulfill({ status: 503, json: {} });
         if (path === "/api/v1/auth/me") return route.fulfill({ json: user });
@@ -192,7 +194,7 @@ test("employee authorization requires owner credentials, clears failed passwords
     await dialog.getByLabel("Owner/Admin password", { exact: false }).fill("Synthetic-Test-Password");
     await dialog.getByRole("button", { name: "Authorize & Void", exact: true }).click();
     await expect(dialog).toHaveCount(0); expect(state.effectCount()).toBe(1);
-    const session = await page.evaluate(() => JSON.parse(localStorage.getItem("joross-auth-session-v1")));
+    const session = await page.evaluate(() => JSON.parse(sessionStorage.getItem("joross-auth-session-v1")));
     expect(session.accessToken).toBe("synthetic-profile-token"); expect(session.user.permissions).toEqual(["workforce:submit"]);
     expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain("Synthetic-Test-Password");
 });

@@ -9,3 +9,12 @@
 .br-drive-setup-list{margin:0;padding-left:20px;display:grid;gap:12px;color:var(--ui-text-muted)}
 .br-drive-setup-list ul{padding-left:18px;margin-top:8px;display:grid;gap:5px}
 .br-drive-setup-list code{color:var(--ui-text);font-size:.78rem;overflow-wrap:anywhere}
+
+/* Disclosure keeps the schedule form mounted so drafts survive folding and polling. */
+.br-card > .br-schedule-summary { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:44px; list-style:none; border-radius:6px; }
+.br-schedule-summary::-webkit-details-marker { display:none; }
+.br-schedule-summary::marker { content:""; }
+.br-root .br-schedule-summary h4 { margin:0; }
+.br-schedule-chevron { flex:0 0 auto; font-size:22px; color:var(--ui-primary); transition:transform .15s ease; }
+.br-schedule-card[open] > .br-schedule-summary .br-schedule-chevron { transform:rotate(180deg); }
+.br-schedule-card > p { margin-top:12px; }

@@ -5,6 +5,7 @@ from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
 from app.core.config import settings
+from app.core.session_policy import MAX_SESSION_SECONDS, SESSION_POLICY_VERSION
 from app.core.recovery_runtime import session_epoch
 
 
@@ -30,7 +31,7 @@ def create_access_token(
     auth_version: int = 0,
 ) -> tuple[str, int]:
     expire_minutes = (
-        settings.jwt_access_token_expire_minutes
+        min(settings.jwt_access_token_expire_minutes, MAX_SESSION_SECONDS // 60)
     )
 
     expires_at = datetime.now(
@@ -44,6 +45,8 @@ def create_access_token(
         "epoch": session_epoch(),
         "ver": int(auth_version),
         "purpose": "access",
+        "sp": SESSION_POLICY_VERSION,
+        "iat": datetime.now(timezone.utc),
         "exp": expires_at,
     }
 
@@ -140,3 +143,20 @@ def decode_access_token(
 ) -> int | None:
     claims = decode_access_token_claims(token)
     return claims[0] if claims is not None else None
+
+
+def decode_session_access_token(token: str):
+    """Old persistent tokens require fresh authentication under the new policy."""
+    try:
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        if (payload.get("purpose") != "access" or payload.get("sp") != SESSION_POLICY_VERSION
+                or payload.get("epoch", "0") != session_epoch()
+                or not isinstance(payload.get("iat"), (int, float))
+                or not isinstance(payload.get("exp"), (int, float))
+                or not 0 < payload["exp"] - payload["iat"] <= MAX_SESSION_SECONDS + 1):
+            return None
+        int(payload["sub"])
+        int(payload.get("ver", 0))
+        return payload
+    except (InvalidTokenError, ValueError, TypeError, KeyError):
+        return None

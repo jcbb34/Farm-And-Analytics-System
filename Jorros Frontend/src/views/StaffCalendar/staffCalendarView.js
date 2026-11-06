@@ -6,7 +6,7 @@ import {
 } from "../../utils/farmCalendar.js";
 
 export const CALENDAR_VIEWS = ["month", "week", "day"];
-export const AVAILABILITY_FILTERS = ["all", "scheduled", "possible-absence", "leave", "coverage"];
+export const AVAILABILITY_FILTERS = ["all", "scheduled", "possible-absence", "leave", "coverage", "present", "not-checked-in", "needs-review", "absent", "not-scheduled"];
 export const TERMINAL_TASK_STATUSES = new Set([
     "Completed",
     "Approved",
@@ -19,7 +19,7 @@ export const TERMINAL_TASK_STATUSES = new Set([
 export function normalizeCalendarView(value) {
     return CALENDAR_VIEWS.includes(String(value || "").toLowerCase())
         ? String(value).toLowerCase()
-        : "month";
+        : "day";
 }
 
 export function normalizeAvailabilityFilter(value) {
@@ -149,7 +149,7 @@ export function employeeMatchesAvailabilityFilter({ filter, state, tasks }) {
     return true;
 }
 
-export function buildCalendarReturnPath({ view = "month", anchor, employeeId = "", availability = "all", selectedDate = "" }) {
+export function buildCalendarReturnPath({ view = "day", anchor, employeeId = "", availability = "all", selectedDate = "" }) {
     const params = new URLSearchParams();
     params.set("view", normalizeCalendarView(view));
     if (anchor) params.set("date", anchor);

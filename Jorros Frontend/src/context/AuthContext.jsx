@@ -6,6 +6,7 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 
@@ -13,6 +14,10 @@ import { appConfig, storageKeys } from "../config/appConfig.js";
 import { authService } from "../services/authService.js";
 import { userService } from "../services/userService.js";
 import { explicitUserHasPermission } from "../utils/accessControl.js";
+
+import useSessionPolicy from "../hooks/useSessionPolicy.js";
+import SessionTimeoutWarning from "../components/Auth/SessionTimeoutWarning.jsx";
+import { connectSessionTabs, initialSessionPolicy, SESSION_SIGNAL_KEY, sessionIdentity, publishSessionSignal } from "../services/sessionPolicy.js";
 
 const AuthContext = createContext(null);
 
@@ -180,20 +185,16 @@ function readStoredSession() {
         return null;
     }
 
-    // Shared-device authentication is intentionally session-scoped so a
-    // kiosk browser does not keep an employee token after the tab/browser
-    // session ends. Normal desktop sessions keep the existing localStorage
-    // behavior for backwards compatibility.
-    const sessionOnlyStored = safelyParse(
-        safeStorageGet("sessionStorage", storageKeys.authSession),
-        null
-    );
-    const persistentStored = safelyParse(
-        safeStorageGet("localStorage", storageKeys.authSession),
-        null
-    );
-    const storedSession = sessionOnlyStored || persistentStored;
-    const storedInSession = Boolean(sessionOnlyStored);
+    // All accounts are temporary. Old persistent credentials are never resumed.
+    safeStorageRemove("localStorage", storageKeys.authSession);
+    safeStorageRemove("localStorage", storageKeys.legacyAuthenticated);
+    const storedSession = safelyParse(safeStorageGet("sessionStorage", storageKeys.authSession), null);
+
+    if (typeof storedSession?.accessToken !== "string" || !storedSession.accessToken.trim()
+        || !storedSession.user || typeof storedSession.user !== "object" || Array.isArray(storedSession.user)) {
+        safeStorageRemove("sessionStorage", storageKeys.authSession);
+        return null;
+    }
 
     if (storedSession?.expiresAt) {
         const expiresAt = Number(storedSession.expiresAt);
@@ -202,7 +203,7 @@ function readStoredSession() {
             Number.isFinite(expiresAt) &&
             expiresAt <= Date.now()
         ) {
-            const storageName = storedInSession ? "sessionStorage" : "localStorage";
+            const storageName = "sessionStorage";
             safeStorageRemove(storageName, storageKeys.authSession);
             safeStorageRemove(storageName, storageKeys.legacyAuthenticated);
             return null;
@@ -212,43 +213,43 @@ function readStoredSession() {
     if (storedSession?.user) {
         return {
             ...storedSession,
+            sessionOnly: true,
             user: normalizeUser(storedSession.user),
         };
     }
 
-    if (!appConfig.useMockApi) {
-        return null;
-    }
-    const legacyAuthenticated = isTruthyStorageValue(
-        safeStorageGet("localStorage", storageKeys.legacyAuthenticated)
-    );
-
-    if (!legacyAuthenticated) {
-        return null;
-    }
-
-    return {
-        accessToken: "legacy-frontend-session",
-        refreshToken: "",
-        tokenType: "bearer",
-        expiresAt: null,
-        user: normalizeUser(),
-        legacy: true,
-    };
+    return null;
 }
 
-function saveSession(session, { sessionOnly = false } = {}) {
+function sessionWasNotReplaced(token) {
+    const stored = safelyParse(safeStorageGet("sessionStorage", storageKeys.authSession), null);
+    return !stored?.accessToken || stored.accessToken === token;
+}
+
+function persistSessionPolicy(policy, token) {
+    const stored = safelyParse(safeStorageGet("sessionStorage", storageKeys.authSession), null);
+    if (!token || stored?.accessToken !== token) return false;
+    // Timing updates are not profile changes. Preserve identity and unsaved
+    // forms instead of notifying every module when the status poll completes.
+    safeStorageSet("sessionStorage", storageKeys.authSession, JSON.stringify({
+        ...stored, sessionOnly: true, sessionPolicy: policy,
+    }));
+    return true;
+}
+
+function saveSession(session, { sessionOnly = true } = {}) {
     if (typeof window === "undefined") {
         return session;
     }
 
     const normalizedSession = {
         ...session,
-        sessionOnly: Boolean(sessionOnly),
+        sessionOnly: true,
+        sessionPolicy: initialSessionPolicy(session),
         user: normalizeUser(session?.user),
     };
-    const targetStorageName = sessionOnly ? "sessionStorage" : "localStorage";
-    const otherStorageName = sessionOnly ? "localStorage" : "sessionStorage";
+    const targetStorageName = "sessionStorage";
+    const otherStorageName = "localStorage";
 
     // Never leave a previous employee/admin token behind in the alternate
     // storage location. This is especially important when a normal browser
@@ -257,11 +258,10 @@ function saveSession(session, { sessionOnly = false } = {}) {
     safeStorageRemove(otherStorageName, storageKeys.profile);
     safeStorageRemove(otherStorageName, storageKeys.legacyAuthenticated);
 
-    safeStorageSet(
-        targetStorageName,
-        storageKeys.authSession,
-        JSON.stringify(normalizedSession)
-    );
+    if (!safeStorageSet(targetStorageName, storageKeys.authSession, JSON.stringify(normalizedSession))) {
+        authService.logout(normalizedSession.accessToken).catch(() => {});
+        throw new Error("Temporary browser storage is unavailable. Enable it before signing in.");
+    }
     safeStorageSet(
         targetStorageName,
         storageKeys.profile,
@@ -295,6 +295,8 @@ function clearSession() {
         return;
     }
 
+    const previous = safelyParse(safeStorageGet("sessionStorage", storageKeys.authSession), null);
+    publishSessionSignal("logout", sessionIdentity(previous));
     safeStorageRemove("localStorage", storageKeys.authSession);
     safeStorageRemove("localStorage", storageKeys.legacyAuthenticated);
     safeStorageRemove("localStorage", storageKeys.profile);
@@ -326,9 +328,18 @@ export function AuthProvider({ children }) {
     const [session, setSession] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [authError, setAuthError] = useState(null);
+    const sessionRef = useRef(session);
+    sessionRef.current = session;
 
     const syncSession = useCallback(() => {
         setSession(readStoredSession());
+    }, []);
+
+    const updateSessionPolicy = useCallback((policy, token) => {
+        if (!persistSessionPolicy(policy, token)) return;
+        setSession((current) => current?.accessToken === token
+            ? { ...current, sessionPolicy: policy }
+            : current);
     }, []);
 
     useEffect(() => {
@@ -338,11 +349,26 @@ export function AuthProvider({ children }) {
             syncSession();
         } catch {
             setSession(null);
-        } finally {
-            setIsLoading(false);
         }
 
+        const handleSignal = (signal) => {
+            const current = readStoredSession();
+            if (!current || signal?.sessionId !== sessionIdentity(current)) return;
+            if (signal.kind === "logout") { clearSession(); setSession(null); }
+            if (signal.kind === "activity" && Number.isFinite(signal.policy?.idleDeadline)) {
+                const currentPolicy = initialSessionPolicy(current);
+                const policy = { ...currentPolicy,
+                    idleDeadline: Math.min(Math.max(signal.policy.idleDeadline, currentPolicy.idleDeadline), currentPolicy.absoluteDeadline) };
+                updateSessionPolicy(policy, current.accessToken);
+            }
+        };
+        const stopSessionTabs = connectSessionTabs({ read: readStoredSession,
+            adopt: (shared) => { if (!readStoredSession()) setSession(saveSession(shared)); },
+            ready: () => setIsLoading(false), signal: handleSignal });
         const handleStorage = (event) => {
+            if (event.key === SESSION_SIGNAL_KEY && event.newValue) {
+                handleSignal(safelyParse(event.newValue, null)); return;
+            }
             if (
                 [
                     storageKeys.authSession,
@@ -385,6 +411,7 @@ export function AuthProvider({ children }) {
             : null;
 
         return () => {
+            stopSessionTabs();
             window.removeEventListener(
                 "storage",
                 handleStorage
@@ -401,7 +428,7 @@ export function AuthProvider({ children }) {
                 window.clearInterval(legacySyncTimer);
             }
         };
-    }, [syncSession]);
+    }, [syncSession, updateSessionPolicy]);
 
     const login = useCallback(async (credentials) => {
         setAuthError(null);
@@ -417,7 +444,7 @@ export function AuthProvider({ children }) {
             }
 
             const savedSession = saveSession(result, {
-                sessionOnly: Boolean(credentials?.sharedDevice),
+                sessionOnly: true,
             });
             setSession(savedSession);
             return savedSession;
@@ -443,7 +470,7 @@ export function AuthProvider({ children }) {
                         otpCode,
                     });
                 const savedSession = saveSession(nextSession, {
-                    sessionOnly: Boolean(sharedDevice),
+                    sessionOnly: true,
                 });
                 setSession(savedSession);
                 return savedSession;
@@ -463,8 +490,12 @@ export function AuthProvider({ children }) {
 
     const logout = useCallback(async ({ forceLocal = false } = {}) => {
         let serverReleased = true;
+        const currentToken = sessionRef.current?.accessToken;
+        const revocation = authService.logout(currentToken);
+        if (forceLocal && sessionWasNotReplaced(currentToken)) { clearSession(); setSession(null); }
+        else setAuthError(null);
         try {
-            await authService.logout();
+            await revocation;
         } catch (error) {
             // An already-expired token needs no additional server revocation.
             if (error?.status !== 401) {
@@ -481,8 +512,7 @@ export function AuthProvider({ children }) {
             storageKeys.lastLogout,
             new Date().toISOString()
         );
-        clearSession();
-        setSession(null);
+        if (sessionRef.current?.accessToken === currentToken && sessionWasNotReplaced(currentToken)) { clearSession(); setSession(null); }
         return { serverReleased };
     }, []);
 
@@ -510,12 +540,15 @@ export function AuthProvider({ children }) {
 
         setSession(updatedSession);
         return updatedSession.user;
-    }, [session]);
+    }, [session?.accessToken, session?.user?.id]);
 
     const updateCurrentUser = useCallback(
         async (changes) => {
-            const currentUser =
-                session?.user || (appConfig.useMockApi ? DEFAULT_USER : {});
+            const currentSession = readStoredSession();
+            if (!session?.accessToken || currentSession?.accessToken !== session.accessToken) {
+                throw new Error("Your session ended. Please sign in again.");
+            }
+            const currentUser = currentSession.user;
 
             let updatedUser;
 
@@ -539,24 +572,26 @@ export function AuthProvider({ children }) {
                 );
             }
 
+            const latestSession = readStoredSession();
+            if (latestSession?.accessToken !== currentSession.accessToken
+                || String(latestSession?.user?.id) !== String(currentUser.id)) {
+                throw new Error("Your session changed. Sign in again before updating your profile.");
+            }
             const updatedSession = saveSession(
                 {
-                    ...(session || {}),
-                    accessToken:
-                        session?.accessToken ||
-                        (appConfig.useMockApi ? "legacy-frontend-session" : ""),
+                    ...latestSession,
                     user: {
-                        ...currentUser,
+                        ...latestSession.user,
                         ...updatedUser,
                     },
                 },
-                { sessionOnly: Boolean(session?.sessionOnly) }
+                { sessionOnly: true }
             );
 
             setSession(updatedSession);
             return updatedSession.user;
         },
-        [session]
+        [session?.accessToken, session?.user]
     );
 
     const hasPermission = useCallback(
@@ -574,8 +609,15 @@ export function AuthProvider({ children }) {
             const rolePermissions = ROLE_PERMISSIONS[currentUser?.role] || [];
             return rolePermissions.includes("*") || rolePermissions.includes(permission);
         },
-        [session]
+        [session?.user]
     );
+
+    const expireSession = useCallback((reason, token) => {
+        if (sessionRef.current?.accessToken !== token || !sessionWasNotReplaced(token)) return;
+        logout({ forceLocal: true }).catch(() => {});
+        setAuthError(reason === "idle" ? "You were signed out after 15 minutes of inactivity. Please sign in again." : "Your session ended. Please sign in again.");
+    }, [logout]);
+    const sessionPolicy = useSessionPolicy({ session, onPolicy: updateSessionPolicy, onExpire: expireSession });
 
     const value = useMemo(
         () => ({
@@ -610,6 +652,9 @@ export function AuthProvider({ children }) {
     return (
         <AuthContext.Provider value={value}>
             {children}
+            <SessionTimeoutWarning open={sessionPolicy.warning} seconds={sessionPolicy.seconds} reason={sessionPolicy.reason}
+                busy={sessionPolicy.busy} error={sessionPolicy.error} onStay={sessionPolicy.staySignedIn}
+                onKeepWorking={sessionPolicy.keepWorking} onLogout={() => logout({ forceLocal: true }).catch(() => {})}/>
         </AuthContext.Provider>
     );
 }

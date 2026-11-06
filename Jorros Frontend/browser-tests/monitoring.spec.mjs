@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
 const today = "2026-10-29";
@@ -55,8 +56,9 @@ async function setup(page, { module = "Crop", reviewing = false, worker = false,
     const writes = [];
     const user = { id: 1, username: "monitoring.test", fullName: employee.full_name, role: worker ? "Employee" : "System Administrator", permissions: worker ? ["workforce:submit"] : ["*"], status: "Active" };
     await page.clock.install({ time: new Date("2026-10-29T04:00:00Z") });
-    await page.addInitScript((profile) => localStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "monitoring-browser-test-token", user: profile, expiresAt: Date.now() + 86400000 })), user);
+    await page.addInitScript((profile) => sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "monitoring-browser-test-token", user: profile, expiresAt: Date.now() + 86400000 })), user);
     await page.route("**/api/v1/**", async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request();
         const path = new URL(request.url()).pathname;
         if (path.endsWith("/events/stream")) return route.fulfill({ status: 503, json: {} });

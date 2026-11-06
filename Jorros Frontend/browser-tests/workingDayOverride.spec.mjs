@@ -1,3 +1,4 @@
+import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
 const today = "2026-11-01";
@@ -8,10 +9,11 @@ test("My Tasks refreshes both today's attendance and My Schedule after a working
     const writes = [];
     const attendance = { id: 91, employee_id: 1, attendance_date: today, status: "Day Off", check_in_at: null, check_out_at: null };
     await page.clock.install({ time: new Date(`${today}T00:05:00Z`) });
-    await page.addInitScript((profile) => localStorage.setItem("joross-auth-session-v1", JSON.stringify({
+    await page.addInitScript((profile) => sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({
         accessToken: "working-day-test-token", user: profile, expiresAt: Date.now() + 86400000,
     })), user);
     await page.route("**/api/v1/**", async (route) => {
+        if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (request.method() !== "GET") writes.push(path);
         if (path === "/api/v1/auth/me") return route.fulfill({ json: user });
