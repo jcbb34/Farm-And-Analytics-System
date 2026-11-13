@@ -10,7 +10,7 @@ def inventory_snapshot(item):
     return {
         column.key: getattr(item, column.key)
         for column in inspect(type(item)).column_attrs
-        if column.key not in {"created_at", "updated_at"}
+        if column.key not in {"created_at", "updated_at", "edit_version"}
     }
 
 

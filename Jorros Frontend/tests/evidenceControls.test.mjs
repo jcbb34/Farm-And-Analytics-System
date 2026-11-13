@@ -31,7 +31,7 @@ test("evidence button states include upload, replace, uploading, view, remove, s
     assert.match(component, /hasEvidence \? "Replace Photo" : "Upload Photo"/);
     assert.match(component, /uploading \? "Uploading…"/);
     assert.match(component, /Opening…/);
-    assert.match(component, />Remove</);
+    assert.match(component, /"Remove Attachment"/);
     assert.match(component, /type: "success"/);
     assert.match(component, /type: "error"/);
     assert.match(component, /disabled=\{blocked\}/);

@@ -29,6 +29,9 @@ from app.core.database import Base
 class Crop(Base):
     __tablename__ = "crops"
 
+    edit_version: Mapped[int] = mapped_column(nullable=False, default=1, server_default=text("1"))
+    __mapper_args__ = {"version_id_col": edit_version}
+
     monitoring_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("1"))
     monitoring_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     monitoring_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)

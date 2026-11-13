@@ -1,11 +1,13 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
 const today = "2026-10-29";
 const employee = { id: 1, full_name: "Task Review Employee", employee_code: "VOID-EMP", employment_status: "Active", is_archived: false };
 
-async function setup(page, { status = "Submitted for Review", eligible, sourceType = "crop_watering", staleVoid = false } = {}) {
+async function setup(page, { status = "Submitted for Review", eligible, sourceType = "crop_watering", staleVoid = false, dark = false, failReviewOnce = false, harvestApprovalBlocker = "" } = {}) {
     const writes = [];
+    let rejectReview = failReviewOnce;
     let task = {
         id: 1, activity_code: "VOID-TASK", name: "Water test crop", category: "Crop Care", related_to: "Test crop", location: "Field A",
         activity_date: today, start_time: "08:00", assigned_employee_id: 1, assigned_to: employee.full_name,
@@ -18,8 +20,11 @@ async function setup(page, { status = "Submitted for Review", eligible, sourceTy
     };
     const user = { id: 1, username: "void.browser.test", fullName: "Task Reviewer", role: "System Administrator", permissions: ["*"], status: "Active" };
     await page.clock.install({ time: new Date("2026-10-29T04:00:00Z") });
-    await page.addInitScript((profile) => sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "test-task-void-browser-token", user: profile, expiresAt: Date.now() + 86400000 })), user);
-    await page.route("**/api/v1/**", async (route) => {
+    await page.addInitScript(({ profile, dark }) => {
+        sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "test-task-void-browser-token", user: profile, expiresAt: Date.now() + 86400000 }));
+        localStorage.setItem("joross-theme", dark ? "dark" : "light");
+    }, { profile: user, dark });
+    await page.route("**/api/v1/**", withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (path.endsWith("/events/stream")) return route.fulfill({ status: 503, json: {} });
@@ -27,6 +32,10 @@ async function setup(page, { status = "Submitted for Review", eligible, sourceTy
         if (path.endsWith("/calendar/config")) return route.fulfill({ json: { today, timezone: "Asia/Manila" } });
         if (path.endsWith("/review") && request.method() === "POST") {
             const payload = request.postDataJSON(); writes.push({ path, payload });
+            if (rejectReview) {
+                rejectReview = false;
+                return route.fulfill({ status: 503, json: { detail: "The review could not be saved. Please retry." } });
+            }
             task = { ...task, status: payload.decision === "Approve" ? "Completed" : "Returned", can_void: payload.decision === "Approve",
                 latest_submission: { ...task.latest_submission, review_status: payload.decision === "Approve" ? "Approved" : "Returned", review_feedback: payload.feedback } };
             return route.fulfill({ json: task });
@@ -38,13 +47,13 @@ async function setup(page, { status = "Submitted for Review", eligible, sourceTy
             if (staleVoid) return route.fulfill({ status: 409, json: { detail: "Only approved, completed work can be voided. Refresh the task list." } });
             return route.fulfill({ json: task });
         }
-        if (path.endsWith("/review-report")) return route.fulfill({ json: { task, current_submission: task.latest_submission, previous_submissions: [], evidence: [], resource_usage: { tracked: false, movements: [] } } });
+        if (path.endsWith("/review-report")) return route.fulfill({ json: { task, current_submission: task.latest_submission, previous_submissions: [], evidence: [], resource_usage: { tracked: false, movements: [] }, harvest_approval_blocker: harvestApprovalBlocker || null, crop_status: harvestApprovalBlocker ? "Harvested" : null } });
         if (path.endsWith("/tasks/page")) return route.fulfill({ json: { items: [task], total: 1, offset: 0, limit: 25 } });
         if (path.endsWith("/tasks/summary")) return route.fulfill({ json: { total: 1 } });
         if (path.endsWith("/employees")) return route.fulfill({ json: [employee] });
         if (path === "/api/v1/workforce/tasks/1") return route.fulfill({ json: task });
         return route.fulfill({ json: [] });
-    });
+    }));
     await page.goto("/task-management");
     await page.getByLabel("Filter by schedule", { exact: true }).selectOption("All Scheduled");
     await expect(page.getByText("Water test crop", { exact: true })).toBeVisible();
@@ -138,4 +147,100 @@ test.describe("mobile pending review", () => {
             expect(box.x + box.width).toBeLessThanOrEqual(390);
         }
     });
+});
+
+const returnMessage = "Feedback is required before returning this work for correction.";
+const reviews = writes => writes.filter(entry => entry.path.endsWith("/review"));
+
+async function expectFeedbackPrompt(page, dialog) {
+    await dialog.getByRole("button", { name: "Return for Correction", exact: true }).click();
+    await page.clock.runFor(20);
+    const field = dialog.getByLabel("Feedback to employee");
+    const alert = dialog.locator(".work-review-footer-error");
+    await expect(alert).toContainText(returnMessage);
+    await expect(alert).toBeInViewport();
+    await expect(dialog.getByText(returnMessage, { exact: true })).toHaveCount(1);
+    await expect(field).toBeFocused();
+    await expect(field).toHaveAttribute("aria-invalid", "true");
+    await expect(field).toHaveAttribute("aria-describedby", await alert.getAttribute("id"));
+    const bounds = await field.boundingBox(), body = await dialog.locator(".work-review-body").boundingBox();
+    expect(bounds.y).toBeGreaterThanOrEqual(body.y);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(body.y + body.height + 1);
+    return field;
+}
+
+for (const [width, height] of [[1440, 900], [390, 844], [320, 568]]) for (const dark of [false, true]) {
+    test(`Return reveals required feedback at ${width}px in ${dark ? "dark" : "light"} mode and submits once after correction`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        const writes = await setup(page, { dark });
+        const dialog = await openReview(page);
+        await expect(page.locator("html")).toHaveAttribute("data-theme", dark ? "dark" : "light");
+        const field = dialog.getByLabel("Feedback to employee");
+        await expect(field).not.toBeInViewport();
+        await expectFeedbackPrompt(page, dialog);
+        expect(reviews(writes)).toHaveLength(0);
+        await field.fill("   ");
+        await dialog.locator(".work-review-body").evaluate(el => { el.scrollTop = 0; });
+        await expectFeedbackPrompt(page, dialog);
+        expect(reviews(writes)).toHaveLength(0);
+        await field.fill("  Please correct the reported quantity.  ");
+        await expect(field).toHaveAttribute("aria-invalid", "false");
+        await expect(dialog.locator(".work-review-footer-error")).toHaveCount(0);
+        await dialog.getByRole("button", { name: "Return for Correction", exact: true }).click();
+        await expect(dialog).toHaveCount(0);
+        expect(reviews(writes)).toEqual([{ path: "/api/v1/workforce/tasks/1/review", payload: { decision: "Return", feedback: "Please correct the reported quantity." } }]);
+        await expect(page.getByRole("button", { name: /Review Submission/ })).toHaveCount(0);
+    });
+}
+
+test("a failed Return preserves feedback, reveals missing feedback on retry, and sends the same corrected request", async ({ page }) => {
+    const writes = await setup(page, { failReviewOnce: true });
+    const dialog = await openReview(page), field = dialog.getByLabel("Feedback to employee");
+    await field.fill("Please verify the amount used.");
+    await dialog.getByRole("button", { name: "Return for Correction", exact: true }).click();
+    await expect(dialog.locator(".work-review-footer-error")).toContainText("The review could not be saved. Please retry.");
+    await expect(field).toHaveValue("Please verify the amount used.");
+    expect(reviews(writes)).toHaveLength(1);
+    await field.clear();
+    await expectFeedbackPrompt(page, dialog);
+    expect(reviews(writes)).toHaveLength(1);
+    await field.fill("Please verify the amount used.");
+    await dialog.getByRole("button", { name: "Return for Correction", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(reviews(writes)).toHaveLength(2);
+    expect(reviews(writes)[1]).toEqual(reviews(writes)[0]);
+});
+
+test("harvest approval blockers do not hide Return feedback validation or prevent returning for correction", async ({ page }) => {
+    const writes = await setup(page, { sourceType: "crop_harvest", harvestApprovalBlocker: "A final harvest is already recorded." });
+    const dialog = await openReview(page);
+    await expect(dialog.getByRole("button", { name: "Approve Work", exact: true })).toBeDisabled();
+    const field = await expectFeedbackPrompt(page, dialog);
+    expect(reviews(writes)).toHaveLength(0);
+    await field.fill("Correct the reported harvest weight.");
+    await dialog.getByRole("button", { name: "Return for Correction", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(reviews(writes)[0].payload).toEqual({ decision: "Return", feedback: "Correct the reported harvest weight." });
+});
+
+test("approval still permits blank optional feedback after a Return validation error", async ({ page }) => {
+    const writes = await setup(page);
+    const dialog = await openReview(page);
+    await expectFeedbackPrompt(page, dialog);
+    await dialog.getByRole("button", { name: "Approve Work", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(reviews(writes)[0].payload).toEqual({ decision: "Approve", feedback: null });
+});
+
+test("closing and reopening the report clears the Return validation state", async ({ page }) => {
+    const writes = await setup(page);
+    let dialog = await openReview(page);
+    await expectFeedbackPrompt(page, dialog);
+    await dialog.getByRole("button", { name: "Close work submission report", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    dialog = await openReview(page);
+    await expect(dialog.getByLabel("Feedback to employee")).toHaveValue("");
+    await expect(dialog.getByLabel("Feedback to employee")).toHaveAttribute("aria-invalid", "false");
+    await expect(dialog.locator(".work-review-footer-error")).toHaveCount(0);
+    expect(reviews(writes)).toHaveLength(0);
 });

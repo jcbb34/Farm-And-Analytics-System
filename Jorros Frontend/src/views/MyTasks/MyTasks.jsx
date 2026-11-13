@@ -122,6 +122,7 @@ function MyTasks() {
     const [activeTaskSnapshot, setActiveTaskSnapshot] = useState([]);
     const taskCacheRef = useRef(new Map());
     const taskRequestRef = useRef(null);
+    const taskRequestSequenceRef = useRef(0);
     const taskSummaryRequestRef = useRef(null);
     const identityKey = useMemo(
         () => String(user?.id ?? user?.userCode ?? user?.username ?? "anonymous"),
@@ -130,6 +131,8 @@ function MyTasks() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [taskSummary, setTaskSummary] = useState(null);
+    const [taskSummaryLoading, setTaskSummaryLoading] = useState(true);
+    const [taskSummaryError, setTaskSummaryError] = useState("");
     const [submitId, setSubmitId] = useState(null);
     const [reportId, setReportId] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -234,6 +237,7 @@ function MyTasks() {
         // Placing this after the loader immediately
         // aborted the first My Tasks request and could leave the spinner active.
         taskRequestRef.current?.abort();
+        taskRequestSequenceRef.current += 1;
         taskSummaryRequestRef.current?.abort();
         taskRequestRef.current = null;
         taskSummaryRequestRef.current = null;
@@ -243,6 +247,8 @@ function MyTasks() {
         setTaskTotal(0);
         setActiveTaskSnapshot([]);
         setTaskSummary(null);
+        setTaskSummaryLoading(true);
+        setTaskSummaryError("");
         setLoading(false);
         setError("");
         setScheduleLoadedRange("");
@@ -284,6 +290,13 @@ function MyTasks() {
     }, [changeTab]);
 
     const loadTasks = useCallback(async (view = "active", { force = false, sharedDevice = false, scope = "all" } = {}) => {
+        // A cached selection is still a new query. Invalidate the old request
+        // before returning cached rows, including transports that ignore abort.
+        taskRequestRef.current?.abort();
+        taskRequestRef.current = null;
+        const requestId = ++taskRequestSequenceRef.current;
+        setLoadingMore(false);
+        setError("");
         const query = buildMyTasksPageQuery({
             view, scope, taskView: sharedDevice ? "active" : taskView,
             search: sharedDevice ? "" : debouncedSearch, priorityFilter: sharedDevice ? "all" : priorityFilter,
@@ -297,17 +310,17 @@ function MyTasks() {
             setTasks(cached.items);
             setTaskTotal(cached.total);
             if (view === "active") setActiveTaskSnapshot(cached.items);
+            setLoading(false);
             return cached.items;
         }
 
-        taskRequestRef.current?.abort();
         const controller = new AbortController();
         taskRequestRef.current = controller;
         setLoading(true);
         setError("");
         try {
             const page = await workforceService.getMyTasksPage(query, { signal: controller.signal });
-            if (controller.signal.aborted) return [];
+            if (controller.signal.aborted || requestId !== taskRequestSequenceRef.current) return [];
             const rows = page?.items || [];
             taskCacheRef.current.set(cacheKey, { items: rows, total: page?.total || 0 });
             setTasks(rows);
@@ -315,7 +328,7 @@ function MyTasks() {
             if (view === "active") setActiveTaskSnapshot(rows);
             return rows;
         } catch (err) {
-            if (controller.signal.aborted) return [];
+            if (controller.signal.aborted || requestId !== taskRequestSequenceRef.current) return [];
             setError(err?.message || "Unable to load your tasks.");
             return [];
         } finally {
@@ -327,9 +340,10 @@ function MyTasks() {
     }, [identityKey, taskView, debouncedSearch, priorityFilter, scheduleFilter, selectedTaskDate, farmToday]);
 
     const loadMoreTasks = useCallback(async () => {
-        if (loadingMore || tasks.length >= taskTotal) return;
+        if (loading || loadingMore || taskRequestRef.current || tasks.length >= taskTotal) return;
         setLoadingMore(true);
         const controller = new AbortController();
+        const requestId = taskRequestSequenceRef.current;
         taskRequestRef.current = controller;
         try {
             const query = buildMyTasksPageQuery({
@@ -339,30 +353,36 @@ function MyTasks() {
                 sharedDevice: sharedDeviceMode,
             });
             const page = await workforceService.getMyTasksPage({ ...query, offset: tasks.length }, { signal: controller.signal });
-            if (controller.signal.aborted) return;
-            setTasks((current) => [...current, ...(page?.items || [])]);
+            if (controller.signal.aborted || requestId !== taskRequestSequenceRef.current) return;
+            setTasks((current) => [...current, ...(page?.items || []).filter((row) => !current.some((item) => item.id === row.id))]);
             setTaskTotal(page?.total || 0);
         } catch (err) {
-            if (!controller.signal.aborted) setError(err?.message || "Unable to load more tasks.");
+            if (!controller.signal.aborted && requestId === taskRequestSequenceRef.current) setError(err?.message || "Unable to load more tasks.");
         } finally {
-            if (taskRequestRef.current === controller) taskRequestRef.current = null;
-            setLoadingMore(false);
+            if (taskRequestRef.current === controller) {
+                taskRequestRef.current = null;
+                setLoadingMore(false);
+            }
         }
-    }, [loadingMore, tasks.length, taskTotal, backendTaskView, backendTaskScope, taskView,
+    }, [loading, loadingMore, tasks.length, taskTotal, backendTaskView, backendTaskScope, taskView,
         debouncedSearch, priorityFilter, scheduleFilter, selectedTaskDate, farmToday, sharedDeviceMode]);
 
     const loadTaskSummary = useCallback(async () => {
         taskSummaryRequestRef.current?.abort();
         const controller = new AbortController();
         taskSummaryRequestRef.current = controller;
+        setTaskSummaryLoading(true);
+        setTaskSummaryError("");
         try {
             const summary = await workforceService.getMyTaskSummary({ signal: controller.signal });
             if (!controller.signal.aborted) setTaskSummary(summary || null);
-        } catch {
-            // The task list remains usable if summary counts fail; fall back to
-            // the currently loaded timeline counts instead of blocking rendering.
+        } catch (error) {
+            if (!controller.signal.aborted) {
+                setTaskSummary(null);
+                setTaskSummaryError(error?.message || "Assignment totals are unavailable.");
+            }
         } finally {
-            if (taskSummaryRequestRef.current === controller) taskSummaryRequestRef.current = null;
+            if (taskSummaryRequestRef.current === controller) { taskSummaryRequestRef.current = null; setTaskSummaryLoading(false); }
         }
     }, []);
 
@@ -530,7 +550,9 @@ function MyTasks() {
     const upcomingLimitKey = useMemo(() => addCalendarDays(todayKey, 7), [todayKey]);
     const summaryTasks = activeTaskSnapshot;
 
-    const groups = useMemo(() => ({
+    const groups = useMemo(() => taskSummaryLoading || taskSummaryError ? Object.fromEntries(
+        ["held", "total", "today", "missed", "progress", "returned", "review", "upcoming"].map(key => [key, taskSummaryLoading ? "…" : "—"])
+    ) : ({
         held: Number(taskSummary?.held ?? summaryTasks.filter((x) => x.work_suspended).length),
         total: Number(taskSummary?.total ?? summaryTasks.length),
         today: Number(taskSummary?.today ?? summaryTasks.filter((x) => x.activity_date === todayKey && !CLOSED_TASK_STATUSES.has(x.status)).length),
@@ -539,7 +561,7 @@ function MyTasks() {
         returned: Number(taskSummary?.returned ?? summaryTasks.filter((x) => x.status === "Returned").length),
         review: Number(taskSummary?.for_review ?? summaryTasks.filter((x) => x.status === "Submitted for Review").length),
         upcoming: Number(taskSummary?.upcoming ?? summaryTasks.filter((x) => x.activity_date > todayKey && x.activity_date <= upcomingLimitKey && !CLOSED_TASK_STATUSES.has(x.status)).length),
-    }), [summaryTasks, taskSummary, todayKey, upcomingLimitKey]);
+    }), [summaryTasks, taskSummary, todayKey, upcomingLimitKey, taskSummaryLoading, taskSummaryError]);
 
     const submitTask = useMemo(
         () => tasks.find((task) => Number(task.id) === Number(submitId)) || null,
@@ -870,6 +892,7 @@ function MyTasks() {
         </nav>
 
         {activeTab === "tasks" && <div className="my-tasks-tab-panel" aria-label="Assigned Tasks">
+            {taskSummaryError && <div className="workforce-error" role="alert">Assignment totals unavailable. {taskSummaryError} <button type="button" className="workforce-button secondary compact" onClick={loadTaskSummary}>Retry totals</button></div>}
             {error && <div className="workforce-error">{error} <button type="button" className="workforce-button secondary compact" onClick={refreshActiveTab}>Retry</button></div>}
             {groups.held > 0 && <div className="farm-task-held" role="note">{groups.held} tasks held for a farm declaration. Held tasks are excluded from missed counts and need Owner/Admin review.</div>}
             <section className="workforce-stats my-tasks-compact-stats" aria-label="Assignment summary">

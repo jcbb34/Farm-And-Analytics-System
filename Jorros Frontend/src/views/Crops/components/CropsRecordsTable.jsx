@@ -48,6 +48,10 @@ function getStatusClass(status = "") {
 function CropsRecordsTable({
     navigation,
     crops,
+    total = crops.length,
+    loadingMore = false,
+    onLoadMore,
+    onRetry,
     loading,
     error,
     canUpdateCrops,
@@ -65,7 +69,7 @@ function CropsRecordsTable({
     return (
         <>
             <RecordHeader className="crop-action-row" title="Crop Records" navigation={navigation}
-                summary={`${crops.length} crop records found`} actions={<>{canUpdateCrops && (
+                summary={`Showing ${crops.length} of ${total} matching crop records`} actions={<>{canUpdateCrops && (
                         <button
                             type="button"
                             className="crop-secondary-button"
@@ -320,6 +324,8 @@ function CropsRecordsTable({
                         </tbody>
                     </table>
             </RecordTableSurface>
+            {error && <button type="button" className="workforce-button secondary" onClick={onRetry}>Retry crops</button>}
+            {!error && crops.length < total && <button type="button" className="workforce-button secondary" disabled={loading || loadingMore} onClick={onLoadMore}>{loadingMore ? "Loading…" : "Load more crops"}</button>}
         </>
     );
 }

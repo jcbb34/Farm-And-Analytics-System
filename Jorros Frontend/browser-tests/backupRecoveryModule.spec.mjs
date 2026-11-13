@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from '@playwright/test';
 const profile = { id: 77, username: 'recovery.admin', fullName: 'Recovery Administrator', role: 'System Administrator', permissions: ['*'], status: 'Active' };
@@ -11,7 +12,7 @@ async function setup(page, { ready = true, activation = false, dark = false, fai
     page.on('pageerror', error => errors.push(error.message));
     await page.mouse.move(1000, 650);
     await page.addInitScript(({ profile, dark }) => { sessionStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-browser-token', expiresAt: Date.now() + 86400000, user: profile })); localStorage.setItem('joross-theme', dark ? 'dark' : 'light'); }, { profile, dark });
-    await page.route('**/api/v1/**', async route => {
+    await page.route('**/api/v1/**', withDisplayData(async route => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (path.endsWith('/events/stream')) return route.fulfill({ status: 503, json: {} });
@@ -31,7 +32,7 @@ async function setup(page, { ready = true, activation = false, dark = false, fai
         if (endpoint === '/recovery-key') return payload.password === 'Synthetic Password' ? route.fulfill({ contentType: 'application/octet-stream', body: 'synthetic-key' }) : route.fulfill({ status: 403, json: { detail: 'Administrator verification failed.' } });
         if (endpoint.includes('/download/')) return route.fulfill({ contentType: 'application/octet-stream', body: 'synthetic-encrypted-file' });
         return route.fulfill({ json: {} });
-    });
+    }));
     await page.goto('/settings?section=data');
     await page.mouse.move(page.viewportSize().width - 10, 60);
     await expect(page.locator('.sidebar')).toHaveCSS('width', '80px');

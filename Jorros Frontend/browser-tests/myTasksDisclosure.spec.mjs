@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { test, expect } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { serveSessionPolicy } from "./helpers/serveSessionPolicy.mjs";
@@ -26,7 +27,7 @@ async function prepare(page, { theme = "light" } = {}) {
         sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-task-disclosure-token", user: profile, expiresAt: Date.now() + 28800000 }));
         localStorage.setItem("joross-theme", theme);
     }, { profile: user, theme });
-    await page.route("**/api/v1/**", async (route) => {
+    await page.route("**/api/v1/**", withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const req = route.request(), url = new URL(req.url()), path = url.pathname;
         if (path === "/api/v1/auth/me") return route.fulfill({ json: user });
@@ -55,7 +56,7 @@ async function prepare(page, { theme = "light" } = {}) {
         }
         if (/\/workforce\/tasks\/\d+$/.test(path)) return route.fulfill({ json: state.tasks.find((task) => task.id === Number(path.split("/").at(-1))) });
         return route.fulfill({ json: [] });
-    });
+    }));
     return state;
 }
 const card = (page, id) => page.locator(`#my-task-${id}`);

@@ -1,4 +1,8 @@
 "use client";
+import useRecordEditConflict from "../../hooks/useRecordEditConflict.js";
+import RecordConflictNotice from "../RecordConflictNotice/RecordConflictNotice.jsx";
+
+
 
 import { HistoryDateRange, useHistoryRange, MonitoringScheduleFields, scheduleForm } from "../Monitoring/Monitoring.jsx";
 
@@ -15,7 +19,8 @@ import {
     LivestockReproductionPanel,
 } from "../LivestockReproductionProduction/LivestockReproductionProduction.jsx";
 import ResourceUsagePanel from "../ResourceUsagePanel/ResourceUsagePanel.jsx";
-import { inventoryService } from "../../services/inventoryService.js";
+import useResourceChoices from "../../hooks/useResourceChoices.js";
+import ResourceChoiceTools from "../ResourceChoiceTools/ResourceChoiceTools.jsx";
 import { livestockService } from "../../services/livestockService.js";
 import { workforceService } from "../../services/workforceService.js";
 
@@ -91,24 +96,6 @@ function parseFeedingSchedule(value = "") {
 
 function serializeFeedingSchedule(frequency, periods) {
     return `${frequency} | ${(periods || []).join(", ")}`;
-}
-
-function isFeedItem(item) {
-    const category = String(item?.category || "").trim().toLowerCase();
-    const name = String(item?.name || "").trim().toLowerCase();
-    const unit = String(item?.unit || "").trim().toLowerCase();
-    const today = getTodayDate();
-    return !item?.isArchived && Number(item?.quantity || 0) > 0 &&
-        (category.includes("feed") || name.includes("feed")) &&
-        ["kg", "kilogram", "kilograms"].includes(unit) &&
-        (!item?.expirationDate || item.expirationDate >= today);
-}
-
-function isVaccineItem(item) {
-    const category = String(item?.category || "").trim().toLowerCase();
-    return !item?.isArchived && Number(item?.quantity || 0) > 0 &&
-        ["vaccine", "vaccines", "vaccination"].includes(category) &&
-        (!item?.expirationDate || item.expirationDate >= getTodayDate());
 }
 
 function getTodayDate() {
@@ -221,6 +208,7 @@ function createLivestockFormFromAnimal(
     }
 
     return {
+        editVersion: animal.editVersion,
         ...scheduleForm(animal),
         recordType:
             animal.recordType || "Batch",
@@ -359,13 +347,20 @@ export function LivestockFormModal({
             createEmptyLivestockForm
         );
     const [pens, setPens] = useState([]);
-    const [feedInventory, setFeedInventory] = useState([]);
+    const feedChoices = useResourceChoices({ active: open, domain: "Inventory",
+        selectedId: form.feedInventoryItemId, inventoryUse: "livestock_feeding" });
+    const feedInventory = feedChoices.items;
     const [employees, setEmployees] = useState([]);
     const [careTemplates, setCareTemplates] = useState([]);
     const [growthAssessment, setGrowthAssessment] = useState(null);
 
     const isEditing =
         Boolean(animal);
+
+    const conflict = useRecordEditConflict({
+        open, id: animal?.id, loadRecord: livestockService.getLivestockRecord,
+        replaceForm: latest => setForm(createLivestockFormFromAnimal(latest)),
+    });
 
     useEffect(() => {
         if (!open) {
@@ -384,13 +379,6 @@ export function LivestockFormModal({
             .catch((error) => {
                 console.error("Failed to load livestock pens:", error);
                 setPens([]);
-            });
-
-        inventoryService.getInventory(false)
-            .then((items) => setFeedInventory(items.filter(isFeedItem)))
-            .catch((error) => {
-                console.error("Failed to load feed Inventory:", error);
-                setFeedInventory([]);
             });
 
         Promise.all([
@@ -488,8 +476,9 @@ export function LivestockFormModal({
         });
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
+        if (conflict.reloading) return;
         if (saving) return;
 
         const requiredFields = [
@@ -502,6 +491,11 @@ export function LivestockFormModal({
             "dateAcquired",
         ];
 
+        if (form.feedInventoryItemId && (feedChoices.loading || feedChoices.error ||
+            !feedInventory.some(row => String(row.id) === String(form.feedInventoryItemId)))) {
+            notify("Load and select available feed stock before saving. Retry the feed choices if loading failed.");
+            return;
+        }
         const missingRequiredField =
             requiredFields.some(
                 (fieldName) =>
@@ -660,7 +654,9 @@ export function LivestockFormModal({
             return;
         }
 
-        onSave({
+        try {
+            await onSave({
+                editVersion: form.editVersion,
             ...scheduleForm(form),
             recordType: form.recordType,
             lifecycleStatus: form.lifecycleStatus,
@@ -752,6 +748,9 @@ export function LivestockFormModal({
                 form.acquiredFrom.trim() ||
                 "Not specified",
         });
+        } catch (error) {
+            if (!conflict.handleError(error)) notify(error?.message || "Unable to save livestock. Your entries are kept.");
+        }
     };
 
     return (
@@ -797,6 +796,7 @@ export function LivestockFormModal({
                     aria-busy={saving}
                     onSubmit={handleSubmit}
                 >
+                    <RecordConflictNotice conflict={conflict} disabled={saving} />
                     <fieldset className="livestock-form-fields" disabled={saving}>
                     <section className="livestock-form-section">
                         <div className="livestock-section-title">
@@ -1308,7 +1308,9 @@ export function LivestockFormModal({
                         <div className="livestock-form-grid">
                             <div className="livestock-form-group">
                                 <label htmlFor="livestockFeedInventory">Feed Item</label>
-                                <select id="livestockFeedInventory" name="feedInventoryItemId" value={form.feedInventoryItemId} onChange={handleChange}>
+                                <ResourceChoiceTools id="livestockFeedSearch" label="Search feed inventory" choice={feedChoices} disabled={saving} />
+                                <select id="livestockFeedInventory" name="feedInventoryItemId" value={form.feedInventoryItemId} onChange={handleChange} disabled={feedChoices.loading || Boolean(feedChoices.error)}>
+                                    {form.feedInventoryItemId && !feedInventory.some(row => String(row.id) === String(form.feedInventoryItemId)) && <option value={form.feedInventoryItemId} disabled>{feedChoices.loading ? "Loading selected feed…" : "Current feed unavailable — choose another item"}</option>}
                                     <option value="">No feeding schedule yet</option>
                                     {feedInventory.map((item) => (
                                         <option key={item.id} value={item.id}>
@@ -1488,7 +1490,25 @@ export function LivestockFormModal({
    LIVESTOCK DETAILS MODAL
 ========================================================= */
 
+function feedingFormFromAnimal(animal) {
+    const parsed = parseFeedingSchedule(animal.feedingSchedule?.times);
+    return { editVersion: animal.editVersion,
+        inventoryItemId: animal.feedInventoryItemId == null ? "" : String(animal.feedInventoryItemId),
+        frequency: parsed.frequency, periods: parsed.periods, times: animal.feedingSchedule?.times || "",
+        feedType: animal.feedingSchedule?.feedType || "", dailyAmountKg: animal.feedingSchedule?.dailyAmountKg ?? "",
+        notes: animal.feedingSchedule?.notes || "" };
+}
+function healthFormFromAnimal(animal) {
+    return { editVersion: animal.editVersion, healthStatus: animal.healthStatus || "Healthy",
+        healthyQuantity: String(animal.healthyQuantity ?? (animal.healthStatus === "Healthy" ? animal.quantity : 0)),
+        atRiskQuantity: String(animal.atRiskQuantity ?? (animal.healthStatus === "At Risk" ? animal.quantity : 0)),
+        sickQuantity: String(animal.sickQuantity ?? (animal.healthStatus === "Sick" ? animal.quantity : 0)),
+        underTreatmentQuantity: String(animal.underTreatmentQuantity ?? (animal.healthStatus === "Under Treatment" ? animal.quantity : 0)),
+        lastCheckup: animal.lastCheckup || "", healthNotes: animal.healthNotes || "" };
+}
+
 export function LivestockDetailsModal({
+    onReloadRecord,
     animal,
     onClose,
     onStageOverrideSaved,
@@ -1519,11 +1539,6 @@ export function LivestockDetailsModal({
         createEmptyVaccinationForm
     );
 
-    const [
-        vaccineInventory,
-        setVaccineInventory,
-    ] = useState([]);
-    const [feedInventory, setFeedInventory] = useState([]);
     const [vaccinationSchedule, setVaccinationSchedule] = useState([]);
     const [vaccinationScheduleLoading, setVaccinationScheduleLoading] = useState(false);
     const [vaccinationScheduleError, setVaccinationScheduleError] = useState("");
@@ -1540,6 +1555,13 @@ export function LivestockDetailsModal({
         dailyAmountKg: "",
         notes: "",
     });
+
+    const feedChoices = useResourceChoices({ active: Boolean(animal) && activeTab === "feeding",
+        domain: "Inventory", selectedId: feedingForm.inventoryItemId, inventoryUse: "livestock_feeding" });
+    const vaccineChoices = useResourceChoices({ active: Boolean(animal) && activeTab === "vaccination" && showVaccinationForm,
+        domain: "Inventory", selectedId: vaccinationForm.inventoryItemId, inventoryUse: "livestock_vaccination" });
+    const feedInventory = feedChoices.items;
+    const vaccineInventory = vaccineChoices.items;
 
     const [
         healthForm,
@@ -1574,6 +1596,11 @@ export function LivestockDetailsModal({
     const [stageOverride, setStageOverride] = useState({ stage: "", reason: "" });
     const [stageOverrideSaving, setStageOverrideSaving] = useState(false);
 
+    const detailConflict = useRecordEditConflict({
+        open: Boolean(animal), id: animal?.id, loadRecord: livestockService.getLivestockRecord,
+        replaceForm: latest => { setFeedingForm(feedingFormFromAnimal(latest)); setHealthForm(healthFormFromAnimal(latest)); onReloadRecord?.(latest); },
+    });
+
     useEffect(() => {
         if (!animal) {
             return;
@@ -1594,26 +1621,8 @@ export function LivestockDetailsModal({
             createEmptyVaccinationForm()
         );
 
-        const parsedFeeding = parseFeedingSchedule(animal.feedingSchedule?.times);
-        setFeedingForm({
-            inventoryItemId: animal.feedInventoryItemId == null ? "" : String(animal.feedInventoryItemId),
-            frequency: parsedFeeding.frequency,
-            periods: parsedFeeding.periods,
-            times: animal.feedingSchedule?.times || "",
-            feedType: animal.feedingSchedule?.feedType || "",
-            dailyAmountKg: animal.feedingSchedule?.dailyAmountKg ?? "",
-            notes: animal.feedingSchedule?.notes || "",
-        });
-
-        setHealthForm({
-            healthStatus: animal.healthStatus || "Healthy",
-            healthyQuantity: String(animal.healthyQuantity ?? (animal.healthStatus === "Healthy" ? animal.quantity : 0)),
-            atRiskQuantity: String(animal.atRiskQuantity ?? (animal.healthStatus === "At Risk" ? animal.quantity : 0)),
-            sickQuantity: String(animal.sickQuantity ?? (animal.healthStatus === "Sick" ? animal.quantity : 0)),
-            underTreatmentQuantity: String(animal.underTreatmentQuantity ?? (animal.healthStatus === "Under Treatment" ? animal.quantity : 0)),
-            lastCheckup: animal.lastCheckup || "",
-            healthNotes: animal.healthNotes || "",
-        });
+        setFeedingForm(feedingFormFromAnimal(animal));
+        setHealthForm(healthFormFromAnimal(animal));
 
         setGrowthForm({
             measurementDate: getTodayDate(),
@@ -1634,31 +1643,6 @@ export function LivestockDetailsModal({
                 "";
         };
     }, [animal?.id]);
-
-    useEffect(() => {
-        if (!animal) {
-            setVaccineInventory([]);
-            setFeedInventory([]);
-            return;
-        }
-
-        let cancelled = false;
-        inventoryService.getInventory(false)
-            .then((items) => {
-                if (cancelled) return;
-                setVaccineInventory(items.filter(isVaccineItem));
-                setFeedInventory(items.filter(isFeedItem));
-            })
-            .catch((error) => {
-                console.error("Unable to load vaccine inventory:", error);
-                if (!cancelled) {
-                    setVaccineInventory([]);
-                    setFeedInventory([]);
-                }
-            });
-
-        return () => { cancelled = true; };
-    }, [animal]);
 
     const loadVaccinationSchedule = useCallback(async () => {
         if (!animal?.id) {
@@ -1784,6 +1768,11 @@ export function LivestockDetailsModal({
     ) => {
         event.preventDefault();
         if (savingVaccination) return;
+        if (vaccineChoices.loading || vaccineChoices.error ||
+            !vaccineInventory.some(row => String(row.id) === String(vaccinationForm.inventoryItemId))) {
+            notify("Load and select available vaccine stock before saving. Retry the vaccine choices if loading failed.");
+            return;
+        }
 
         if (
             !vaccinationForm.inventoryItemId ||
@@ -1909,11 +1898,16 @@ export function LivestockDetailsModal({
         });
     };
 
-    const handleFeedingSubmit = (
+    const handleFeedingSubmit = async (
         event
     ) => {
         event.preventDefault();
 
+        if (feedChoices.loading || feedChoices.error ||
+            !feedInventory.some(row => String(row.id) === String(feedingForm.inventoryItemId))) {
+            notify("Load and select available feed stock before saving. Retry the feed choices if loading failed.");
+            return;
+        }
         if (!feedingForm.inventoryItemId) {
             notify("Select an available Feed Inventory item.");
             return;
@@ -1927,13 +1921,19 @@ export function LivestockDetailsModal({
             notify("Enter a daily feed amount greater than zero.");
             return;
         }
-        onSaveFeeding(animal.id, {
+        try {
+            const saved = await onSaveFeeding(animal.id, {
+            editVersion: feedingForm.editVersion,
             inventoryItemId: Number(feedingForm.inventoryItemId),
             times: serializeFeedingSchedule(feedingForm.frequency, feedingForm.periods),
             feedType: feedingForm.feedType,
             dailyAmountKg: Number(feedingForm.dailyAmountKg),
             notes: feedingForm.notes.trim() || "No feeding notes.",
         });
+            if (saved) setFeedingForm(feedingFormFromAnimal(saved));
+        } catch (error) {
+            if (!detailConflict.handleError(error)) notify(error?.message || "Unable to save these changes. Your entries are kept.");
+        }
     };
 
     const handleHealthChange = (
@@ -1950,7 +1950,7 @@ export function LivestockDetailsModal({
         );
     };
 
-    const handleHealthSubmit = (
+    const handleHealthSubmit = async (
         event
     ) => {
         event.preventDefault();
@@ -1963,7 +1963,9 @@ export function LivestockDetailsModal({
             notify(`Healthy + At Risk + Sick + Under Treatment must equal the batch quantity (${animal.quantity}).`);
             return;
         }
-        onSaveHealth(animal.id, {
+        try {
+            const saved = await onSaveHealth(animal.id, {
+            editVersion: healthForm.editVersion,
             healthStatus: healthForm.healthStatus,
             healthyQuantity: animal.recordType === "Batch" ? healthy : (healthForm.healthStatus === "Healthy" ? 1 : 0),
             atRiskQuantity: animal.recordType === "Batch" ? atRisk : (healthForm.healthStatus === "At Risk" ? 1 : 0),
@@ -1972,6 +1974,10 @@ export function LivestockDetailsModal({
             lastCheckup: healthForm.lastCheckup,
             healthNotes: healthForm.healthNotes.trim() || "No health issues observed.",
         });
+            if (saved) setHealthForm(healthFormFromAnimal(saved));
+        } catch (error) {
+            if (!detailConflict.handleError(error)) notify(error?.message || "Unable to save these changes. Your entries are kept.");
+        }
     };
 
     const handleGrowthChange = (event) => {
@@ -2167,6 +2173,7 @@ export function LivestockDetailsModal({
                 </nav>
 
                 <div className="livestock-details-body">
+                    <RecordConflictNotice conflict={detailConflict} />
                     {activeTab ===
                         "overview" && (
                         <>
@@ -2873,14 +2880,17 @@ export function LivestockDetailsModal({
                                             <label htmlFor="vaccinationInventoryItem">
                                                 Vaccine Inventory <span>*</span>
                                             </label>
+                                            <ResourceChoiceTools id="livestockVaccineSearch" label="Search vaccine inventory" choice={vaccineChoices} disabled={savingVaccination} />
                                             <select
                                                 id="vaccinationInventoryItem"
                                                 name="inventoryItemId"
                                                 value={vaccinationForm.inventoryItemId}
                                                 onChange={handleVaccinationChange}
+                                                disabled={vaccineChoices.loading || Boolean(vaccineChoices.error)}
                                                 required
                                             >
                                                 <option value="">Select available vaccine stock</option>
+                                                {vaccinationForm.inventoryItemId && !vaccineInventory.some(row => String(row.id) === String(vaccinationForm.inventoryItemId)) && <option value={vaccinationForm.inventoryItemId} disabled>{vaccineChoices.loading ? "Loading selected vaccine…" : "Current vaccine unavailable — choose another item"}</option>}
                                                 {vaccineInventory.map((item) => (
                                                     <option key={item.id} value={item.id}>
                                                         {item.name} — {item.quantity} {item.unit}
@@ -3070,8 +3080,10 @@ export function LivestockDetailsModal({
                             <form className="livestock-edit-form" onSubmit={handleFeedingSubmit}>
                                 <div className="livestock-form-grid">
                                     <div className="livestock-form-group">
-                                        <label>Feed Inventory Item</label>
-                                        <select name="inventoryItemId" value={feedingForm.inventoryItemId} onChange={handleFeedingChange} required>
+                                        <label htmlFor="livestockScheduleFeedInventory">Feed Inventory Item</label>
+                                        <ResourceChoiceTools id="livestockScheduleFeedSearch" label="Search feed inventory" choice={feedChoices} />
+                                        <select id="livestockScheduleFeedInventory" name="inventoryItemId" value={feedingForm.inventoryItemId} onChange={handleFeedingChange} disabled={feedChoices.loading || Boolean(feedChoices.error)} required>
+                                            {feedingForm.inventoryItemId && !feedInventory.some(row => String(row.id) === String(feedingForm.inventoryItemId)) && <option value={feedingForm.inventoryItemId} disabled>{feedChoices.loading ? "Loading selected feed…" : "Current feed unavailable — choose another item"}</option>}
                                             <option value="">Select available feed stock</option>
                                             {feedInventory.map((item) => <option key={item.id} value={item.id}>{item.name} — {item.quantity} {item.unit} available</option>)}
                                         </select>

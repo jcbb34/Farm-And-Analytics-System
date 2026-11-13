@@ -12,9 +12,9 @@ from app.models import FarmCreationCommand
 from app.services.db_concurrency import acquire_transaction_lock
 
 
-def request_fingerprint(payload: BaseModel) -> str:
+def request_fingerprint(payload: BaseModel, *, exclude: set[str] | None = None) -> str:
     canonical = json.dumps(
-        payload.model_dump(mode="json"),
+        payload.model_dump(mode="json", exclude=exclude),
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=False,

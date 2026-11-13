@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from '@playwright/test';
 
@@ -15,7 +16,7 @@ async function prepare(page, { authenticated = true, taskInPage = true, holdDeta
     if (authenticated) await page.addInitScript((user) => {
         sessionStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-ui-token', user, expiresAt: Date.now() + 86400000 }));
     }, admin);
-    await page.route('**/api/v1/**', async (route) => {
+    await page.route('**/api/v1/**', withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request();
         const url = new URL(request.url());
@@ -37,7 +38,7 @@ async function prepare(page, { authenticated = true, taskInPage = true, holdDeta
         if (path === '/api/v1/workforce/employees') return route.fulfill({ json: url.searchParams.has('archived_only') ? [] : [employee] });
         if (path === '/api/v1/activities') return route.fulfill({ json: [activity] });
         return route.fulfill({ json: [] });
-    });
+    }));
     return state;
 }
 

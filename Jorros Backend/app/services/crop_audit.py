@@ -8,7 +8,7 @@ from app.models import AuditLog
 
 def crop_snapshot(crop):
     return {column.key: getattr(crop, column.key) for column in inspect(type(crop)).column_attrs
-            if column.key not in {"created_at", "updated_at"}}
+            if column.key not in {"created_at", "updated_at", "edit_version"}}
 
 
 def record_crop_change(db, crop, actor, *, action, before=None):

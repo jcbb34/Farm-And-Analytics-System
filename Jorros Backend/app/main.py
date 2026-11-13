@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 from app.services.db_concurrency import DatabaseLockBusy
-from app.core.exception_handlers import database_lock_busy_handler
+from sqlalchemy.orm.exc import StaleDataError
+from app.core.exception_handlers import database_lock_busy_handler, stale_record_handler
 from app.core.config import settings
 from app.core.database import SessionLocal, check_database_connection, get_db
 from app.routers.auth import router as auth_router
@@ -20,6 +21,7 @@ from app.routers.archives import router as archives_router
 from app.routers.void_authorizations import router as void_authorizations_router
 from app.routers.roles import router as roles_router
 from app.routers.crops import router as crops_router
+from app.routers.display import router as display_router
 from app.routers.livestock import router as livestock_router
 from app.routers.inventory import router as inventory_router
 from app.routers.activities import router as activities_router
@@ -102,9 +104,12 @@ async def lifespan(app: FastAPI):
     if settings.farm_automation_scheduler_enabled:
         background_tasks.append(asyncio.create_task(farm_automation_scheduler_loop()))
 
+    from app.services.report_pdf_jobs import ReportPdfWorker
+    pdf_worker = ReportPdfWorker(SessionLocal).start()
     try:
         yield
     finally:
+        pdf_worker.stop()
         for task in background_tasks:
             task.cancel()
 
@@ -125,7 +130,7 @@ for router in [
     livestock_router, inventory_router, activities_router,
     alerts_router, weather_router, reports_router, backups_router,
     backup_recovery_router, imports_router, audit_router, resource_usages_router, production_sales_router, analytics_router, workforce_router,
-    events_router, system_router, farm_events_router, farm_locations_router,
+    events_router, system_router, farm_events_router, farm_locations_router, display_router,
 ]:
     app.include_router(router)
 
@@ -136,6 +141,7 @@ configured_cors_origins = [
 ]
 
 app.add_exception_handler(DatabaseLockBusy, database_lock_busy_handler)
+app.add_exception_handler(StaleDataError, stale_record_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -143,7 +149,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID", "Retry-After", "X-Existing-Task-Id"],
+    expose_headers=["X-Request-ID", "Retry-After", "X-Existing-Task-Id", "X-Record-Conflict"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(RecoveryGateMiddleware)

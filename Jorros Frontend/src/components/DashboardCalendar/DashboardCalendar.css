@@ -1959,3 +1959,7 @@
 .calendar-work-type-label { font-size: 13px; font-weight: 600; color: var(--text-secondary, #64748b); }
 .calendar-work-type-group .event-type-container { margin: 0; }
 .calendar-work-type-group .event-type-button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+
+.fc-event-paging { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin:12px 0; }
+.fc-event-paging small { color:var(--text-secondary, #64748b); }
+.fc-event-paging p { flex-basis:100%; color:var(--error-color, #b42318); }

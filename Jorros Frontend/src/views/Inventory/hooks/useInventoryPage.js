@@ -1,3 +1,4 @@
+import { isRecordEditConflict } from "../../../services/recordEditing.js";
 "use client";
 import { requestArchive } from "../../../services/archiveService.js";
 
@@ -28,6 +29,10 @@ export default function useInventoryPage() {
     const [inventoryError, setInventoryError] = useState("");
     const [movementSummary, setMovementSummary] = useState([]);
     const [inventorySummaryData, setInventorySummaryData] = useState(null);
+    const [summaryLoading, setSummaryLoading] = useState(true);
+    const [summaryError, setSummaryError] = useState("");
+    const [movementError, setMovementError] = useState("");
+    const summaryRequestRef = useRef(0);
     const [inventoryTotal, setInventoryTotal] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
     const requestIdRef = useRef(0);
@@ -86,16 +91,25 @@ export default function useInventoryPage() {
     }, [debouncedSearch, categoryFilter, statusFilter, supplierFilter, dateFilter]);
 
     const loadSummary = useCallback(async () => {
-        try {
-            const [summary, movements] = await Promise.all([
-                inventoryService.getInventorySummary(), inventoryService.getMovementSummary(),
-            ]);
-            setInventorySummaryData(summary);
-            setMovementSummary(movements);
-        } catch (error) {
-            console.error("Failed to load inventory summary:", error);
-            setInventoryError(error?.message || "Unable to load inventory analytics.");
+        const requestId = ++summaryRequestRef.current;
+        setSummaryLoading(true);
+        setSummaryError("");
+        setMovementError("");
+        const [summary, movements] = await Promise.allSettled([
+            inventoryService.getInventorySummary(), inventoryService.getMovementSummary(),
+        ]);
+        if (requestId !== summaryRequestRef.current) return;
+        if (summary.status === "fulfilled") setInventorySummaryData(summary.value);
+        else {
+            setInventorySummaryData(null);
+            setSummaryError(summary.reason?.message || "Inventory totals are unavailable.");
         }
+        if (movements.status === "fulfilled") setMovementSummary(movements.value);
+        else {
+            setMovementSummary([]);
+            setMovementError(movements.reason?.message || "Stock movement analytics are unavailable.");
+        }
+        setSummaryLoading(false);
     }, []);
 
     useEffect(() => {
@@ -133,6 +147,7 @@ export default function useInventoryPage() {
     const filteredInventory = inventory;
 
     const inventorySummary = useMemo(() => {
+        const count = (value) => summaryLoading ? "…" : summaryError || !inventorySummaryData ? "—" : (value ?? 0);
         const inStock = inventorySummaryData?.in_stock || 0;
         const lowStock = inventorySummaryData?.low_stock || 0;
         const outOfStock = inventorySummaryData?.out_of_stock || 0;
@@ -142,40 +157,40 @@ export default function useInventoryPage() {
             {
                 id: 1,
                 title: "Inventory Records",
-                value: inventorySummaryData?.total || 0,
+                value: count(inventorySummaryData?.total),
                 icon: "inventory_2",
                 className: "records",
             },
             {
                 id: 2,
                 title: "In Stock",
-                value: inStock,
+                value: count(inStock),
                 icon: "check_circle",
                 className: "in-stock",
             },
             {
                 id: 3,
                 title: "Low Stock",
-                value: lowStock,
+                value: count(lowStock),
                 icon: "warning",
                 className: "low-stock",
             },
             {
                 id: 4,
                 title: "Out of Stock",
-                value: outOfStock,
+                value: count(outOfStock),
                 icon: "error",
                 className: "out-of-stock",
             },
             {
                 id: 5,
                 title: "Inventory Value",
-                value: formatCurrency(totalValue),
+                value: summaryLoading || summaryError || !inventorySummaryData ? count(null) : formatCurrency(totalValue),
                 icon: "payments",
                 className: "value",
             },
         ];
-    }, [inventorySummaryData]);
+    }, [inventorySummaryData, summaryLoading, summaryError]);
 
     const clearFilters = () => {
         setSearchText("");
@@ -199,7 +214,7 @@ export default function useInventoryPage() {
         try {
             setSelectedItem(await inventoryService.getInventoryItem(item.id));
         } catch (error) {
-            notify(error?.message || "Unable to load this item's stock history.");
+            notify(error?.message || "Unable to load this inventory item.");
         }
     };
 
@@ -244,6 +259,7 @@ export default function useInventoryPage() {
             await Promise.allSettled([loadInventory(), loadSummary()]);
             return true;
         } catch (error) {
+            if (isRecordEditConflict(error)) throw error;
             console.error("Failed to save inventory record:", error);
             notify(
                 error?.message || "Unable to save inventory record."
@@ -266,27 +282,32 @@ export default function useInventoryPage() {
                 { idempotencyKey }
             );
 
-            // The POST already returns the authoritative before/after quantity.
-            // Apply it locally instead of making a second blocking GET request.
+            // Fresh saves include the version of their stock update. A historical
+            // idempotent replay needs current metadata rather than an old balance.
+            let replayItem = null;
+            const priorItem = selectedItem?.id === itemId ? selectedItem : adjustedItem;
+            const canMerge = Boolean(stockRecord.inventoryEditVersion &&
+                priorItem.editVersion === stockRecord.inventoryPreviousEditVersion);
+            if (!canMerge) {
+                try { replayItem = await inventoryService.getInventoryItem(itemId); }
+                catch { /* A missing version requires an explicit reload before an exact correction. */ }
+            }
             const applyStockRecord = (item) => {
                 if (!item || item.id !== itemId) {
                     return item;
                 }
 
-                const existingHistory = item.stockHistory || [];
-                const nextHistory = [
-                    stockRecord,
-                    ...existingHistory.filter((record) => record.id !== stockRecord.id),
-                ];
+                if (replayItem) return replayItem;
 
                 return {
-                    ...item,
-                    quantity: stockRecord.newQuantity,
+                    ...priorItem,
+                    quantity: stockRecord.inventoryEditVersion ? stockRecord.newQuantity : priorItem.quantity,
                     supplier:
                         adjustment.type === "Restock" && adjustment.supplier
                             ? adjustment.supplier
-                            : item.supplier,
-                    stockHistory: nextHistory,
+                            : priorItem.supplier,
+                    editVersion: canMerge ? stockRecord.inventoryEditVersion : undefined,
+                    stockHistory: [],
                 };
             };
 
@@ -296,10 +317,13 @@ export default function useInventoryPage() {
 
             setSelectedItem((currentItem) => applyStockRecord(currentItem));
 
-            notify("Stock quantity updated successfully.");
+            notify(!canMerge && !replayItem
+                ? "Stock submission confirmed. Reload item details to verify the current balance."
+                : "Stock quantity updated successfully.");
             void Promise.all([loadInventory(), loadSummary()]);
-            return true;
+            return applyStockRecord(selectedItem?.id === itemId ? selectedItem : adjustedItem);
         } catch (error) {
+            if (isRecordEditConflict(error)) throw error;
             console.error("Failed to adjust inventory stock:", error);
             notify(
                 error?.message || "Unable to update stock quantity."
@@ -365,6 +389,10 @@ export default function useInventoryPage() {
         inventoryError,
         inventorySummary,
         inventorySummaryData,
+        summaryLoading,
+        summaryError,
+        movementError,
+        loadSummary,
         inventoryTotal,
         loadingMore,
         loadMoreInventory,

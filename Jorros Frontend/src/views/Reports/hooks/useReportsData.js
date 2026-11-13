@@ -1,3 +1,4 @@
+import useReportPdfJobs from "./useReportPdfJobs.js";
 import { requestArchive } from "../../../services/archiveService.js";
 import { notify } from "../../../context/NotificationContext.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -13,81 +14,90 @@ import useFarmModuleUpdates from "../../../hooks/useFarmModuleUpdates.js";
 // Loads report data and keeps report actions in one place
 export default function useReportsData(reportQuery) {
     const [reports, setReports] = useState([]);
+    const { pdfJobs, pdfJobsError, refreshPdfJobs } = useReportPdfJobs(reports);
     const [reportSummary, setReportSummary] = useState(null);
     const [selectedReport, setSelectedReport] = useState(null);
     const [reportsLoading, setReportsLoading] = useState(true);
     const [reportsError, setReportsError] = useState("");
+    const [summaryLoading, setSummaryLoading] = useState(true);
+    const [summaryError, setSummaryError] = useState("");
     const [automationSettings, setAutomationSettings] = useState(null);
     const [automationLoading, setAutomationLoading] = useState(false);
     const [reportsHasMore, setReportsHasMore] = useState(false);
     const [reportsLoadingMore, setReportsLoadingMore] = useState(false);
     const reportsPageSize = 25;
-    const requestSequence = useRef(0);
+    const requestSequence = useRef(0), rowsRequest = useRef(null);
+    const summarySequence = useRef(0), summaryRequest = useRef(null);
+    const loadedQuery = useRef(""), summaryState = useRef({ key: "", value: null });
     const nextOffset = useRef(0);
     const loadingMoreRef = useRef(false);
     const queryKey = JSON.stringify(reportQuery);
 
-    // Load saved reports
-    const loadReports = useCallback(async () => {
+    // A failed summary must not prevent otherwise successful report rows from appearing.
+    const loadReportRows = useCallback(async () => {
         const requestId = ++requestSequence.current;
-        const query = JSON.parse(queryKey);
+        rowsRequest.current?.abort();
+        const controller = new AbortController(); rowsRequest.current = controller;
         loadingMoreRef.current = false;
+        setReportsLoading(true); setReportsLoadingMore(false); setReportsError("");
+        if (loadedQuery.current !== queryKey) { setReports([]); nextOffset.current = 0; setReportsHasMore(false); }
+        loadedQuery.current = queryKey;
         try {
-            setReportsLoading(true);
-            setReportsLoadingMore(false);
-            setReportsError("");
-            setReports([]);
-            setReportsHasMore(false);
-            nextOffset.current = 0;
-
-            const [records, summary] = await Promise.all([
-                reportService.getReports(false, { ...query, offset: 0, limit: reportsPageSize }),
-                reportService.getReportSummary(query),
-            ]);
-            if (requestId !== requestSequence.current) return;
-            setReports(records);
-            setReportSummary(summary);
-            nextOffset.current = records.length;
-            setReportsHasMore(records.length < summary.matchingTotal);
+            const records = await reportService.getReports(false, { ...JSON.parse(queryKey), offset: 0, limit: reportsPageSize, signal: controller.signal });
+            if (requestId !== requestSequence.current || controller.signal.aborted) return;
+            setReports(records); nextOffset.current = records.length;
+            const summary = summaryState.current.key === queryKey ? summaryState.current.value : null;
+            setReportsHasMore(summary ? records.length < summary.matchingTotal : records.length === reportsPageSize);
         } catch (error) {
-            if (requestId !== requestSequence.current) return;
-            console.error("Failed to load reports:", error);
-            setReportsError(error?.message || "Unable to load report records.");
+            if (requestId === requestSequence.current && !controller.signal.aborted) setReportsError(error?.message || "Unable to load report records.");
         } finally {
-            if (requestId === requestSequence.current) setReportsLoading(false);
+            if (requestId === requestSequence.current) { setReportsLoading(false); rowsRequest.current = null; }
         }
     }, [queryKey]);
 
+    const loadReportSummary = useCallback(async () => {
+        const requestId = ++summarySequence.current;
+        summaryRequest.current?.abort();
+        const controller = new AbortController(); summaryRequest.current = controller;
+        setSummaryLoading(true); setSummaryError("");
+        if (summaryState.current.key !== queryKey) { setReportSummary(null); summaryState.current = { key: queryKey, value: null }; }
+        try {
+            const summary = await reportService.getReportSummary({ ...JSON.parse(queryKey), signal: controller.signal });
+            if (requestId !== summarySequence.current || controller.signal.aborted) return;
+            summaryState.current = { key: queryKey, value: summary }; setReportSummary(summary);
+            if (loadedQuery.current === queryKey) setReportsHasMore(nextOffset.current < summary.matchingTotal);
+        } catch (error) {
+            if (requestId === summarySequence.current && !controller.signal.aborted) setSummaryError(error?.message || "Unable to load report totals.");
+        } finally {
+            if (requestId === summarySequence.current) { setSummaryLoading(false); summaryRequest.current = null; }
+        }
+    }, [queryKey]);
+
+    const loadReports = useCallback(() => Promise.all([loadReportRows(), loadReportSummary()]), [loadReportRows, loadReportSummary]);
     const loadMoreReports = useCallback(async () => {
         if (loadingMoreRef.current || reportsLoading || !reportsHasMore) return;
         loadingMoreRef.current = true;
         const requestId = requestSequence.current;
-        const query = JSON.parse(queryKey);
+        const controller = new AbortController(); rowsRequest.current = controller;
         try {
             setReportsLoadingMore(true);
             const records = await reportService.getReports(false, {
-                ...query,
-                offset: nextOffset.current,
-                limit: reportsPageSize,
+                ...JSON.parse(queryKey), offset: nextOffset.current, limit: reportsPageSize, signal: controller.signal,
             });
-            if (requestId !== requestSequence.current) return;
+            if (requestId !== requestSequence.current || controller.signal.aborted) return;
             nextOffset.current += records.length;
-            setReports((current) => {
-                const existing = new Set(current.map((item) => item.id));
-                return [...current, ...records.filter((item) => !existing.has(item.id))];
+            setReports(current => {
+                const existing = new Set(current.map(item => item.id));
+                return [...current, ...records.filter(item => !existing.has(item.id))];
             });
-            setReportsHasMore(records.length > 0 && nextOffset.current < (reportSummary?.matchingTotal ?? 0));
+            const summary = summaryState.current.key === queryKey ? summaryState.current.value : null;
+            setReportsHasMore(records.length > 0 && (summary ? nextOffset.current < summary.matchingTotal : records.length === reportsPageSize));
         } catch (error) {
-            if (requestId !== requestSequence.current) return;
-            console.error("Failed to load more reports:", error);
-            setReportsError(error?.message || "Unable to load more report records.");
+            if (requestId === requestSequence.current && !controller.signal.aborted) setReportsError(error?.message || "Unable to load more report records.");
         } finally {
-            if (requestId === requestSequence.current) {
-                loadingMoreRef.current = false;
-                setReportsLoadingMore(false);
-            }
+            if (requestId === requestSequence.current) { loadingMoreRef.current = false; setReportsLoadingMore(false); rowsRequest.current = null; }
         }
-    }, [queryKey, reportSummary?.matchingTotal, reportsHasMore, reportsLoading]);
+    }, [queryKey, reportsHasMore, reportsLoading]);
 
     // Load automatic report settings
     const loadAutomationSettings = useCallback(async () => {
@@ -104,7 +114,7 @@ export default function useReportsData(reportQuery) {
 
     useEffect(() => {
         loadReports();
-        return () => { requestSequence.current += 1; };
+        return () => { ++requestSequence.current; ++summarySequence.current; rowsRequest.current?.abort(); summaryRequest.current?.abort(); };
     }, [loadReports]);
     useEffect(() => { loadAutomationSettings(); }, [loadAutomationSettings]);
     useFarmModuleUpdates(["reports"], loadReports);
@@ -157,21 +167,23 @@ export default function useReportsData(reportQuery) {
     // PDF and supporting data actions
     const previewReportPdf = useCallback(async (report) => {
         try {
-            await reportService.previewPdf(report);
+            const job = await reportService.previewPdf(report);
+            if (job && job.status !== "Ready") notify(job.status === "Failed" ? job.error || "PDF generation failed. Retry the PDF." : "PDF queued. Preview it when its status is Ready.");
         } catch (error) {
-            console.error("Failed to preview report PDF:", error);
+            if (!error?.pdfJob) console.error("Failed to preview report PDF:", error);
             notify(error?.message || "Unable to open the report PDF.");
-        }
-    }, []);
+        } finally { void refreshPdfJobs({ force: true }); }
+    }, [refreshPdfJobs]);
 
     const exportSingleReport = useCallback(async (report) => {
         try {
-            await reportService.downloadPdf(report);
+            const job = await reportService.downloadPdf(report);
+            if (job && job.status !== "Ready") notify(job.status === "Failed" ? job.error || "PDF generation failed. Retry the PDF." : "PDF queued. Download it when its status is Ready.");
         } catch (error) {
-            console.error("Failed to download report PDF:", error);
+            if (!error?.pdfJob) console.error("Failed to download report PDF:", error);
             notify(error?.message || "Unable to download the report PDF.");
-        }
-    }, []);
+        } finally { void refreshPdfJobs({ force: true }); }
+    }, [refreshPdfJobs]);
 
     const downloadSupportingData = useCallback(async (report) => {
         try {
@@ -338,11 +350,12 @@ export default function useReportsData(reportQuery) {
 
     return {
         reports,
+        pdfJobs, pdfJobsError, refreshPdfJobs,
         reportSummary,
         selectedReport,
         setSelectedReport,
         reportsLoading,
-        reportsError,
+        reportsError, summaryLoading, summaryError, loadReportSummary, loadReportRows,
         reportsHasMore,
         reportsLoadingMore,
         loadMoreReports,

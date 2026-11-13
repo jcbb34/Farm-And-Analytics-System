@@ -79,6 +79,8 @@ class CropCreate(BaseModel):
 
 
 class CropUpdate(BaseModel):
+    expected_version: int | None = Field(default=None, ge=1)
+
     model_config = ConfigDict(str_strip_whitespace=True)
     monitoring_enabled: bool | None = None
     monitoring_start_date: date | None = None
@@ -163,6 +165,8 @@ class CropUpdate(BaseModel):
 
 
 class CropResponse(BaseModel):
+    edit_version: int = Field(default=1, ge=1)
+
     monitoring_summary: dict | None = None
     monitoring_enabled: bool = False
     monitoring_start_date: date | None = None

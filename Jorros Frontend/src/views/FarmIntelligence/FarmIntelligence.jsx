@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Sidebar from "../../components/Sidebar/Sidebar.jsx";
 import AppHeaderActions from "../../components/AppHeaderActions/AppHeaderActions.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
-import RecommendationPanel from "./components/RecommendationPanel.jsx";
-import AuditPanel from "./components/AuditPanel.jsx";
+const RecommendationPanel = dynamic(() => import("./components/RecommendationPanel.jsx"), { ssr: false, loading: () => <p role="status">Loading analysis…</p> });
+const AuditPanel = dynamic(() => import("./components/AuditPanel.jsx"), { ssr: false, loading: () => <p role="status">Loading analysis…</p> });
 import OverviewPanel from "./components/OverviewPanel.jsx";
-import TrendsPanel from "./components/TrendsPanel.jsx";
+const TrendsPanel = dynamic(() => import("./components/TrendsPanel.jsx"), { ssr: false, loading: () => <p role="status">Loading analysis…</p> });
 
 import "./FarmIntelligence.css";
 

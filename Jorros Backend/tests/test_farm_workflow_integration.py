@@ -7,7 +7,7 @@ from test_resource_monitoring import farm, submit, review, observation
 from test_remaining_workflows import item
 from app.models import InventoryItem, InventoryStockRecord, Livestock, FarmReport, ResourceUsage
 from app.routers import production_sales, reports
-from app.services import report_pdf
+from app.services import report_pdf, report_pdf_jobs
 
 
 @pytest.mark.parametrize('module', ['Crop', 'Livestock'])
@@ -103,5 +103,10 @@ def test_employee_approval_to_stock_sale_and_report(farm, module, tmp_path, monk
             assert report.prepared_by == 'Monitoring manager'
             for key, expected in expectations.items():
                 assert report.snapshot['metrics'][key] == expected
-            assert list((tmp_path / 'reports').glob('*.pdf')), 'real PDF generation must complete'
+        pending = farm.client.get(f"/api/v1/reports/{response.json()['id']}/pdf", headers=farm.headers['manager'])
+        assert pending.status_code == 202 and pending.json()['status'] == 'Queued'
+        assert report_pdf_jobs.process_next_pdf_job(lambda: Session(farm.engine, expire_on_commit=False))
+        downloaded = farm.client.get(f"/api/v1/reports/{response.json()['id']}/pdf", headers=farm.headers['manager'])
+        assert downloaded.status_code == 200 and downloaded.content.startswith(b'%PDF')
+        assert list((tmp_path / 'reports').glob('*.pdf')), 'real background PDF generation must complete'
     assert farm.client.post('/api/v1/reports', json={}, headers=farm.headers['worker']).status_code == 403

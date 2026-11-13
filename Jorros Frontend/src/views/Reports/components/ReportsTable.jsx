@@ -11,6 +11,7 @@ export default function ReportsTable({
     navigation,
     actions,
     reports,
+    pdfJobs = {},
     filteredReports,
     matchingTotal,
     reportsLoading,
@@ -30,15 +31,15 @@ export default function ReportsTable({
     return (
         <>
         <RecordHeader title="Generated Reports" navigation={navigation} actions={actions}
-            summary={reportsLoading ? "Loading report records..." : `${matchingTotal ?? filteredReports.length} report records found`}/>
+            summary={reportsLoading ? "Loading report records..." : matchingTotal == null ? `${filteredReports.length} report records loaded · total unavailable` : `${matchingTotal} report records found`}/>
         <RecordTableSurface className="reports-page-table-card" scrollClassName="reports-page-table-wrapper" busy={reportsLoading} footer={<div className="reports-page-table-footer records-footer">
-                <span>{reportsLoading ? "Loading report records..." : `Showing ${reports.length} of ${matchingTotal ?? reports.length} matching report records`}</span>
+                <span>{reportsLoading ? "Loading report records..." : matchingTotal == null ? `Showing ${reports.length} loaded report records` : `Showing ${reports.length} of ${matchingTotal} matching report records`}</span>
                 {hasMore && (
                     <button
                         type="button"
                         className="reports-page-load-more-button"
                         onClick={onLoadMore}
-                        disabled={loadingMore}
+                        disabled={loadingMore || reportsLoading}
                     >
                         {loadingMore ? "Loading…" : "Load More Reports"}
                     </button>
@@ -78,6 +79,7 @@ export default function ReportsTable({
 
                                             <div>
                                                 <strong>{report.title}</strong>
+                                                <small className={`report-pdf-status ${pdfJobs[report.id]?.status === "Failed" ? "failed" : ""}`} title={pdfJobs[report.id]?.error || undefined}>PDF: {pdfJobs[report.id]?.status || "…"}</small>
                                                 <small>
                                                     {report.reportCode}
                                                     {report.isAutomatic
@@ -128,6 +130,7 @@ export default function ReportsTable({
                                             <button
                                                 type="button"
                                                 title="Preview professional PDF"
+                                                disabled={["Queued", "Generating"].includes(pdfJobs[report.id]?.status)}
                                                 onClick={() => onPreview(report)}
                                             >
                                                 <span className="material-symbols-outlined">
@@ -147,7 +150,8 @@ export default function ReportsTable({
 
                                             <button
                                                 type="button"
-                                                title="Download PDF"
+                                                title={pdfJobs[report.id]?.status === "Failed" ? "Retry PDF" : "Download PDF"}
+                                                disabled={["Queued", "Generating"].includes(pdfJobs[report.id]?.status)}
                                                 onClick={() => onDownload(report)}
                                             >
                                                 <span className="material-symbols-outlined">

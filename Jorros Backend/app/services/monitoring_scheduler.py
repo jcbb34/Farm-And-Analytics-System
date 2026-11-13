@@ -106,11 +106,14 @@ def annotate_monitoring(db, rows, module):
         FarmActivity.status.in_(["Pending", "In Progress", "Returned", "Submitted for Review"]),
     )).all())
     config = db.scalar(select(AlertSettings).order_by(AlertSettings.id).limit(1)) if module == "Crop" else None
+    tasks_by_record = {}
+    for task in tasks:
+        tasks_by_record.setdefault(task.source_record_id, []).append(task)
     for row in rows:
         interval = row.monitoring_frequency_days or ((config.crop_growth_check_frequency if config else 7) if module == "Crop" else None)
         enabled = bool(row.monitoring_enabled and (config is None or config.crop_growth_check))
         active = not row.is_archived and (row.status not in {"Harvested", "Failed"} if module == "Crop" else row.lifecycle_status == "Active" and row.quantity > 0)
-        own = [task for task in tasks if task.source_record_id == row.id]
+        own = tasks_by_record.get(row.id, ())
         pending = sum(task.status == "Submitted for Review" for task in own)
         overdue = sum(task.activity_date < today and task.status != "Submitted for Review" for task in own)
         next_date = min((task.activity_date for task in own), default=None)

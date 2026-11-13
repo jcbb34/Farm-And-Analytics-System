@@ -1,4 +1,6 @@
 """HTTP/transaction regressions for the five system audit findings (isolated DB)."""
+
+from edit_helpers import versioned_edit
 import json
 from io import BytesIO
 from unittest.mock import patch
@@ -153,7 +155,7 @@ def test_inventory_key_cannot_be_reused_by_another_actor_or_another_command(even
 def test_inventory_update_audits_before_after_atomically_without_browser_post(events):
     item_id = events.stock["Fertilizer"]
     response = events.client.put(f"/api/v1/inventory/{item_id}",
-        json={"supplier": " New supplier ", "location": "Warehouse B", "cost": 5}, headers=events.headers["manager"])
+        json=versioned_edit(events.client, f"/api/v1/inventory/{item_id}", {"supplier": " New supplier ", "location": "Warehouse B", "cost": 5}, events.headers["manager"]), headers=events.headers["manager"])
     assert response.status_code == 200, response.text
     with Session(events.engine) as db:
         entry = db.scalar(select(AuditLog).where(AuditLog.event_type == "audit", AuditLog.entity_id == response.json()["item_code"]))
@@ -163,7 +165,7 @@ def test_inventory_update_audits_before_after_atomically_without_browser_post(ev
         assert changes["location"] == {"before": "Storage A", "after": "Warehouse B"}
         assert "quantity" not in changes
     count_before = total(events, AuditLog)
-    same = events.client.put(f"/api/v1/inventory/{item_id}", json={"supplier": "New supplier"}, headers=events.headers["manager"])
+    same = events.client.put(f"/api/v1/inventory/{item_id}", json=versioned_edit(events.client, f"/api/v1/inventory/{item_id}", {"supplier": "New supplier"}, events.headers["manager"]), headers=events.headers["manager"])
     assert same.status_code == 200 and total(events, AuditLog) == count_before
 
 
@@ -181,7 +183,7 @@ def test_inventory_audit_failure_rolls_back_record_stock_and_command(events, ope
                 if operation == "create":
                     inventory.create_inventory_item(InventoryCreate(**inventory_body(events)), db=db, current_user=actor, idempotency_key="audit-rollback")
                 else:
-                    inventory.update_inventory_item(item_id, InventoryUpdate(supplier="Unsaved supplier"), db=db, current_user=actor)
+                    inventory.update_inventory_item(item_id, InventoryUpdate(expected_version=db.get(InventoryItem, item_id).edit_version, supplier="Unsaved supplier"), db=db, current_user=actor)
         assert db.get(InventoryItem, item_id).supplier == original
     assert total(events, InventoryItem) == count_before
     assert total(events, InventoryStockRecord) == 0

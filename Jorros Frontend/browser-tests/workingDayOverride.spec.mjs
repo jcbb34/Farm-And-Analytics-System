@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
@@ -12,7 +13,7 @@ test("My Tasks refreshes both today's attendance and My Schedule after a working
     await page.addInitScript((profile) => sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({
         accessToken: "working-day-test-token", user: profile, expiresAt: Date.now() + 86400000,
     })), user);
-    await page.route("**/api/v1/**", async (route) => {
+    await page.route("**/api/v1/**", withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (request.method() !== "GET") writes.push(path);
@@ -30,7 +31,7 @@ test("My Tasks refreshes both today's attendance and My Schedule after a working
         } });
         if (path.endsWith("/my-tasks/page")) return route.fulfill({ json: { items: [], total: 0 } });
         return route.fulfill({ json: [] });
-    });
+    }));
     await page.goto("/my-tasks?tab=schedule");
     const bar = page.getByRole("region", { name: "Today's Attendance", exact: true });
     const day = page.locator(".my-schedule-day.today");

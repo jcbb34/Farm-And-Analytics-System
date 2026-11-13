@@ -1,6 +1,7 @@
+from app.services.record_editing import check_edit_version
 from app.routers.archives import ArchiveRequest
 from app.services.archive_service import change_archive_state, permanent_delete
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import (
@@ -20,6 +21,7 @@ from sqlalchemy.orm import (
 )
 
 from app.core.database import get_db
+from app.core.farm_time import farm_today
 from app.core.dependencies import has_permission, require_permission
 from app.models import (
     AuditLog,
@@ -43,6 +45,7 @@ from app.schemas.inventory import (
     InventoryResponse,
     InventoryStockAdjustmentCreate,
     InventoryStockRecordResponse,
+    InventoryStockHistoryPage,
     InventoryUpdate,
 )
 
@@ -116,14 +119,15 @@ def require_system_admin(
 def get_inventory_or_404(
     inventory_id: int,
     db: Session,
+    *,
+    with_history: bool = True,
 ) -> InventoryItem:
     statement = (
         select(InventoryItem)
         .where(InventoryItem.id == inventory_id)
-        .options(
-            selectinload(InventoryItem.stock_history)
-        )
     )
+    if with_history:
+        statement = statement.options(selectinload(InventoryItem.stock_history))
 
     item = db.scalar(statement)
 
@@ -317,10 +321,21 @@ def inventory_summary(db: Session = Depends(get_db), _: User = Depends(get_curre
                            .order_by(table.quantity, table.id).limit(25)).all()
     expiry_items = db.scalars(select(table).where(active, table.expiration_date.is_not(None))
                               .order_by(table.expiration_date, table.id).limit(25)).all()
+    preview = db.scalars(select(table).where(active).order_by(
+        case((table.quantity <= 0, 0), (table.quantity <= table.reorder_level, 1), else_=2),
+        table.quantity, table.id).limit(3)).all()
+    seed_rows = db.execute(select(table.name, table.category, table.unit, func.sum(table.quantity), func.sum(table.reorder_level))
+        .where(active, or_(table.category.ilike("%seed%"), table.name.ilike("%seed%")))
+        .group_by(table.name, table.category, table.unit).order_by(table.name, table.unit)).all()
     return {
         "total": total, "in_stock": in_stock or 0, "low_stock": low or 0,
         "out_of_stock": empty or 0, "total_value": float(value or 0),
         "supplier_count": supplier_count,
+        "preview_items": [InventoryResponse.model_validate(item).model_dump(mode="json") for item in preview],
+        "seed_items": [{"name": name, "category": category, "unit": unit, "quantity": float(quantity or 0),
+                        "reorderLevel": float(level or 0)} for name, category, unit, quantity, level in seed_rows],
+        "expiring_soon": db.scalar(select(func.count(table.id)).where(active,
+            table.expiration_date >= farm_today(), table.expiration_date <= farm_today() + timedelta(days=30))) or 0,
         "categories": sorted([row[0] for row in category_rows if row[0]]),
         "suppliers": sorted([row[0] for row in supplier_rows if row[0]]),
         "category_values": [{"category": category, "value": float(amount or 0)}
@@ -406,16 +421,64 @@ def list_inventory_details(
 # GET ONE INVENTORY ITEM
 # =========================================================
 
+@router.get("/choices")
+def inventory_choices(
+    inventory_use: str = Query(..., pattern="^(livestock_feeding|livestock_vaccination)$"),
+    search: str = Query("", max_length=120),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(25, ge=1, le=100),
+    selected_id: int | None = Query(None, ge=1),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    # Keep the existing inventory permission boundary: choosing a supply must
+    # not introduce an unrelated activities:view requirement for livestock staff.
+    from app.services.resource_choices import resource_choice_page
+    return resource_choice_page(db, domain="Inventory", inventory_use=inventory_use,
+                                search=search, offset=offset, limit=limit, selected_id=selected_id)
+
+
 @router.get(
     "/{inventory_id}",
     response_model=InventoryDetailsResponse,
 )
 def get_inventory_item(
     inventory_id: int,
+    include_history: bool = Query(True),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    return get_inventory_or_404(inventory_id, db)
+    item = get_inventory_or_404(inventory_id, db, with_history=include_history)
+    if include_history:
+        return item
+    return InventoryDetailsResponse(
+        **InventoryResponse.model_validate(item).model_dump(),
+        stock_history=[], stock_history_included=False,
+    )
+
+
+@router.get("/{inventory_id}/stock-history", response_model=InventoryStockHistoryPage)
+def get_stock_history(
+    inventory_id: int,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(25, ge=1, le=100),
+    snapshot_id: int | None = Query(None, ge=0),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    get_inventory_or_404(inventory_id, db, with_history=False)
+    movement = InventoryStockRecord
+    # Movement records are append-only. Pin subsequent pages to the initial
+    # maximum ID so newly inserted/backdated movements cannot shift offsets.
+    if snapshot_id is None:
+        snapshot_id = db.scalar(select(func.max(movement.id)).where(
+            movement.inventory_item_id == inventory_id)) or 0
+    criteria = (movement.inventory_item_id == inventory_id, movement.id <= snapshot_id)
+    total = db.scalar(select(func.count()).select_from(movement).where(*criteria)) or 0
+    rows = db.scalars(select(movement).where(*criteria).order_by(
+        movement.adjustment_date.desc(), movement.created_at.desc(), movement.id.desc(),
+    ).offset(offset).limit(limit)).all()
+    return dict(items=rows, total=total, offset=offset, limit=limit, snapshot_id=snapshot_id)
 
 
 # =========================================================
@@ -527,7 +590,8 @@ def _update_inventory_item(inventory_id, payload, db, current_user):
     item = get_inventory_or_404(inventory_id, db)
     ensure_inventory_not_archived(item)
 
-    changes = payload.model_dump(exclude_unset=True)
+    check_edit_version(item, payload.expected_version)
+    changes = payload.model_dump(exclude_unset=True, exclude={"expected_version"})
     validate_inventory_dates(item, changes)
 
     if (
@@ -669,7 +733,9 @@ def create_stock_adjustment(
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ):
     normalized_key = normalize_idempotency_key(idempotency_key)
-    payload_hash = request_fingerprint(payload)
+    payload_hash = request_fingerprint(
+        payload, exclude={"expected_version"} if payload.expected_version is None else None,
+    )
 
     # A double-click, browser retry, or slow-network retry must resolve to the
     # original stock movement instead of creating a second movement.
@@ -698,12 +764,16 @@ def create_stock_adjustment(
     item = lock_inventory_or_404(inventory_id, db)
     ensure_inventory_not_archived(item)
 
+    if payload.adjustment_type == "Set Exact Quantity":
+        check_edit_version(item, payload.expected_version)
+
     if payload.adjustment_type not in ALLOWED_STOCK_ADJUSTMENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid stock adjustment type.",
         )
 
+    previous_edit_version = item.edit_version
     previous_quantity = float(item.quantity)
     adjustment_quantity = float(payload.quantity)
 
@@ -785,8 +855,12 @@ def create_stock_adjustment(
     db.add(AuditLog(event_type="timeline", **audit_common))
 
     db.flush()
+    saved_edit_version = item.edit_version
     db.commit()
     db.refresh(record)
+
+    record.inventory_edit_version = saved_edit_version
+    record.inventory_previous_edit_version = previous_edit_version
 
     # Farm-wide task synchronization can take several seconds and may wait on
     # the automation lock. Run it after the HTTP response instead of holding

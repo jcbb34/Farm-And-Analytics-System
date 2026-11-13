@@ -33,19 +33,21 @@ def show_phone_link(addresses, port, hostname=None):
 def start_backend(port, frontend_port=3000):
     environment = os.environ.copy()
     environment["FARM_FRONTEND_PORT"] = str(frontend_port)
+    environment["JOROSS_LAUNCHER_CONTROL"] = "1"
     return subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "app.main:app", "--app-dir", str(BACKEND), "--host", "127.0.0.1", "--port", str(port)],
+        [sys.executable, str(BACKEND / "scripts" / "serve_farm.py"), "--host", "127.0.0.1", "--port", str(port)],
         cwd=BACKEND,
         env=environment,
-        start_new_session=sys.platform != "win32",
+        **child_process_options(),
     )
 
 
 def start_frontend(port, backend_port, production, phone_hostname=None):
-    executable = shutil.which("npm.cmd" if sys.platform == "win32" else "npm")
+    executable = shutil.which("node")
     if not executable:
-        raise RuntimeError("npm is unavailable. Install Node.js and run npm ci in Jorros Frontend.")
+        raise RuntimeError("Node.js is unavailable. Install Node.js and run npm ci in Jorros Frontend.")
     environment = os.environ.copy()
+    environment["JOROSS_LAUNCHER_CONTROL"] = "1"
     # The proxy always talks to the backend on this computer, even if an old
     # frontend .env.local contains the IP of a previous Wi-Fi network.
     environment["BACKEND_API_ORIGIN"] = f"http://127.0.0.1:{backend_port}"
@@ -54,34 +56,107 @@ def start_frontend(port, backend_port, production, phone_hostname=None):
             filter(None, [environment.get("NEXT_ALLOWED_DEV_ORIGINS"), phone_hostname])
         )
     return subprocess.Popen(
-        [executable, "run", "start" if production else "dev", "--", "-H", "0.0.0.0", "-p", str(port)],
+        [executable, str(FRONTEND / "scripts" / "serve-farm.cjs"), "start" if production else "dev", "-H", "0.0.0.0", "-p", str(port)],
         cwd=FRONTEND,
         env=environment,
-        start_new_session=sys.platform != "win32",
+        **child_process_options(),
     )
 
 
-def stop_process(process):
+def child_process_options():
+    # Only the launcher receives the terminal's Ctrl+C. It can then stop the
+    # HTTP listener, finish its live proxy responses, and stop the API in order.
+    options = {"stdin": subprocess.PIPE, "text": True, "encoding": "utf-8"}
+    if sys.platform == "win32":
+        options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        options["start_new_session"] = True
+    return options
+
+
+def send_control(process, command):
+    if process is None or process.poll() is not None or process.stdin is None:
+        return False
+    try:
+        process.stdin.write(command + "\n")
+        process.stdin.flush()
+        return True
+    except (OSError, ValueError):
+        # The child may have exited between poll() and the write.
+        return False
+
+
+def request_process_stop(process):
     if process is None or process.poll() is not None:
         return
-    if sys.platform == "win32":
-        subprocess.run(
-            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-    else:
-        os.killpg(process.pid, signal.SIGTERM)
+    if send_control(process, "stop"):
+        return
     try:
-        process.wait(timeout=5)
+        if sys.platform == "win32":
+            process.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            os.killpg(process.pid, signal.SIGTERM)
+    except OSError:
+        # An unavailable console or a child exiting concurrently falls back
+        # to the bounded wait/termination below.
+        pass
+
+
+def wait_process_stopped(process, label, timeout=20):
+    if process is None:
+        return
+    try:
+        process.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
-        process.kill()
-        process.wait()
+        print(f"{label} did not finish stopping; closing its remaining processes.", flush=True)
+        if sys.platform == "win32":
+            try:
+                subprocess.run(
+                    ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    check=False, timeout=5,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+        else:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        if process.poll() is None:
+            process.kill()
+        process.wait(timeout=5)
+    finally:
+        if process.stdin is not None:
+            try:
+                process.stdin.close()
+            except OSError:
+                pass
+
+
+def stop_frontend(frontend, backend):
+    request_process_stop(frontend)
+    # Next.js stops accepting new requests first. The API remains available
+    # while existing responses finish; ending SSE produces a complete HTTP
+    # response instead of a reset in Next's proxy.
+    send_control(backend, "drain")
+    wait_process_stopped(frontend, "Frontend")
+
+
+def stop_farm(frontend, backend):
+    try:
+        stop_frontend(frontend, backend)
+    finally:
+        request_process_stop(backend)
+        wait_process_stopped(backend, "Backend")
 
 
 def ensure_port_available(port, label):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        if sys.platform != "win32":
+            # Match the servers' Unix bind behavior: a completed graceful
+            # close may leave TIME_WAIT sockets, but no live listener.
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             probe.bind(("127.0.0.1", port))
         except OSError:
@@ -154,7 +229,10 @@ def main():
                     # Next.js dev checks allowed origins at startup. Refresh
                     # that list when the computer changes networks.
                     print("Network changed; restarting the frontend for the new address.", flush=True)
-                    stop_process(frontend)
+                    try:
+                        stop_frontend(frontend, backend)
+                    finally:
+                        send_control(backend, "resume")
                     frontend = start_frontend(args.port, args.backend_port, False, phone_hostname)
                 show_phone_link(addresses, args.port, phone_hostname)
                 previous_network = network
@@ -162,8 +240,14 @@ def main():
     except KeyboardInterrupt:
         print("\nStopping Joross Farm...", flush=True)
     finally:
-        stop_process(frontend)
-        stop_process(backend)
+        # Repeated Ctrl+C must not interrupt cleanup and leave a child running.
+        previous_interrupt = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        try:
+            stop_farm(frontend, backend)
+        finally:
+            signal.signal(signal.SIGINT, previous_interrupt)
+        if frontend is not None or backend is not None:
+            print("Joross Farm stopped.", flush=True)
 
 
 if __name__ == "__main__":

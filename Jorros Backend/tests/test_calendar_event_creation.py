@@ -1,5 +1,7 @@
 """Dashboard event creation uses real employee tasks and approval-only stock posting."""
 
+from edit_helpers import versioned_edit
+
 from io import BytesIO
 from unittest.mock import patch
 
@@ -413,7 +415,7 @@ def test_location_scopes_custom_persistence_and_permissions(events):
     assert "Hidden pen" not in combined and "Closed pen" not in combined
     crop = events.client.put(
         f"/api/v1/crops/{events.ids['Crop']}",
-        json={"field": "Custom hillside"},
+        json=versioned_edit(events.client, f"/api/v1/crops/{events.ids['Crop']}", {"field": "Custom hillside"}, headers),
         headers=headers,
     )
     assert crop.status_code == 200, crop.text

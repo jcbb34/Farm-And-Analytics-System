@@ -3,6 +3,11 @@ import { httpClient } from "./httpClient.js";
 const base = "/production-sales";
 
 export const productionSalesService = Object.freeze({
+    async getStock(options = {}, { signal } = {}) {
+        const data = await httpClient.get(`${base}/stock`, { query: options, signal, cache: "no-store" });
+        if (!Array.isArray(data?.items) || !Number.isInteger(data.total) || data.total < 0) throw new Error("Available stock could not be read. Please retry.");
+        return data;
+    },
     getOverview() {
         return httpClient.get(`${base}/overview`);
     },

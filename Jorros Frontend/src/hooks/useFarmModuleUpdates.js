@@ -36,6 +36,9 @@ export default function useFarmModuleUpdates(modules, refresh, { editing = false
             queue();
         };
         const observer = new MutationObserver(flush);
+        const legacyEvents = { "joross:livestock-updated": "livestock", "joross:crops-updated": "crops", "joross:inventory-updated": "inventory" };
+        const onLegacyUpdate = event => onUpdate({ detail: { modules: [legacyEvents[event.type]] } });
+        for (const name of Object.keys(legacyEvents)) window.addEventListener(name, onLegacyUpdate);
         observer.observe(document.body, { childList: true, subtree: true });
         window.addEventListener("joross:modules-updated", onUpdate);
         window.addEventListener("focus", queue);
@@ -45,6 +48,7 @@ export default function useFarmModuleUpdates(modules, refresh, { editing = false
         document.addEventListener("visibilitychange", queue);
         return () => {
             active = false; clearTimeout(timer); observer.disconnect();
+            for (const name of Object.keys(legacyEvents)) window.removeEventListener(name, onLegacyUpdate);
             window.removeEventListener("joross:modules-updated", onUpdate);
             window.removeEventListener("focus", queue); window.removeEventListener("online", queue);
             window.removeEventListener("joross:auth-changed", queue); window.removeEventListener("joross:activities-updated", queue);

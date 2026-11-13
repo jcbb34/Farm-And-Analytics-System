@@ -1,3 +1,5 @@
+from sqlalchemy.orm.attributes import set_committed_value
+from app.services.record_editing import check_edit_version
 from app.routers.archives import ArchiveRequest
 from app.services.archive_service import change_archive_state, permanent_delete
 from datetime import date, datetime
@@ -232,7 +234,17 @@ def _harvest_record_type(record: CropYieldRecord) -> str:
 
 def apply_automatic_progress(
     crop: Crop,
+    *, persist: bool = False,
 ) -> Crop:
+    def finish(**values):
+        for name, value in values.items():
+            if persist:
+                setattr(crop, name, value)
+            else:
+                # Display estimates are not database writes or new edit versions.
+                set_committed_value(crop, name, value)
+        return crop
+
     # Growth % is automatic until the first real harvest is recorded.
     # A partial harvest means the crop has reached production and remains
     # active; a final harvest closes the crop cycle.
@@ -273,39 +285,29 @@ def apply_automatic_progress(
             for record in harvest_records
         )
     ):
-        crop.status = "Harvested"
-        crop.growth_stage = "Harvested"
-        crop.current_growth = 100.0
-        return crop
+        return finish(status="Harvested", growth_stage="Harvested", current_growth=100.0)
 
     if any(
         _harvest_record_type(record) == "partial harvest"
         for record in harvest_records
     ):
-        crop.status = "Harvesting"
-        crop.growth_stage = "Harvesting / Production"
-        crop.current_growth = 100.0
-        return crop
+        return finish(status="Harvesting", growth_stage="Harvesting / Production", current_growth=100.0)
 
     if crop.status == "Harvesting":
-        crop.growth_stage = "Harvesting / Production"
-        crop.current_growth = 100.0
-        return crop
+        return finish(growth_stage="Harvesting / Production", current_growth=100.0)
 
     if crop.confirmed_ready_at is not None:
-        crop.status = "Ready for Harvest"
-        crop.growth_stage = "Harvest Ready"
-        crop.current_growth = 100.0
-        return crop
+        return finish(status="Ready for Harvest", growth_stage="Harvest Ready", current_growth=100.0)
 
     progress = calculate_crop_progress(
         crop.planting_date,
         crop.estimated_harvest,
     )
-    crop.current_growth = progress
-    crop.growth_stage = crop.observed_growth_stage or stage_for_progress(progress)
-    crop.status = ("Planted" if crop.observed_growth_stage == "Seeded" else "Growing") if crop.observed_growth_stage else status_for_progress(progress)
-    return crop
+    return finish(
+        current_growth=progress,
+        growth_stage=crop.observed_growth_stage or stage_for_progress(progress),
+        status=("Planted" if crop.observed_growth_stage == "Seeded" else "Growing") if crop.observed_growth_stage else status_for_progress(progress),
+    )
 
 
 # =========================================================
@@ -571,7 +573,7 @@ def create_crop(
             is_archived=False,
         )
         validate_schedule(crop, "Crop")
-        apply_automatic_progress(crop)
+        apply_automatic_progress(crop, persist=True)
 
         template = None
         if payload.care_template_id is not None:
@@ -637,10 +639,9 @@ def update_crop(
 
     ensure_crop_not_archived(crop)
 
+    check_edit_version(crop, payload.expected_version)
     before = crop_snapshot(crop)
-    changes = payload.model_dump(
-        exclude_unset=True
-    )
+    changes = payload.model_dump(exclude_unset=True, exclude={"expected_version"})
     future_care_task_action = changes.pop("future_care_task_action", None)
     old_care_template_id = crop.care_template_id
     old_planting_date = crop.planting_date
@@ -741,7 +742,7 @@ def update_crop(
     else:
         # Active records always return to automatic date-based tracking.
         crop.status = "Planted"
-        apply_automatic_progress(crop)
+        apply_automatic_progress(crop, persist=True)
 
     validate_schedule(crop, "Crop")
     crop.updated_at = datetime.now()
@@ -1136,7 +1137,7 @@ def create_pest_disease_record(
         recorded_by_user_id=current_user.id,
     )
 
-    apply_automatic_progress(crop)
+    apply_automatic_progress(crop, persist=True)
     crop.updated_at = datetime.now()
 
     db.add(record)

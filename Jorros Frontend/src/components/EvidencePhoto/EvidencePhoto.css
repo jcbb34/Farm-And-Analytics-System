@@ -447,3 +447,10 @@ html[data-theme="dark"] .workforce-layout .evidence-action-button:disabled {
     font-size: 0.84rem;
     text-align: center;
 }
+
+.evidence-inline-shell { width: 100%; }
+.evidence-inline-placeholder {
+    display: flex; min-height: 110px; padding: 16px;
+    align-items: center; justify-content: center;
+    color: var(--workforce-muted, #66736b); text-align: center;
+}

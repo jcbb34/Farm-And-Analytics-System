@@ -68,6 +68,8 @@ class InventoryCreate(InventoryTextFields):
 
 
 class InventoryUpdate(InventoryTextFields):
+    expected_version: int | None = Field(default=None, ge=1)
+
     model_config = ConfigDict(extra="forbid")
 
     name: str | None = Field(default=None, min_length=1, max_length=150)
@@ -98,6 +100,7 @@ class InventoryUpdate(InventoryTextFields):
 
 
 class InventoryStockAdjustmentCreate(BaseModel):
+    expected_version: int | None = Field(default=None, ge=1)
     adjustment_type: str = Field(min_length=1, max_length=50)
     quantity: float = Field(ge=0)
     adjustment_date: date
@@ -122,6 +125,10 @@ class InventoryStockAdjustmentCreate(BaseModel):
 
 
 class InventoryStockRecordResponse(BaseModel):
+    # Response-only version of the inventory row at the time this save completed.
+    # Historical/idempotent replies may omit it; clients then reload metadata.
+    inventory_edit_version: int | None = None
+    inventory_previous_edit_version: int | None = None
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -140,6 +147,8 @@ class InventoryStockRecordResponse(BaseModel):
 
 
 class InventoryResponse(BaseModel):
+    edit_version: int = Field(default=1, ge=1)
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -167,3 +176,12 @@ class InventoryResponse(BaseModel):
 
 class InventoryDetailsResponse(InventoryResponse):
     stock_history: list[InventoryStockRecordResponse] = Field(default_factory=list)
+    stock_history_included: bool = True
+
+
+class InventoryStockHistoryPage(BaseModel):
+    items: list[InventoryStockRecordResponse]
+    total: int
+    offset: int
+    limit: int
+    snapshot_id: int

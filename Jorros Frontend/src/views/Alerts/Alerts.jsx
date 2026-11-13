@@ -1611,6 +1611,9 @@ function Alerts() {
     ] = useState(false);
 
     const [summaryData, setSummaryData] = useState(null);
+    const [summaryLoading, setSummaryLoading] = useState(true);
+    const [summaryError, setSummaryError] = useState("");
+    const summaryRequestRef = useRef(0);
     const [activeTotal, setActiveTotal] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
     const [historyRecords, setHistoryRecords] = useState([]);
@@ -1654,8 +1657,18 @@ function Alerts() {
     }, [debouncedSearch, categoryFilter, activeTab]);
 
     const loadAlertSummary = useCallback(async () => {
-        try { setSummaryData(await alertService.getAlertSummary()); }
-        catch (error) { console.error("Failed to load alert counts:", error); }
+        const requestId = ++summaryRequestRef.current;
+        setSummaryLoading(true);
+        setSummaryError("");
+        try {
+            const data = await alertService.getAlertSummary();
+            if (requestId === summaryRequestRef.current) setSummaryData(data);
+        } catch (error) {
+            if (requestId === summaryRequestRef.current) {
+                setSummaryData(null);
+                setSummaryError(error?.message || "Alert totals are unavailable.");
+            }
+        } finally { if (requestId === summaryRequestRef.current) setSummaryLoading(false); }
     }, []);
 
     const loadHistory = useCallback(async (offset = 0) => {
@@ -1701,7 +1714,7 @@ function Alerts() {
           icon: "assignment_late", className: "configured" },
         { title: "Alert History", value: summaryData?.history ?? 0, label: "Resolved or inactive",
           icon: "history", className: "disabled" },
-    ], [summaryData]);
+    ].map((card) => ({ ...card, value: summaryLoading ? "…" : summaryError || !summaryData ? "—" : card.value })), [summaryData, summaryLoading, summaryError]);
 
     const filteredAlerts = alerts;
 
@@ -2101,7 +2114,8 @@ function Alerts() {
                     <AppHeaderActions />
                 </header>
 
-                <section className="alerts-page-summary-grid">
+                {summaryError && <div className="workforce-error" role="alert"><strong>Alert totals unavailable.</strong> {summaryError}{" "}<button type="button" className="workforce-button secondary compact" onClick={loadAlertSummary} disabled={summaryLoading}>Retry totals</button></div>}
+                <section className="alerts-page-summary-grid" aria-busy={summaryLoading}>
                     {summaryCards.map(
                         (card) => (
                             <article

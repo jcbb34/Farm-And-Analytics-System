@@ -1,4 +1,9 @@
 "use client";
+import useInventoryStockHistory from "../../hooks/useInventoryStockHistory.js";
+import useRecordEditConflict from "../../hooks/useRecordEditConflict.js";
+import RecordConflictNotice from "../RecordConflictNotice/RecordConflictNotice.jsx";
+import { inventoryService } from "../../services/inventoryService.js";
+
 
 import FarmLocationInput from "../FarmLocationInput/FarmLocationInput.jsx";
 import { notify } from "../../context/NotificationContext.jsx";
@@ -167,6 +172,7 @@ function createInventoryFormFromItem(
     }
 
     return {
+        editVersion: item.editVersion,
         name: item.name || "",
 
         category:
@@ -241,6 +247,11 @@ export function InventoryFormModal({
     const isEditing =
         Boolean(item);
 
+    const conflict = useRecordEditConflict({
+        open, id: item?.id, loadRecord: inventoryService.getInventoryItem,
+        replaceForm: latest => setForm(createInventoryFormFromItem(latest)),
+    });
+
     useEffect(() => {
         if (!open) {
             return;
@@ -282,6 +293,7 @@ export function InventoryFormModal({
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        if (conflict.reloading) return;
         if (inventorySubmittingRef.current) return;
 
         const requiredFields = [
@@ -392,6 +404,7 @@ export function InventoryFormModal({
         }
 
         const payload = {
+            editVersion: form.editVersion,
             name: form.name.trim(),
 
             category:
@@ -439,6 +452,7 @@ export function InventoryFormModal({
             const saved = await onSave(payload, { idempotencyKey });
             if (saved !== false) clearStableIdempotencyKey(inventoryCreateRequestRef);
         } catch (error) {
+            if (conflict.handleError(error)) return;
             notify(error?.message || "Unable to save inventory record. Your entries are kept; retry when ready.");
         } finally {
             inventorySubmittingRef.current = false;
@@ -514,6 +528,7 @@ export function InventoryFormModal({
                         handleSubmit
                     }
                 >
+                    <RecordConflictNotice conflict={conflict} disabled={inventorySaving} />
                     <fieldset className="inventory-form-fields" disabled={inventorySaving}>
                     <section className="inventory-form-section">
                         <div className="inventory-form-section-title">
@@ -1046,6 +1061,16 @@ export function InventoryDetailsModal({
     const [adjustmentSaving, setAdjustmentSaving] = useState(false);
     const adjustmentSubmittingRef = useRef(false);
     const adjustmentRequestRef = useRef(null);
+    const [stockSnapshot, setStockSnapshot] = useState(null);
+    const stockItem = stockSnapshot?.id === item?.id ? stockSnapshot : item;
+    const stockConflict = useRecordEditConflict({
+        open: Boolean(item), id: item?.id, loadRecord: inventoryService.getInventoryItem,
+        replaceForm: latest => setStockSnapshot(latest),
+    });
+    const history = useInventoryStockHistory({
+        active: Boolean(item) && activeTab === "history", inventoryId: item?.id,
+        revision: stockItem?.editVersion,
+    });
 
     useEffect(() => {
         if (!item) {
@@ -1053,6 +1078,7 @@ export function InventoryDetailsModal({
         }
 
         setActiveTab("overview");
+        setStockSnapshot(item);
 
         setAdjustmentForm({
             type: "Restock",
@@ -1061,7 +1087,7 @@ export function InventoryDetailsModal({
             reason: "",
             reference: "",
             supplier:
-                item.supplier || "",
+                stockItem.supplier || "",
         });
         adjustmentSubmittingRef.current = false;
         setAdjustmentSaving(false);
@@ -1074,7 +1100,7 @@ export function InventoryDetailsModal({
             document.body.style.overflow =
                 "";
         };
-    }, [item]);
+    }, [item?.id]);
 
     const projectedQuantity =
         useMemo(() => {
@@ -1084,7 +1110,7 @@ export function InventoryDetailsModal({
 
             const currentQuantity =
                 Number(
-                    item.quantity
+                    stockItem.quantity
                 ) || 0;
 
             const enteredQuantity =
@@ -1128,17 +1154,16 @@ export function InventoryDetailsModal({
                 currentQuantity -
                     enteredQuantity
             );
-        }, [item, adjustmentForm]);
+        }, [stockItem, adjustmentForm]);
 
     if (!item) {
         return null;
     }
 
     const stockStatus =
-        getStockStatus(item);
+        getStockStatus(stockItem);
 
-    const stockHistory =
-        item.stockHistory || [];
+    const stockHistory = history.items;
 
     const handleAdjustmentChange = (
         event
@@ -1207,7 +1232,7 @@ export function InventoryDetailsModal({
                 adjustmentForm.type
             ) &&
             quantity >
-                Number(item.quantity)
+                Number(stockItem.quantity)
         ) {
             notify(
                 "The quantity to remove is greater than the available stock."
@@ -1228,8 +1253,8 @@ export function InventoryDetailsModal({
 
         if (
             adjustmentForm.type === "Stock Usage" &&
-            item.expirationDate &&
-            adjustmentForm.date > item.expirationDate
+            stockItem.expirationDate &&
+            adjustmentForm.date > stockItem.expirationDate
         ) {
             notify(
                 "This inventory batch is expired. Record it as Expired stock instead of Stock Usage."
@@ -1248,12 +1273,13 @@ export function InventoryDetailsModal({
         }
 
         const payload = {
+            ...(adjustmentForm.type === "Set Exact Quantity" ? { editVersion: stockItem?.editVersion } : {}),
             type: adjustmentForm.type,
             quantity,
             date: adjustmentForm.date,
             reason: adjustmentForm.reason.trim(),
             reference: adjustmentForm.reference.trim() || "No reference",
-            supplier: adjustmentForm.supplier.trim() || item.supplier,
+            supplier: adjustmentForm.supplier.trim() || stockItem.supplier,
         };
         const idempotencyKey = stableIdempotencyKey(
             adjustmentRequestRef,
@@ -1275,6 +1301,7 @@ export function InventoryDetailsModal({
                 return;
             }
 
+            setStockSnapshot(saved?.id ? saved : { ...stockItem, editVersion: undefined });
             clearStableIdempotencyKey(adjustmentRequestRef);
             setAdjustmentForm({
                 type: "Restock",
@@ -1282,10 +1309,12 @@ export function InventoryDetailsModal({
                 date: getTodayDate(),
                 reason: "",
                 reference: "",
-                supplier: item.supplier || "",
+                supplier: saved?.supplier || stockItem.supplier || "",
             });
 
             setActiveTab("history");
+        } catch (error) {
+            if (!stockConflict.handleError(error)) notify(error?.message || "Unable to save the stock adjustment. Your entries are kept.");
         } finally {
             adjustmentSubmittingRef.current = false;
             setAdjustmentSaving(false);
@@ -1314,19 +1343,19 @@ export function InventoryDetailsModal({
                         <div>
                             <div className="inventory-details-code-line">
                                 <h2>
-                                    {item.name}
+                                    {stockItem.name}
                                 </h2>
 
                                 <span>
                                     {
-                                        item.itemCode
+                                        stockItem.itemCode
                                     }
                                 </span>
                             </div>
 
                             <p>
-                                {item.category} •{" "}
-                                {item.location}
+                                {stockItem.category} •{" "}
+                                {stockItem.location}
                             </p>
                         </div>
                     </div>
@@ -1397,6 +1426,13 @@ export function InventoryDetailsModal({
                 </nav>
 
                 <div className="inventory-details-body">
+                    {!stockItem.editVersion && <div className="inventory-history-feedback" role="alert">
+                        <p>The stock submission was confirmed, but current details could not be refreshed. The displayed balance may be outdated.</p>
+                        <button type="button" onClick={stockConflict.reload} disabled={stockConflict.reloading}>
+                            {stockConflict.reloading ? "Reloading…" : "Reload current balance"}
+                        </button>
+                        {stockConflict.error && <p>{stockConflict.error}</p>}
+                    </div>}
                     {activeTab ===
                         "overview" && (
                         <>
@@ -1413,9 +1449,9 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {
-                                                item.quantity
+                                                stockItem.quantity
                                             }{" "}
-                                            {item.unit}
+                                            {stockItem.unit}
                                         </strong>
                                     </div>
                                 </div>
@@ -1432,9 +1468,9 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {
-                                                item.reorderLevel
+                                                stockItem.reorderLevel
                                             }{" "}
-                                            {item.unit}
+                                            {stockItem.unit}
                                         </strong>
                                     </div>
                                 </div>
@@ -1451,7 +1487,7 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {formatCurrency(
-                                                item.cost
+                                                stockItem.cost
                                             )}
                                         </strong>
                                     </div>
@@ -1469,7 +1505,7 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {formatCurrency(
-                                                item.price
+                                                stockItem.price
                                             )}
                                         </strong>
                                     </div>
@@ -1488,10 +1524,10 @@ export function InventoryDetailsModal({
                                         <strong>
                                             {formatCurrency(
                                                 Number(
-                                                    item.quantity
+                                                    stockItem.quantity
                                                 ) *
                                                     Number(
-                                                        item.cost
+                                                        stockItem.cost
                                                     )
                                             )}
                                         </strong>
@@ -1510,7 +1546,7 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {
-                                                item.supplier
+                                                stockItem.supplier
                                             }
                                         </strong>
                                     </div>
@@ -1528,7 +1564,7 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {formatDate(
-                                                item.dateAcquired
+                                                stockItem.dateAcquired
                                             )}
                                         </strong>
                                     </div>
@@ -1546,7 +1582,7 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {formatDate(
-                                                item.expirationDate
+                                                stockItem.expirationDate
                                             )}
                                         </strong>
                                     </div>
@@ -1564,7 +1600,7 @@ export function InventoryDetailsModal({
                                             Description,
                                             storage, and
                                             stock information
-                                            for this item.
+                                            for this stockItem.
                                         </p>
                                     </div>
                                 </div>
@@ -1577,7 +1613,7 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {
-                                                item.category
+                                                stockItem.category
                                             }
                                         </strong>
                                     </div>
@@ -1588,7 +1624,7 @@ export function InventoryDetailsModal({
                                         </small>
 
                                         <strong>
-                                            {item.unit}
+                                            {stockItem.unit}
                                         </strong>
                                     </div>
 
@@ -1598,7 +1634,7 @@ export function InventoryDetailsModal({
                                         </small>
 
                                         <strong>
-                                            {item.batchNumber || "—"}
+                                            {stockItem.batchNumber || "—"}
                                         </strong>
                                     </div>
 
@@ -1609,7 +1645,7 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {
-                                                item.location
+                                                stockItem.location
                                             }
                                         </strong>
                                     </div>
@@ -1633,7 +1669,7 @@ export function InventoryDetailsModal({
                                     </strong>
 
                                     <p>
-                                        {item.description ||
+                                        {stockItem.description ||
                                             "No description provided."}
                                     </p>
                                 </div>
@@ -1644,7 +1680,7 @@ export function InventoryDetailsModal({
                                     </strong>
 
                                     <p>
-                                        {item.notes ||
+                                        {stockItem.notes ||
                                             "No additional notes."}
                                     </p>
                                 </div>
@@ -1671,6 +1707,9 @@ export function InventoryDetailsModal({
                                 </div>
                             </div>
 
+                            <RecordConflictNotice conflict={stockConflict}
+                                reloadHint="Reloading updates the stock balance and keeps your adjustment entries. Review the current balance and proposed quantity before saving." />
+                            <p className="inventory-stock-baseline">Current balance for this adjustment: <strong>{stockItem.quantity} {stockItem.unit}</strong></p>
                             <form
                                 className="inventory-stock-form"
                                 onSubmit={
@@ -1745,7 +1784,7 @@ export function InventoryDetailsModal({
 
                                             <span>
                                                 {
-                                                    item.unit
+                                                    stockItem.unit
                                                 }
                                             </span>
                                         </div>
@@ -1819,9 +1858,9 @@ export function InventoryDetailsModal({
 
                                         <strong>
                                             {
-                                                item.quantity
+                                                stockItem.quantity
                                             }{" "}
-                                            {item.unit}
+                                            {stockItem.unit}
                                         </strong>
                                     </div>
 
@@ -1838,7 +1877,7 @@ export function InventoryDetailsModal({
                                             {
                                                 projectedQuantity
                                             }{" "}
-                                            {item.unit}
+                                            {stockItem.unit}
                                         </strong>
                                     </div>
                                 </div>
@@ -1867,7 +1906,7 @@ export function InventoryDetailsModal({
                                 <div className="inventory-stock-form-footer">
                                     <button
                                         type="submit"
-                                        disabled={adjustmentSaving}
+                                        disabled={adjustmentSaving || stockConflict.reloading || (adjustmentForm.type === "Set Exact Quantity" && Boolean(stockConflict.message))}
                                         aria-busy={adjustmentSaving}
                                     >
                                         <span className="material-symbols-outlined">
@@ -1902,18 +1941,16 @@ export function InventoryDetailsModal({
                                     </p>
                                 </div>
 
-                                <span className="inventory-history-count">
-                                    {
-                                        stockHistory.length
-                                    }{" "}
-                                    {stockHistory.length ===
-                                    1
-                                        ? "record"
-                                        : "records"}
+                                <span className="inventory-history-count" role="status">
+                                    {history.loaded ? `${stockHistory.length} of ${history.total} records` : "History not loaded"}
                                 </span>
                             </div>
 
-                            <div className="inventory-history-list">
+                            {history.loading && <p role="status">Loading stock history…</p>}
+                            {history.error && <div role="alert" className="inventory-history-feedback">
+                                <p>{history.error}</p><button type="button" onClick={history.retry} disabled={history.loading}>Retry history</button>
+                            </div>}
+                            <div className="inventory-history-list" aria-busy={history.loading}>
                                 {stockHistory.length >
                                 0 ? (
                                     stockHistory.map(
@@ -1986,7 +2023,7 @@ export function InventoryDetailsModal({
                                                             record.newQuantity
                                                         }{" "}
                                                         {
-                                                            item.unit
+                                                            stockItem.unit
                                                         }
                                                     </strong>
 
@@ -2006,7 +2043,7 @@ export function InventoryDetailsModal({
                                             </article>
                                         )
                                     )
-                                ) : (
+                                ) : history.loaded && !history.loading && !history.error ? (
                                     <div className="inventory-empty-history">
                                         <span className="material-symbols-outlined">
                                             history
@@ -2019,8 +2056,13 @@ export function InventoryDetailsModal({
                                             available.
                                         </p>
                                     </div>
-                                )}
+                                ) : null}
                             </div>
+                            {history.loaded && stockHistory.length < history.total && !history.error && (
+                                <div className="inventory-history-feedback"><button type="button" onClick={history.loadMore} disabled={history.loading}>
+                                    {history.loading ? "Loading…" : "Load older movements"}
+                                </button></div>
+                            )}
                         </section>
                     )}
                 </div>

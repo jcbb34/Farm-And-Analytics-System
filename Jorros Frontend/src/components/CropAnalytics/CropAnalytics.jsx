@@ -61,9 +61,16 @@ function getQualityClass(quality) {
 function CropAnalytics({
     crops,
     yieldRecords,
+    analytics,
+    yieldTotal = yieldRecords.length,
+    yieldLoading = false,
+    yieldError = "",
+    onRetry,
+    onLoadMore,
 }) {
     const monthlyPrediction =
         useMemo(() => {
+            if (analytics) return analytics.monthlyPrediction.slice(0, 12);
             const groupedMonths =
                 new Map();
 
@@ -107,9 +114,10 @@ function CropAnalytics({
                     second.monthKey
                 )
             );
-        }, [crops]);
+        }, [crops, analytics]);
 
     const yieldByCrop = useMemo(() => {
+        if (analytics) return analytics.yieldByCrop.slice(0, 10);
         const groupedYield =
             new Map();
 
@@ -144,10 +152,11 @@ function CropAnalytics({
                 second.quantityKg -
                 first.quantityKg
         );
-    }, [yieldRecords]);
+    }, [yieldRecords, analytics]);
 
     const productivityStats =
         useMemo(() => {
+            if (analytics) return analytics.productivityStats;
             const totalYield =
                 yieldRecords.reduce(
                     (total, record) =>
@@ -222,6 +231,7 @@ function CropAnalytics({
             crops,
             yieldRecords,
             yieldByCrop,
+            analytics,
         ]);
 
     const maxPredictionArea =
@@ -271,8 +281,7 @@ function CropAnalytics({
                             </h3>
 
                             <p>
-                                Expected harvest area
-                                based on crop schedules.
+                                Earliest 12 harvest months for current crop cycles.
                             </p>
                         </div>
 
@@ -347,8 +356,7 @@ function CropAnalytics({
                             </h3>
 
                             <p>
-                                Total recorded yield
-                                for each crop.
+                                Top 10 crops by total recorded yield.
                             </p>
                         </div>
 
@@ -570,14 +578,16 @@ function CropAnalytics({
                     </div>
 
                     <span>
-                        {yieldRecords.length}{" "}
+                        {yieldRecords.length} of {yieldTotal}{" "}
                         {yieldRecords.length === 1
                             ? "record"
                             : "records"}
                     </span>
                 </div>
 
-                <div className="crop-yield-table-wrapper">
+                {yieldLoading && <p role="status">Loading harvest history…</p>}
+                {yieldError && <div role="alert" className="workforce-error">Harvest history unavailable. {yieldError} <button type="button" className="workforce-button secondary" onClick={onRetry}>Retry history</button></div>}
+                <div className="crop-yield-table-wrapper" hidden={yieldLoading || Boolean(yieldError)}>
                     <table className="crop-yield-table">
                         <thead>
                             <tr>
@@ -708,6 +718,7 @@ function CropAnalytics({
                         </tbody>
                     </table>
                 </div>
+                {!yieldError && yieldRecords.length < yieldTotal && <button type="button" className="workforce-button secondary" onClick={onLoadMore} disabled={yieldLoading}>{yieldLoading ? "Loading…" : "Load more harvests"}</button>}
             </article>
         </section>
     );

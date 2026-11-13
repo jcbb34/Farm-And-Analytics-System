@@ -1,3 +1,6 @@
+from fastapi.responses import JSONResponse, StreamingResponse
+from app.services.report_csv import iter_report_csv
+from app.services.report_pdf_jobs import queue_pdf, job_payload, job_statuses, ready_file
 from app.routers.archives import ArchiveRequest
 from app.services.archive_service import change_archive_state, permanent_delete
 from datetime import date, datetime
@@ -187,28 +190,43 @@ def get_report_or_404(
     return report
 
 
-def _regenerate_pdf_safely(
-    db: Session,
-    report: FarmReport,
+def _regenerate_pdf_safely(db: Session, report: FarmReport):
+    try:
+        queue_pdf(db, report, force=True)
+        db.commit()
+        db.refresh(report)
+    except Exception:
+        db.rollback()
+        logging.getLogger("joross.reports").exception("Report PDF could not be queued")
+
+
+@router.get("/pdf-jobs/status")
+def report_pdf_statuses(
+    report_ids: str = Query("", max_length=1200),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
 ):
     try:
-        pdf_path = (
-            generate_report_pdf(
-                report
-            )
-        )
+        ids = sorted({int(value) for value in report_ids.split(",") if value})
+    except ValueError:
+        raise HTTPException(422, "Invalid report IDs.")
+    if len(ids) > 100 or any(value <= 0 for value in ids):
+        raise HTTPException(422, "Choose up to 100 positive report IDs.")
+    return job_statuses(db, ids) if ids else []
 
-        report.pdf_filename = (
-            pdf_path.name
-        )
 
-        db.commit()
-        db.refresh(
-            report
-        )
-    except Exception as error:
-        db.rollback()
-        logging.getLogger("joross.reports").exception("Report PDF regeneration failed: %s", error)
+@router.post("/{report_id}/pdf-job")
+def prepare_report_pdf(
+    report_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    report = get_report_or_404(report_id, db)
+    _sync_report_prepared_by(db, report, current_user)
+    db.flush()
+    job = queue_pdf(db, report, retry_failed=True)
+    db.commit()
+    return job_payload(job)
 
 
 @router.get(
@@ -456,6 +474,7 @@ def generate_report(
         summary=payload.summary,
         generated_by_user_id=current_user.id,
         generate_pdf=True,
+        queue_pdf=True,
         included_sections=payload.included_sections,
         filters=payload.filters,
     )
@@ -644,6 +663,7 @@ def create_report_revision(
         db,
         report,
         current_user.id,
+        queue_pdf=True,
     )
 
 
@@ -678,48 +698,14 @@ def get_report_pdf(
             report
         )
 
-    pdf_path = None
-
-    if (
-        report.pdf_filename
-        and is_current_pdf_filename(
-            report.pdf_filename
-        )
-    ):
-        candidate = resolve_report_pdf_path(
-            report.pdf_filename,
-            require_current=True,
-        )
-
-        if candidate is not None and candidate.exists():
-            pdf_path = (
-                candidate
-            )
-
+    job = queue_pdf(db, report)
+    db.commit()
+    pdf_path = ready_file(report) if job.status == "Ready" else None
     if pdf_path is None:
-        try:
-            pdf_path = (
-                generate_report_pdf(
-                    report
-                )
-            )
-
-            report.pdf_filename = (
-                pdf_path.name
-            )
-
-            db.commit()
-            db.refresh(
-                report
-            )
-        except Exception as error:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=(
-                    "The report exists, but the PDF could not be generated: "
-                    f"{error}"
-                ),
-            ) from error
+        return JSONResponse(
+            status_code=202, content=job_payload(job),
+            headers={"Retry-After": "2", "Cache-Control": "no-store"},
+        )
 
     response = FileResponse(
         path=str(
@@ -760,16 +746,12 @@ def get_report_supporting_csv(
         db,
     )
 
-    content = build_report_csv(
-        report
-    )
-
     filename = (
         f"{report.report_code}_REV-{report.revision_number}_supporting-data.csv"
     )
 
-    return Response(
-        content=content,
+    return StreamingResponse(
+        content=iter_report_csv(report),
         media_type=(
             "text/csv; charset=utf-8"
         ),
@@ -805,32 +787,9 @@ def regenerate_report_pdf(
         current_user,
     )
 
-    try:
-        pdf_path = (
-            generate_report_pdf(
-                report
-            )
-        )
-    except Exception as error:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=(
-                "Unable to regenerate report PDF: "
-                f"{error}"
-            ),
-        ) from error
-
-    report.pdf_filename = (
-        pdf_path.name
-    )
-    report.updated_at = (
-        datetime.now()
-    )
-
+    queue_pdf(db, report, force=True, retry_failed=True)
     db.commit()
-    db.refresh(
-        report
-    )
+    db.refresh(report)
 
     return report
 

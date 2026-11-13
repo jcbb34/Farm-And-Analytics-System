@@ -191,6 +191,9 @@ export function DashboardWeatherStrip({
 function DashboardExtras({
     period = "month",
     inventoryItems = [],
+    inventoryLoading = false,
+    inventoryError = "",
+    recommendationInventory = inventoryItems,
     crops = [],
     weatherData = null,
     weatherSettings = {},
@@ -241,13 +244,13 @@ function DashboardExtras({
                 recommendationConditions,
                 {
                     crops,
-                    inventory: inventoryItems,
+                    inventory: recommendationInventory,
                     weather: weatherData,
                 }
             ),
         [
             crops,
-            inventoryItems,
+            recommendationInventory,
             recommendationConditions,
             weatherData,
         ]
@@ -271,7 +274,7 @@ function DashboardExtras({
                 </div>
 
                 <div className="inventory-list">
-                    {inventoryOverview.length === 0 ? (
+                    {inventoryLoading ? <p role="status">Loading inventory…</p> : inventoryError ? <p role="status">Inventory overview is unavailable.</p> : inventoryOverview.length === 0 ? (
                         <div className="inventory-item">
                             <div className="inventory-info">
                                 <div className="inventory-icon">

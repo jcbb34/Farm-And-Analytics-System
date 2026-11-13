@@ -40,8 +40,9 @@ test("inventory stays reserved until manager approval and review messages reflec
     assert.doesNotMatch(taskManagement, /Existing inventory usage remains posted/);
 });
 
-test("Task Management counts real submitted-for-review rows and exposes review only through the report modal", () => {
-    assert.match(taskManagement, /review:\s*tasks\.filter\(\(x\) => x\.status === "Submitted for Review"\)\.length/);
+test("Task Management uses server totals and exposes review only through the report modal", () => {
+    assert.match(taskManagement, /const stats = taskSummary/);
+    assert.match(read("src/views/TaskManagement/hooks/useTaskManagementData.js"), /workforceService\.getTaskManagementSummary\(\)/);
     assert.match(taskManagement, /task\.status === "Submitted for Review".*Review Submission/s);
     assert.match(taskManagement, /onOpenReview\(task\)/);
     assert.match(taskManagement, /onOpenReview=\{openReviewSubmission\}/);

@@ -1,3 +1,4 @@
+import ResourceChoiceTools from "../../../components/ResourceChoiceTools/ResourceChoiceTools.jsx";
 import { WORK_TYPES, workTypeLabel, eventDomain, taskCategoryUpdate } from "../../../services/eventPlanning.js";
 import { PersonalNameFields, PersonalAddressFields } from "../../../components/PersonalDetails/PersonalDetails.jsx";
 import { composeFullName } from "../../../components/PersonalDetails/personalDetails.js";
@@ -18,6 +19,7 @@ function TaskManagementModals({
     assistedForm,
     assistedIsCropHarvest,
     assistedResourceItems,
+    assistedInventoryChoices,
     assistedSaving,
     assistedSelectedInventoryItem,
     assistedTask,
@@ -36,8 +38,8 @@ function TaskManagementModals({
     employeeForm,
     employees,
     filteredPositionGroups,
-    inventoryItems,
     manualTaskResourceItems,
+    taskRecordChoices, taskSupplyChoices, taskInventoryItems = [],
     openEditEmployee,
     otherReassignCandidates,
     performEmployeeAction,
@@ -908,11 +910,17 @@ function TaskManagementModals({
                                     )}
                                     {assistedTask.resource_required && (
                                         <>
+                                            <div className="workforce-field full">
+                                                {!assistedTask.resource_linked ? <ResourceChoiceTools id="assisted-resource-search" label="Search compatible inventory" choice={assistedInventoryChoices} disabled={assistedSaving} /> : <>
+                                                    {assistedInventoryChoices?.loading && <p role="status">Checking current stock…</p>}
+                                                    {assistedInventoryChoices?.error && <p role="alert">{assistedInventoryChoices.error} <button type="button" onClick={assistedInventoryChoices.retry} disabled={assistedSaving}>Retry stock details</button></p>}
+                                                </>}
+                                            </div>
                                             {!assistedTask.resource_linked && (
                                                 <div className="workforce-field full">
                                                     <label htmlFor="assisted-inventory-resource">Inventory Resource *</label>
-                                                    <select id="assisted-inventory-resource" required value={assistedForm.inventory_item_id} onChange={(event)=>{
-                                                        const item = inventoryItems.find((entry)=>String(entry.id) === String(event.target.value));
+                                                    <select id="assisted-inventory-resource" required disabled={assistedSaving || assistedInventoryChoices?.loading || Boolean(assistedInventoryChoices?.error)} value={assistedForm.inventory_item_id} onChange={(event)=>{
+                                                        const item = assistedResourceItems.find((entry)=>String(entry.id) === String(event.target.value));
                                                         setAssistedForm({...assistedForm, inventory_item_id:event.target.value, actual_unit:item?.unit || "", actual_quantity_confirmed:false});
                                                     }}>
                                                         <option value="">Select the exact inventory item used</option>
@@ -930,7 +938,7 @@ function TaskManagementModals({
                                                 </div>
                                                 <div className="workforce-resource-metrics">
                                                     <div><span>Planned</span><strong>{assistedTask.planned_quantity != null ? `${assistedTask.planned_quantity} ${assistedTask.resource_linked ? (assistedTask.planned_inventory_unit || assistedTask.planned_unit || "") : (assistedSelectedInventoryItem?.unit || assistedTask.planned_unit || "")}` : "Not set"}</strong></div>
-                                                    <div><span>Available Before Use</span><strong>{assistedTask.resource_linked && assistedTask.planned_inventory_available_quantity != null ? `${assistedTask.planned_inventory_available_quantity} ${assistedTask.planned_inventory_unit || ""}` : assistedSelectedInventoryItem ? `${assistedSelectedInventoryItem.quantity} ${assistedSelectedInventoryItem.unit}` : "—"}</strong></div>
+                                                    <div><span>Available Before Use</span><strong>{assistedSelectedInventoryItem ? `${assistedSelectedInventoryItem.quantity} ${assistedSelectedInventoryItem.unit}` : "—"}</strong></div>
                                                 </div>
                                             </div>
                                             <div className="workforce-field">
@@ -1003,13 +1011,13 @@ function TaskManagementModals({
                         <footer className="workforce-modal-footer">
                             <button type="button" className="workforce-modal-cancel" onClick={closeAssistedModal} disabled={assistedSaving}>Cancel</button>
                             {!assistedCorrectionMode && (
-                                <button type="button" className="workforce-modal-review-submit" onClick={()=>submitAssistedWork(false)} disabled={assistedSaving}>
+                                <button type="button" className="workforce-modal-review-submit" onClick={()=>submitAssistedWork(false)} disabled={assistedSaving || (assistedTask.resource_required && (assistedInventoryChoices?.loading || Boolean(assistedInventoryChoices?.error)))}>
                                     <span className="material-symbols-outlined">rate_review</span>
                                     {assistedIsCropHarvest ? "Submit Harvest for Review" : "Submit for Review"}
                                 </button>
                             )}
                             {!assistedIsCropHarvest && (
-                                <button type="button" className="workforce-modal-save" onClick={()=>submitAssistedWork(true)} disabled={assistedSaving || Boolean(assistedTask.monitoring_context)}>
+                                <button type="button" className="workforce-modal-save" onClick={()=>submitAssistedWork(true)} disabled={assistedSaving || Boolean(assistedTask.monitoring_context) || (assistedTask.resource_required && (assistedInventoryChoices?.loading || Boolean(assistedInventoryChoices?.error)))}>
                                     <span className="material-symbols-outlined">task_alt</span>
                                     {assistedSaving ? "Saving…" : assistedCorrectionMode ? "Save Usage Correction" : "Submit & Approve"}
                                 </button>
@@ -1174,10 +1182,11 @@ function TaskManagementModals({
                                     </div>
                                     {taskForm.source_module === "Inventory" && <p className="workforce-field-help">Restocking plans schedule a delivery. Record received stock in Inventory → Stock Adjustment; task approval does not change stock.</p>}
                                     <div className="workforce-field">
+                                        {taskForm.source_module && taskRecordChoices && <ResourceChoiceTools id="assign-task-record-search" label="Search farm records" choice={taskRecordChoices} disabled={taskSaving} />}
                                         <label htmlFor="assign-task-source-record">Related Farm Record</label>
                                         <select
                                             id="assign-task-source-record"
-                                            disabled={!taskForm.source_module}
+                                            disabled={!taskForm.source_module || taskRecordChoices?.loading || Boolean(taskRecordChoices?.error)}
                                             required={Boolean(taskForm.source_module)}
                                             value={taskForm.source_record_id}
                                             onChange={(event) => {
@@ -1209,13 +1218,14 @@ function TaskManagementModals({
                                         </select>
                                     </div>
                                     <div className="workforce-field full">
+                                        {taskSupplyChoices && ["Crop", "Livestock"].includes(taskForm.source_module) && taskForm.source_record_id && !["Weight Monitoring", "Crop Growth Monitoring"].includes(taskForm.category) && <ResourceChoiceTools id="assign-task-supply-search" label="Search compatible supplies" choice={taskSupplyChoices} disabled={taskSaving} />}
                                         <label htmlFor="assign-task-inventory-resource">Inventory Resource <span className="field-optional">(optional)</span></label>
                                         <select
                                             id="assign-task-inventory-resource"
-                                            disabled={!["Crop", "Livestock"].includes(taskForm.source_module) || !taskForm.source_record_id || ["Weight Monitoring", "Crop Growth Monitoring"].includes(taskForm.category)}
+                                            disabled={taskSupplyChoices?.loading || Boolean(taskSupplyChoices?.error) || !["Crop", "Livestock"].includes(taskForm.source_module) || !taskForm.source_record_id || ["Weight Monitoring", "Crop Growth Monitoring"].includes(taskForm.category)}
                                             value={taskForm.planned_inventory_item_id}
                                             onChange={(event) => {
-                                                const item = inventoryItems.find((entry) => String(entry.id) === String(event.target.value));
+                                                const item = taskInventoryItems.find((entry) => String(entry.id) === String(event.target.value));
                                                 setTaskForm({
                                                     ...taskForm,
                                                     planned_inventory_item_id: event.target.value,

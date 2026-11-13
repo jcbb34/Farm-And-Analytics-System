@@ -63,7 +63,8 @@ test("review decisions and completed-work void keep their existing API routes", 
 
 test("evidence is loaded through the secure evidence service and supports an enlarged preview", () => {
     assert.match(modal, /EvidenceInlinePreview/);
-    assert.match(evidence, /workforceService\.downloadEvidencePhoto\(evidenceUrl\)/);
+    assert.match(evidence, /useEvidenceImage\(paths\?\.original, previewOpen\)/);
+    assert.match(service, /downloadEvidencePhoto:[\s\S]*httpClient\.download\(evidenceUrl, options\)/);
     assert.match(evidence, /Open larger evidence photo preview/);
     assert.match(evidence, /External evidence links are disabled/);
 });

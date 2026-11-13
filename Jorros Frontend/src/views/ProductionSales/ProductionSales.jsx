@@ -10,7 +10,7 @@ import AppHeaderActions from "../../components/AppHeaderActions/AppHeaderActions
 import { confirmAction, notifyError, notifySuccess, promptAction } from "../../context/NotificationContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { livestockService } from "../../services/livestockService.js";
-import { inventoryService } from "../../services/inventoryService.js";
+import useSaleStock from "./useSaleStock.js";
 import { productionSalesService } from "../../services/productionSalesService.js";
 import useFarmModuleUpdates from "../../hooks/useFarmModuleUpdates.js";
 import { clearStableIdempotencyKey, stableIdempotencyKey } from "../../services/idempotencyKey.js";
@@ -92,19 +92,19 @@ function ProductionSales() {
     const [activeTab, setActiveTab] = useState("overview");
     const [overview, setOverview] = useState(null);
     const [livestock, setLivestock] = useState([]);
-    const [inventoryProducts, setInventoryProducts] = useState([]);
-    const [saleableProduction, setSaleableProduction] = useState([]);
     const [reproduction, setReproduction] = useState([]);
     const [production, setProduction] = useState([]);
     const [processing, setProcessing] = useState([]);
     const [sales, setSales] = useState([]);
-    const [loaded, setLoaded] = useState(new Set());
+    const listRequestRef = useRef(0);
+    const moreRequestRef = useRef(false);
+    const [listError, setListError] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [hasMore, setHasMore] = useState({});
     const [loading, setLoading] = useState(true);
     const [tabLoading, setTabLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [sourceLoading, setSourceLoading] = useState(false);
-    const [sourceError, setSourceError] = useState("");
     const [error, setError] = useState("");
     const [search, setSearch] = useState("");
     const [modal, setModal] = useState(null);
@@ -116,52 +116,76 @@ function ProductionSales() {
     const processingRequestRef = useRef(null);
     const saleRequestRef = useRef(null);
     const paymentRequestRef = useRef(null);
+    const overviewRequestRef = useRef(0);
 
     const loadOverview = useCallback(async () => {
+        const requestId = ++overviewRequestRef.current;
         setLoading(true); setError("");
         try {
-            setOverview(await productionSalesService.getOverview());
-        } catch (err) { setError(err?.message || "Unable to load Production & Sales."); }
-        finally { setLoading(false); }
+            const data = await productionSalesService.getOverview();
+            if (requestId === overviewRequestRef.current) setOverview(data);
+        } catch (err) { if (requestId === overviewRequestRef.current) setError(err?.message || "Unable to load Production & Sales."); }
+        finally { if (requestId === overviewRequestRef.current) setLoading(false); }
     }, []);
 
     useEffect(() => { loadOverview(); }, [loadOverview]);
 
-    const loadTab = useCallback(async (tab, force = false) => {
+    useEffect(() => {
+        const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+        return () => window.clearTimeout(timer);
+    }, [search]);
+
+    const listOptions = useCallback((offset = 0) => ({
+        limit: PAGE_SIZE, offset, search: debouncedSearch || undefined,
+        source_type: scope === "crops" ? "Crop" : scope === "livestock" ? "Livestock" : undefined,
+        include_voided: false,
+    }), [scope, debouncedSearch]);
+    const fetchTab = useCallback((tab, options) => tab === "reproduction"
+        ? productionSalesService.getReproduction(options)
+        : tab === "production" ? productionSalesService.getProduction(options)
+        : tab === "processing" ? productionSalesService.getProcessing(options)
+        : productionSalesService.getSales(options), []);
+    const setTabRows = useCallback((tab, rows) => ({ reproduction: setReproduction,
+        production: setProduction, processing: setProcessing, sales: setSales })[tab](rows), []);
+
+    const loadTab = useCallback(async (tab) => {
         const dataTab = tab === "harvests" ? "production" : tab;
-        if (dataTab === "overview" || (!force && loaded.has(dataTab))) return;
-        setTabLoading(true);
+        if (dataTab === "overview") return;
+        const requestId = ++listRequestRef.current;
+        moreRequestRef.current = false;
+        setLoadingMore(false); setTabLoading(true); setListError("");
+        setTabRows(dataTab, []);
         try {
-            const options = { limit: PAGE_SIZE, offset: 0 };
-            const rows = dataTab === "reproduction" ? await productionSalesService.getReproduction(options)
-                : dataTab === "production" ? await productionSalesService.getProduction(options)
-                : dataTab === "processing" ? await productionSalesService.getProcessing({ ...options, include_voided: false })
-                : await productionSalesService.getSales(options);
-            ({ reproduction: setReproduction, production: setProduction, processing: setProcessing,
-                sales: setSales })[dataTab](rows);
-            setHasMore((current) => ({ ...current, [dataTab]: rows.length === PAGE_SIZE }));
-            setLoaded((current) => new Set([...current, dataTab]));
-        } catch (err) { notifyError(err?.message || "Unable to load records.", "Load Failed"); }
-        finally { setTabLoading(false); }
-    }, [loaded]);
+            const rows = await fetchTab(dataTab, listOptions());
+            if (requestId !== listRequestRef.current) return;
+            setTabRows(dataTab, rows);
+            setHasMore(current => ({ ...current, [dataTab]: rows.length === PAGE_SIZE }));
+        } catch (err) {
+            if (requestId === listRequestRef.current) setListError(err?.message || "Unable to load records.");
+        } finally { if (requestId === listRequestRef.current) setTabLoading(false); }
+    }, [fetchTab, listOptions, setTabRows]);
+    useEffect(() => {
+        if (activeTab !== "overview") void loadTab(activeTab);
+        else { setTabLoading(false); setLoadingMore(false); setListError(""); }
+        return () => { listRequestRef.current += 1; moreRequestRef.current = false; };
+    }, [activeTab, loadTab]);
 
     const loadMore = async () => {
         const tab = activeTab === "harvests" ? "production" : activeTab;
         const records = { reproduction, production, processing, sales }[tab];
-        if (tabLoading || loadingMore || !hasMore[tab] || !records) return;
-        setLoadingMore(true);
+        if (tabLoading || moreRequestRef.current || search.trim() !== debouncedSearch || !hasMore[tab] || !records) return;
+        const requestId = listRequestRef.current;
+        moreRequestRef.current = true; setLoadingMore(true); setListError("");
         try {
-            const options = { limit: PAGE_SIZE, offset: records.length };
-            const rows = tab === "reproduction" ? await productionSalesService.getReproduction(options)
-                : tab === "production" ? await productionSalesService.getProduction(options)
-                : tab === "processing" ? await productionSalesService.getProcessing(options)
-                : await productionSalesService.getSales(options);
-            ({ reproduction: setReproduction, production: setProduction, processing: setProcessing,
-                sales: setSales })[tab]((current) => [...current, ...rows.filter((row) =>
-                    !current.some((existing) => existing.id === row.id))]);
-            setHasMore((current) => ({ ...current, [tab]: rows.length === PAGE_SIZE }));
-        } catch (err) { notifyError(err?.message || "Unable to load more records.", "Load Failed"); }
-        finally { setLoadingMore(false); }
+            const rows = await fetchTab(tab, listOptions(records.length));
+            if (requestId !== listRequestRef.current) return;
+            setTabRows(tab, current => [...current, ...rows.filter(row => !current.some(item => item.id === row.id))]);
+            setHasMore(current => ({ ...current, [tab]: rows.length === PAGE_SIZE }));
+        } catch (err) {
+            if (requestId === listRequestRef.current) setListError(err?.message || "Unable to load more records.");
+        } finally {
+            if (requestId === listRequestRef.current) { moreRequestRef.current = false; setLoadingMore(false); }
+        }
     };
 
     const loadLivestockSources = async (nextModal) => {
@@ -173,56 +197,22 @@ function ProductionSales() {
         finally { setSourceLoading(false); }
     };
 
-    const loadSaleSources = async () => {
-        if (sourceLoading) return;
-        try {
-            setSourceLoading(true);
-            setSourceError("");
-            const [animals, inventory, available] = await Promise.all([
-                livestockService.getLivestock(false),
-                inventoryService.getInventory(false, false),
-                (async () => {
-                    const lots = [];
-                    let offset = 0;
-                    // The server filters before paging, so spent history does
-                    // not delay the sale form or hide older available stock.
-                    while (true) {
-                        const rows = await productionSalesService.getProduction({ available_only: true, limit: 500, offset });
-                        lots.push(...rows);
-                        if (rows.length < 500) break;
-                        offset += rows.length;
-                    }
-                    return lots;
-                })(),
-            ]);
-            setLivestock(animals);
-            setInventoryProducts(inventory.filter((item) => item.isSaleable && Number(item.quantity || 0) > 0));
-            setSaleableProduction(available);
-        } catch (err) {
-            setSourceError(err?.message || "Unable to load sale sources.");
-            notifyError(err?.message || "Unable to load sale sources.", "Load Failed");
-        }
-        finally { setSourceLoading(false); }
-    };
-    const openSale = () => {
-        setModal("sale");
-        void loadSaleSources();
-    };
+    const openSale = () => setModal("sale");
 
     useFarmModuleUpdates(["production_sales", "crops", "livestock"], async () => {
         await loadOverview();
         if (activeTab !== "overview") await loadTab(activeTab, true);
     }, { editing: Boolean(modal) });
 
-    const changeTab = async (tab) => { setSearch(""); setActiveTab(tab); await loadTab(tab); };
-    const changeScope = (next) => { setScope(next); setActiveTab("overview"); setSearch(""); };
+    const changeTab = (tab) => { setSearch(""); setDebouncedSearch(""); setActiveTab(tab); };
+    const changeScope = (next) => { setScope(next); setActiveTab("overview"); setSearch(""); setDebouncedSearch(""); };
     const refreshAfterMutation = async (...tabs) => { await Promise.all([loadOverview(), ...tabs.map((tab) => loadTab(tab, true))]); };
 
-    const query = search.trim().toLowerCase();
-    const filteredReproduction = useMemo(() => reproduction.filter((item) => `${item.livestock_name} ${item.animal_code} ${item.record_type} ${item.reproductive_status || ""}`.toLowerCase().includes(query)), [reproduction, query]);
-    const filteredProduction = useMemo(() => production.filter((item) => sourceMatches(item, scope) && `${item.source_name} ${item.source_code} ${item.output_type} ${item.destination || ""}`.toLowerCase().includes(query)), [production, query, scope]);
-    const filteredProcessing = useMemo(() => processing.filter((item) => `${item.livestock_name} ${item.animal_code} ${item.quality_grade || ""}`.toLowerCase().includes(query)), [processing, query]);
-    const filteredSales = useMemo(() => sales.filter((item) => sourceMatches(item, scope) && `${item.sale_code} ${item.source_name} ${item.product_type} ${item.buyer_name || ""} ${item.payment_status || ""}`.toLowerCase().includes(query)), [sales, query, scope]);
+    // Filtering happens before LIMIT/OFFSET in the API, across all records.
+    const filteredReproduction = reproduction;
+    const filteredProduction = production;
+    const filteredProcessing = processing;
+    const filteredSales = sales;
 
     const submitProduction = async (event) => {
         event.preventDefault();
@@ -374,22 +364,23 @@ function ProductionSales() {
                     )}
                 </div>
                 {error && <div className="ps-error"><span>{error}</span><button type="button" onClick={loadOverview}>Retry</button></div>}
-                <section className="ps-summary-grid ps-summary-grid-six">{summaryCards.map(([icon,label,value]) => <Summary key={label} icon={icon} label={label} value={loading ? "—" : value} />)}</section>
+                <section className="ps-summary-grid ps-summary-grid-six">{summaryCards.map(([icon,label,value]) => <Summary key={label} icon={icon} label={label} value={loading || error || !overview ? "—" : value} />)}</section>
                 <section className="ps-panel">
                     <div className="ps-toolbar"><nav className="ps-tabs">{scopeTabs.map(([key,label]) => <button type="button" key={key} className={activeTab === key ? "active" : ""} onClick={() => changeTab(key)}>{label}</button>)}</nav>
-                        {activeTab !== "overview" && <div className="ps-actions"><div className="ps-search"><span className="material-symbols-outlined">search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search loaded records..." /></div>{actionButton}</div>}
+                        {activeTab !== "overview" && <div className="ps-actions"><div className="ps-search"><span className="material-symbols-outlined">search</span><input value={search} onChange={(event) => setSearch(event.target.value)} maxLength={120} placeholder="Search all records..." /></div>{actionButton}</div>}
                     </div>
                     {activeTab === "overview" && <Overview summary={overview} loading={loading} scope={scope} />}
-                    {activeTab === "reproduction" && <ReproductionTable rows={filteredReproduction} loading={tabLoading} />}
-                    {(activeTab === "production" || activeTab === "harvests") && <ProductionTable rows={filteredProduction} loading={tabLoading} cropMode={activeTab === "harvests"} />}
-                    {activeTab === "processing" && <ProcessingTable rows={filteredProcessing} loading={tabLoading} canEdit={canEdit} onVoid={handleVoidProcessing} />}
-                    {activeTab === "sales" && <SalesTable rows={filteredSales} loading={tabLoading} canEdit={canEdit} onDetails={openSaleDetails} onPayment={openPayment} onReceipt={printReceipt} onVoid={handleVoidSale} />}
-                    {activeTab !== "overview" && hasMore[activeTab === "harvests" ? "production" : activeTab] && <div className="ps-pagination"><button className="ps-secondary" type="button" disabled={tabLoading || loadingMore} onClick={loadMore}>{loadingMore ? "Loading..." : "Load 50 more records"}</button></div>}
+                    {listError && <div className="ps-error" role="alert">{listError}<button type="button" onClick={() => loadTab(activeTab)}>Retry records</button></div>}
+                    {!listError && activeTab === "reproduction" && <ReproductionTable rows={filteredReproduction} loading={tabLoading} />}
+                    {!listError && (activeTab === "production" || activeTab === "harvests") && <ProductionTable rows={filteredProduction} loading={tabLoading} cropMode={activeTab === "harvests"} />}
+                    {!listError && activeTab === "processing" && <ProcessingTable rows={filteredProcessing} loading={tabLoading} canEdit={canEdit} onVoid={handleVoidProcessing} />}
+                    {!listError && activeTab === "sales" && <SalesTable rows={filteredSales} loading={tabLoading} canEdit={canEdit} onDetails={openSaleDetails} onPayment={openPayment} onReceipt={printReceipt} onVoid={handleVoidSale} />}
+                    {activeTab !== "overview" && !listError && hasMore[activeTab === "harvests" ? "production" : activeTab] && <div className="ps-pagination"><button className="ps-secondary" type="button" disabled={tabLoading || loadingMore || search.trim() !== debouncedSearch} onClick={loadMore}>{loadingMore ? "Loading..." : "Load 50 more records"}</button></div>}
                 </section>
             </main>
             <ProductionModal saving={mutationBusy} open={modal === "production"} livestock={livestock} onClose={() => { if (!productionInFlightRef.current) setModal(null); }} onSubmit={submitProduction} />
             <ProcessingModal open={modal === "processing"} livestock={livestock} saving={mutationBusy} onClose={() => setModal(null)} onSubmit={submitProcessing} />
-            <SaleModal open={modal === "sale"} scope={scope} livestock={livestock} inventory={inventoryProducts} production={saleableProduction} sourceLoading={sourceLoading} sourceError={sourceError} onRetry={loadSaleSources} saving={mutationBusy} onClose={() => setModal(null)} onSubmit={submitSale} />
+            {modal === "sale" && <SaleModal open scope={scope} saving={mutationBusy} onClose={() => setModal(null)} onSubmit={submitSale} />}
             <PaymentModal open={modal === "payment"} sale={selectedSale} saving={mutationBusy} onClose={() => { setModal(null); setSelectedSale(null); }} onSubmit={submitPayment} />
             <SaleDetailsModal open={modal === "sale-details"} sale={selectedSale} payments={salePayments} canEdit={canEdit} onClose={() => { setModal(null); setSelectedSale(null); setSalePayments([]); }} onPayment={() => setModal("payment")} onReceipt={() => printReceipt(selectedSale)} />
         </div>
@@ -469,7 +460,7 @@ function ProcessingModal({ open, livestock, saving, onClose, onSubmit }) {
     return <Modal open={open} title="Record Livestock Processing" subtitle="Only livestock designated for Meat production can be processed. The result becomes traceable meat stock." onClose={onClose}>{eligible.length === 0 ? <div className="ps-modal-empty"><span className="material-symbols-outlined">info</span><div><strong>No meat-production livestock is available.</strong><p>Open Livestock Management and set the correct Production Purpose to Meat before processing. Breeding and other purposes are protected.</p></div></div> : <form className="ps-form" onSubmit={onSubmit}><div className="ps-form-grid"><Field label="Meat Livestock"><select name="livestock_id" value={livestockId} onChange={(e) => setLivestockId(e.target.value)} required><option value="">Select meat-purpose livestock</option>{eligible.map((animal) => <option key={animal.id} value={animal.id}>{animal.recordName} ({animal.animalId}) — {animal.quantity} head</option>)}</select></Field><Field label="Processing Date"><input name="processing_date" type="date" defaultValue={todayIso()} required /></Field><Field label="Animals Processed"><input name="animals_processed" type="number" min="1" max={selected?.quantity || undefined} step="1" required /></Field><Field label="Total Live Weight (kg)"><input name="live_weight_kg" type="number" min="0.001" step="0.001" /></Field><Field label="Meat Output (kg)"><input name="meat_output_kg" type="number" min="0.001" step="0.001" required /></Field><Field label="Quality / Grade"><input name="quality_grade" defaultValue="Grade A" /></Field><Field label="Male Processed"><input name="male_quantity" type="number" min="0" max={selected?.maleQuantity || undefined} defaultValue="0" /></Field><Field label="Female Processed"><input name="female_quantity" type="number" min="0" max={selected?.femaleQuantity || undefined} defaultValue="0" /></Field><Field label="Unknown Sex Processed"><input name="unknown_quantity" type="number" min="0" max={selected?.unknownSexQuantity || undefined} defaultValue="0" /></Field></div><div className="ps-help">Only healthy animals can be processed. Meat output cannot exceed total live weight. Saving reduces the live head count and creates one meat production lot.</div><Field label="Notes"><textarea name="notes" rows="3" /></Field><FormFooter onClose={onClose} label="Record Processing" saving={saving} /></form>}</Modal>;
 }
 
-function SaleModal({ open, scope, livestock, production, inventory, sourceLoading, sourceError, onRetry, saving, onClose, onSubmit }) {
+function SaleModal({ open, scope, saving, onClose, onSubmit }) {
     const [kind, setKind] = useState("Production");
     const [sourceId, setSourceId] = useState("");
     const [sourceQuery, setSourceQuery] = useState("");
@@ -494,32 +485,24 @@ function SaleModal({ open, scope, livestock, production, inventory, sourceLoadin
         setPaymentMethod("Cash"); setAmountPaid(""); setNotes("");
     }, [open, scope]);
 
-    const sourceOptions = useMemo(() => {
-        if (sourceLoading || sourceError) return [];
-        return kind === "Production" ? production
-            : kind === "Live Animal" ? livestock.filter((item) => Number(item.quantity || 0) > 0)
-                : inventory;
-    }, [kind, production, livestock, inventory, sourceLoading, sourceError]);
-    const selected = useMemo(() => sourceOptions.find((item) => item.id === Number(sourceId)), [sourceOptions, sourceId]);
-    const visibleSources = useMemo(() => {
-        const query = sourceQuery.trim().toLowerCase();
-        const matches = query ? sourceOptions.filter((item) => (
-            `${item.source_name || item.recordName || item.name || ""} ${item.source_code || item.animalId || item.itemCode || ""} ${item.output_type || ""}`
-        ).toLowerCase().includes(query)) : sourceOptions;
-        const first = matches.slice(0, 150);
-        if (selected && !first.some((item) => item.id === selected.id)) first.unshift(selected);
-        return first;
-    }, [sourceOptions, sourceQuery, selected]);
-    const sourceOptionElements = useMemo(() => visibleSources.map((item) => <option key={item.id} value={item.id}>{kind === "Production" ? `${item.source_type} • ${item.source_name} • ${item.output_type} — ${number(item.available_quantity)} ${item.unit}` : kind === "Live Animal" ? `${item.recordName} (${item.animalId}) — ${item.quantity} head` : `${item.name} (${item.itemCode}) — ${number(item.quantity)} ${item.unit}`}</option>), [visibleSources, kind]);
-    const available = kind === "Production" ? Number(selected?.available_quantity || 0) : Number(selected?.quantity || 0);
-    const unit = kind === "Production" ? selected?.unit : kind === "Live Animal" ? "head" : selected?.unit;
-    const sourceName = kind === "Production" ? `${selected?.source_name || ""} — ${selected?.output_type || ""}` : kind === "Live Animal" ? selected?.recordName : selected?.name;
-    const sourceCode = kind === "Production" ? selected?.source_code : kind === "Live Animal" ? selected?.animalId : selected?.itemCode;
+    const stock = useSaleStock({ open, kind, search: sourceQuery });
+    const sourceOptions = stock.items;
+    const sourceLoading = stock.loading, sourceError = stock.error;
+    const selected = useMemo(() => sourceOptions.find(item => item.id === Number(sourceId)), [sourceOptions, sourceId]);
+    const sourceOptionElements = useMemo(() => sourceOptions.map(item => <option key={item.id} value={item.id}>
+        {`${item.source_type ? `${item.source_type} • ` : ""}${item.name} (${item.code})${kind === "Production" ? ` • ${item.product_type}` : ""} — ${number(item.available_quantity)} ${item.unit}`}
+    </option>), [sourceOptions, kind]);
+    const available = Number(selected?.available_quantity || 0);
+    const unit = selected?.unit;
+    const sourceName = selected ? (kind === "Production" ? `${selected.name} — ${selected.product_type}` : selected.name) : "";
+    const sourceCode = selected?.code;
+    const onRetry = () => { setSourceId(""); setQuantity(""); stock.retry(); };
+    const changeSourceSearch = value => { setSourceQuery(value); setSourceId(""); setQuantity(""); setUnitPrice(""); setMale("0"); setFemale("0"); setUnknown("0"); };
 
     const chooseSource = (value) => {
         setSourceId(value); setQuantity(""); setMale("0"); setFemale("0"); setUnknown("0");
         const next = sourceOptions.find((item) => item.id === Number(value));
-        setUnitPrice(kind === "Inventory" && next ? String(next.price || "") : "");
+        setUnitPrice(kind === "Inventory" && next ? String(next.suggested_price ?? "") : "");
     };
     const changeKind = (value) => { setKind(value); setSourceId(""); setSourceQuery(""); setQuantity(""); setUnitPrice(""); setMale("0"); setFemale("0"); setUnknown("0"); };
     const addItem = () => {
@@ -585,16 +568,17 @@ function SaleModal({ open, scope, livestock, production, inventory, sourceLoadin
             {sourceLoading && <p className="ps-source-status" role="status">Loading available stock… You can enter customer details while it loads.</p>}
             {sourceError && <div className="ps-source-status ps-source-error" role="alert"><span>{sourceError}</span><button type="button" className="ps-secondary" onClick={onRetry}>Retry stock loading</button></div>}
             <div className="ps-form-grid">
-                <Field label="Stock Type"><select value={kind} onChange={(event) => changeKind(event.target.value)} disabled={sourceLoading || Boolean(sourceError)}><option value="Production">Crop / Egg / Meat / Milk Output</option><option value="Live Animal">Live Livestock</option><option value="Inventory">Other Saleable Inventory Product</option></select></Field>
-                <Field label="Search Available Stock"><input value={sourceQuery} onChange={(event) => setSourceQuery(event.target.value)} placeholder="Search name or code" disabled={sourceLoading || Boolean(sourceError)} /></Field>
+                <Field label="Stock Type"><select value={kind} onChange={(event) => changeKind(event.target.value)}><option value="Production">Crop / Egg / Meat / Milk Output</option><option value="Live Animal">Live Livestock</option><option value="Inventory">Other Saleable Inventory Product</option></select></Field>
+                <Field label="Search Available Stock"><input value={sourceQuery} onChange={(event) => changeSourceSearch(event.target.value)} placeholder="Search name or code" maxLength={120} /></Field>
                 <Field label="Available Source"><select value={sourceId} onChange={(event) => chooseSource(event.target.value)} disabled={sourceLoading || Boolean(sourceError)}><option value="">Select available stock</option>{sourceOptionElements}</select></Field>
                 <Field label="Available"><input value={selected ? `${number(available)} ${unit}` : "—"} readOnly /></Field>
                 <Field label="Quantity"><input type="number" min={kind === "Live Animal" ? "1" : "0.001"} step={kind === "Live Animal" ? "1" : "0.001"} max={available || undefined} value={quantity} onChange={(event) => setQuantity(event.target.value)} /></Field>
                 <Field label={`Price per ${unit || "unit"}`}><input type="number" min="0" step="0.01" value={unitPrice} onChange={(event) => setUnitPrice(event.target.value)} /></Field>
                 {kind === "Live Animal" && <><Field label="Male Sold"><input type="number" min="0" value={male} onChange={(event) => setMale(event.target.value)} /></Field><Field label="Female Sold"><input type="number" min="0" value={female} onChange={(event) => setFemale(event.target.value)} /></Field><Field label="Unknown Sex Sold"><input type="number" min="0" value={unknown} onChange={(event) => setUnknown(event.target.value)} /></Field></>}
             </div>
-            {sourceOptions.length > visibleSources.length && <p className="ps-source-status">Showing {visibleSources.length} of {sourceOptions.length} available sources. Search by name or code to find another.</p>}
-            <div className="ps-add-line"><button type="button" className="ps-secondary" onClick={addItem} disabled={!selected}><span className="material-symbols-outlined">add</span>Add to Invoice</button></div>
+            {!sourceLoading && !sourceError && <p className="ps-source-status">Showing {sourceOptions.length} of {stock.total} matching sources.</p>}
+            {sourceOptions.length < stock.total && <button type="button" className="ps-secondary" onClick={stock.loadMore} disabled={sourceLoading}>Load more stock</button>}
+            <div className="ps-add-line"><button type="button" className="ps-secondary" onClick={addItem} disabled={!selected || sourceLoading || Boolean(sourceError)}><span className="material-symbols-outlined">add</span>Add to Invoice</button></div>
         </section>
         <section className="ps-invoice-lines ps-invoice-preview"><div className="ps-section-heading"><div><h3>Invoice Items</h3><p>Stock is deducted only when the complete invoice saves successfully.</p></div><strong>{money(invoiceTotal)}</strong></div>{items.length === 0 ? <EmptyState text="No items added yet." /> : items.map((item, index) => <article key={item.identity}><span>{index + 1}</span><div><strong>{item.displayName}</strong><small>{item.item_kind} • {item.sourceCode || "No code"}</small><small>{number(item.quantity)} {item.unit} × {money(item.unit_price)} each</small></div><b>{money(item.quantity * item.unit_price)}</b><button type="button" onClick={() => setItems((current) => current.filter((line) => line.identity !== item.identity))} aria-label={`Remove ${item.displayName}`}><span className="material-symbols-outlined">delete</span></button></article>)}</section>
         <section className="ps-sale-builder ps-sale-payment"><div className="ps-section-heading"><div><h3>Customer &amp; Payment</h3><p>Payments are tracked against the whole invoice and remain in history.</p></div></div><div className="ps-form-grid"><Field label="Sale Date"><input type="date" value={saleDate} onChange={(event) => setSaleDate(event.target.value)} required /></Field><Field label="Buyer / Customer"><input value={buyer} onChange={(event) => setBuyer(event.target.value)} placeholder="Walk-in customer if blank" /></Field><Field label="Payment Status"><select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}><option>Paid</option><option>Partial</option><option>Unpaid</option></select></Field>{paymentStatus !== "Unpaid" && <Field label="Payment Method"><select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option>Cash</option><option>GCash</option><option>Bank Transfer</option><option>Other</option></select></Field>}{paymentStatus === "Partial" && <Field label="Amount Paid"><input type="number" min="0.01" max={invoiceTotal || undefined} step="0.01" value={amountPaid} onChange={(event) => setAmountPaid(event.target.value)} required /></Field>}</div><Field label="Notes"><textarea rows="3" value={notes} onChange={(event) => setNotes(event.target.value)} /></Field></section>

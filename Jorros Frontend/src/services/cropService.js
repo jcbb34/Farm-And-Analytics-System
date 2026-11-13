@@ -1,3 +1,4 @@
+import { recordEditVersion } from "./recordEditing.js";
 import { schedulePayload, normalizeSchedule } from "../components/Monitoring/monitoring.js";
 import { httpClient } from "./httpClient.js";
 
@@ -446,6 +447,7 @@ function normalizeCrop(
     const status = crop.status ?? "Planted";
 
     return {
+        editVersion: crop.editVersion ?? crop.edit_version,
         id: crop.id,
         cropCode:
             crop.cropCode ??
@@ -617,6 +619,7 @@ function createUpdatePayload(
     crop = {}
 ) {
     const payload = {};
+    if (crop.editVersion !== undefined || crop.edit_version !== undefined) payload.expected_version = recordEditVersion(crop);
 
     if (crop.name !== undefined) {
         payload.name =
@@ -743,11 +746,31 @@ export const cropService =
             );
         },
 
+        getSummary() {
+            return httpClient.get("/display/crops/summary", { cache: "no-store" });
+        },
+        async getCropPage(options = {}) {
+            const page = await httpClient.get("/display/crops", { query: options, cache: "no-store" });
+            return { ...page, items: page.items.map(normalizeCrop) };
+        },
+        async getOverview({ startDate, endDate }) {
+            const data = await httpClient.get("/display/crops/overview", { query: { start_date: startDate, end_date: endDate }, cache: "no-store" });
+            return { ...data, chart_records: data.chart_records.map(normalizeCrop) };
+        },
+        async getChart({ startDate, endDate }) {
+            const data = await httpClient.get("/display/crops/chart", { query: { start_date: startDate, end_date: endDate }, cache: "no-store" });
+            return data.items.map(normalizeCrop);
+        },
+        async getYieldPage(offset = 0) {
+            const page = await httpClient.get("/display/crop-yields", { query: { offset, limit: 25 }, cache: "no-store" });
+            return { ...page, items: page.items.map(row => ({ ...normalizeYieldRecord(row), cropName: row.crop_name, field: row.field, area: row.area })) };
+        },
+
 
         async getCrop(cropId) {
             const response =
                 await httpClient.get(
-                    `/crops/${cropId}`
+                    `/crops/${cropId}`, { cache: "no-store" }
                 );
 
             return normalizeCrop(
@@ -782,6 +805,7 @@ export const cropService =
             cropId,
             crop
         ) {
+            recordEditVersion(crop);
             const response =
                 await httpClient.put(
                     `/crops/${cropId}`,

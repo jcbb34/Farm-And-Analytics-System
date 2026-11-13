@@ -1,3 +1,4 @@
+import { isRecordEditConflict } from "../../../services/recordEditing.js";
 "use client";
 
 import { notify } from "../../../context/NotificationContext.jsx";
@@ -362,6 +363,7 @@ export default function useLivestockPage() {
 
             closeLivestockForm();
         } catch (error) {
+            if (isRecordEditConflict(error)) throw error;
             console.error("Failed to save livestock:", error);
             notify(
                 error?.message || "Unable to save livestock record."
@@ -551,6 +553,7 @@ export default function useLivestockPage() {
 
         try {
             await livestockService.updateLivestock(animalId, {
+                editVersion: feedingSchedule.editVersion,
                 feedingSchedule,
             });
 
@@ -582,7 +585,9 @@ export default function useLivestockPage() {
             }
 
             notify("Feeding schedule updated successfully.");
+            return updatedAnimal;
         } catch (error) {
+            if (isRecordEditConflict(error)) throw error;
             console.error("Failed to update feeding schedule:", error);
             notify(
                 error?.message || "Unable to update feeding schedule."
@@ -639,7 +644,9 @@ export default function useLivestockPage() {
             }
 
             notify("Health record updated successfully.");
+            return updatedAnimal;
         } catch (error) {
+            if (isRecordEditConflict(error)) throw error;
             console.error("Failed to update health record:", error);
             notify(
                 error?.message || "Unable to update health record."

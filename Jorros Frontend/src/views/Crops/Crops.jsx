@@ -10,7 +10,10 @@ import CropsSummaryCards from "./components/CropsSummaryCards.jsx";
 import CropsToolbar from "./components/CropsToolbar.jsx";
 import CropsRecordsTable from "./components/CropsRecordsTable.jsx";
 import useCropsPage from "./hooks/useCropsPage.js";
-import CropAnalytics from "../../components/CropAnalytics/CropAnalytics.jsx";
+import DeferredSection from "../../components/DeferredSection/DeferredSection.jsx";
+const CropAnalytics = dynamic(() => import("../../components/CropAnalytics/CropAnalytics.jsx"), {
+    ssr: false, loading: () => <p role="status">Loading crop analytics…</p>,
+});
 
 // Load large forms only when they are opened.
 const AddCropModal = dynamic(
@@ -69,6 +72,9 @@ function Crops() {
                 </header>
 
                 <CropsSummaryCards cards={page.cropSummary} />
+                {page.overviewError && <div className="workforce-error" role="alert">{page.overviewError}{" "}
+                    <button type="button" className="workforce-button secondary" onClick={page.loadCropSummary} disabled={page.overviewLoading}>Retry crop totals</button>
+                </div>}
 
                 <ArchiveWorkspace module="Crop" before={<>
                 <section className="crop-priority-strip" aria-label="Harvest priority">
@@ -100,14 +106,18 @@ function Crops() {
                 <CropsRecordsTable
                     navigation={navigation}
                     crops={page.filteredCrops}
+                    total={page.cropTotal}
+                    loadingMore={page.loadingMore}
+                    onLoadMore={page.loadMoreCrops}
+                    onRetry={page.loadCrops}
                     loading={page.cropsLoading}
                     error={page.cropsError}
                     canUpdateCrops={page.canUpdateCrops}
                     canFullEditCrops={page.canFullEditCrops}
                     onAddYield={() => page.setAddYieldOpen(true)}
                     onAddCrop={() => page.setAddCropOpen(true)}
-                    onViewCrop={page.setSelectedCrop}
-                    onEditCrop={page.setEditCrop}
+                    onViewCrop={page.openCropDetails}
+                    onEditCrop={page.openEditCrop}
                     onArchiveCrop={page.handleArchiveCrop}
                     onHarvestCrop={page.openHarvestForCrop}
                     onOpenHarvestTask={page.openPendingHarvestTask}
@@ -115,17 +125,23 @@ function Crops() {
                     onReopenCrop={page.setReopenCropTarget}
                 />
 
-                <CropAnalytics
+                {!page.cropsLoading && !page.cropsError && page.analytics && <DeferredSection label="crop analytics" onReveal={page.enableAnalytics}><CropAnalytics
                     crops={page.crops}
                     yieldRecords={page.yieldRecords}
-                />
+                    analytics={page.analytics}
+                    yieldTotal={page.yieldTotal}
+                    yieldLoading={page.yieldLoading}
+                    yieldError={page.yieldError}
+                    onRetry={() => page.loadYields()}
+                    onLoadMore={() => page.loadYields(page.yieldRecords.length)}
+                /></DeferredSection>}
                 </>}
                 </ArchiveWorkspace>
             </main>
 
             {page.addCropOpen && (
                 <AddCropModal
-                    fieldOptions={page.crops.filter((crop) => !crop.isArchived).map((crop) => crop.field)}
+                    fieldOptions={page.cropFields}
                     open
                     onClose={() => page.setAddCropOpen(false)}
                     onSave={page.handleAddCrop}
@@ -134,7 +150,7 @@ function Crops() {
 
             {page.editCrop && (
                 <EditCropModal
-                    fieldOptions={page.crops.filter((crop) => !crop.isArchived).map((crop) => crop.field)}
+                    fieldOptions={page.cropFields}
                     open
                     crop={page.editCrop}
                     onClose={() => page.setEditCrop(null)}

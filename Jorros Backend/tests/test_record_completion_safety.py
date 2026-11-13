@@ -1,4 +1,6 @@
 """Create/edit boundary and authoritative history checks for farm records."""
+
+from edit_helpers import versioned_edit
 import json
 from datetime import timedelta
 from unittest.mock import patch
@@ -31,7 +33,7 @@ def count(events, model):
 
 def test_livestock_metadata_update_writes_authenticated_before_after_audit(events):
     response = events.client.put(f"/api/v1/livestock/{events.ids['Livestock']}",
-        json={"record_name": "Renamed batch", "acquired_from": "New supplier"}, headers=events.headers["manager"])
+        json=versioned_edit(events.client, f"/api/v1/livestock/{events.ids['Livestock']}", {"record_name": "Renamed batch", "acquired_from": "New supplier"}, events.headers["manager"]), headers=events.headers["manager"])
     assert response.status_code == 200, response.text
     with Session(events.engine) as db:
         rows = db.scalars(select(AuditLog).where(AuditLog.module == "Livestock")).all()
@@ -43,7 +45,7 @@ def test_livestock_metadata_update_writes_authenticated_before_after_audit(event
         assert changes["acquired_from"]["after"] == "New supplier"
     before = count(events, AuditLog)
     assert events.client.put(f"/api/v1/livestock/{events.ids['Livestock']}",
-        json={"record_name": "Renamed batch"}, headers=events.headers["manager"]).status_code == 200
+        json=versioned_edit(events.client, f"/api/v1/livestock/{events.ids['Livestock']}", {"record_name": "Renamed batch"}, events.headers["manager"]), headers=events.headers["manager"]).status_code == 200
     assert count(events, AuditLog) == before
 
 
@@ -85,7 +87,7 @@ def test_livestock_audit_failure_rolls_back_parent_growth_and_creation_command(e
                 if operation == "create":
                     livestock.create_livestock(LivestockCreate(**body(events, "Livestock")), db=db, current_user=actor, idempotency_key="livestock-failed-audit")
                 else:
-                    livestock.update_livestock(events.ids["Livestock"], LivestockUpdate(record_name="Unsaved batch", weight_kg=21), db=db, current_user=actor)
+                    livestock.update_livestock(events.ids["Livestock"], LivestockUpdate(expected_version=db.get(Livestock, events.ids["Livestock"]).edit_version, record_name="Unsaved batch", weight_kg=21), db=db, current_user=actor)
         assert db.get(Livestock, events.ids["Livestock"]).record_name == "Test group"
     assert before == (count(events, Livestock), count(events, LivestockGrowthRecord), count(events, FarmCreationCommand))
 
@@ -113,15 +115,15 @@ def test_unknown_birth_livestock_can_be_edited_with_its_existing_age_provenance(
     assert created.status_code == 201, created.text
     record_id = created.json()["id"]
     saved = events.client.put(f"/api/v1/livestock/{record_id}",
-        json={"record_name": "Updated estimated-age batch", "date_of_birth": None, **estimated_age(events)},
+        json=versioned_edit(events.client, f"/api/v1/livestock/{record_id}", {"record_name": "Updated estimated-age batch", "date_of_birth": None, **estimated_age(events)}, events.headers["manager"]),
         headers=events.headers["manager"])
     assert saved.status_code == 200, saved.text
     assert saved.json()["date_of_birth"] is None and saved.json()["age_is_estimated"] is True
     assert saved.json()["estimated_age_source"] == "Supplier's age estimate"
     # A later documented birth date can replace the estimate.
     known = events.client.put(f"/api/v1/livestock/{record_id}",
-        json={"date_of_birth": str(events.today - timedelta(days=100)), "estimated_age_days": None,
-              "estimated_age_as_of_date": None, "estimated_age_confidence": None, "estimated_age_source": None},
+        json=versioned_edit(events.client, f"/api/v1/livestock/{record_id}", {"date_of_birth": str(events.today - timedelta(days=100)), "estimated_age_days": None,
+              "estimated_age_as_of_date": None, "estimated_age_confidence": None, "estimated_age_source": None}, events.headers["manager"]),
         headers=events.headers["manager"])
     assert known.status_code == 200, known.text
     assert known.json()["age_is_estimated"] is False
@@ -130,7 +132,7 @@ def test_unknown_birth_livestock_can_be_edited_with_its_existing_age_provenance(
 @pytest.mark.parametrize("missing", ["estimated_age_days", "estimated_age_as_of_date", "estimated_age_confidence", "estimated_age_source"])
 def test_clearing_known_birth_still_requires_complete_age_provenance(events, missing):
     value = {"date_of_birth": None, **estimated_age(events), missing: None, "record_name": "Must not be saved"}
-    response = events.client.put(f"/api/v1/livestock/{events.ids['Livestock']}", json=value, headers=events.headers["manager"])
+    response = events.client.put(f"/api/v1/livestock/{events.ids['Livestock']}", json=versioned_edit(events.client, f"/api/v1/livestock/{events.ids['Livestock']}", value, events.headers["manager"]), headers=events.headers["manager"])
     assert response.status_code == 400, response.text
     with Session(events.engine) as db:
         record = db.get(Livestock, events.ids["Livestock"])

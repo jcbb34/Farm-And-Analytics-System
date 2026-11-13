@@ -1,4 +1,6 @@
 "use client";
+import { isRecordEditConflict } from "../../services/recordEditing.js";
+import dynamic from "next/dynamic";
 import useFarmModuleUpdates from "../../hooks/useFarmModuleUpdates.js";
 import { requestArchive } from "../../services/archiveService.js";
 
@@ -34,14 +36,11 @@ import {
     stableIdempotencyKey,
 } from "../../services/idempotencyKey.js";
 
-import {
-    LivestockDetailsModal,
-    LivestockFormModal,
-} from "../../components/LivestockModals/LivestockModals.jsx";
-
+const LivestockFormModal = dynamic(() => import("../../components/LivestockModals/LivestockModals.jsx").then(module => module.LivestockFormModal), { ssr: false });
+const LivestockDetailsModal = dynamic(() => import("../../components/LivestockModals/LivestockModals.jsx").then(module => module.LivestockDetailsModal), { ssr: false });
+const PenManagementModal = dynamic(() => import("./components/PenManagementModal.jsx"), { ssr: false });
+const LivestockMovementModal = dynamic(() => import("./components/LivestockMovementModal.jsx"), { ssr: false });
 import LivestockAnalytics from "../../components/LivestockAnalytics/LivestockAnalytics.jsx";
-import PenManagementModal from "./components/PenManagementModal.jsx";
-import LivestockMovementModal from "./components/LivestockMovementModal.jsx";
 import useModalScrollLock from "../../hooks/useModalScrollLock.js";
 
 import "./Livestock.css";
@@ -405,6 +404,17 @@ function Livestock() {
     ] = useState(null);
 
     const [selectedFeedingHistoryAnimal, setSelectedFeedingHistoryAnimal] = useState(null);
+    const [livestockOverview, setLivestockOverview] = useState(null);
+    const [livestockTotal, setLivestockTotal] = useState(0);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const listRequestRef = useRef(0), moreRequestRef = useRef(false), detailRequestRef = useRef(0);
+    useEffect(() => {
+        const timer = window.setTimeout(() => setDebouncedSearch(searchText.trim()), 300);
+        return () => window.clearTimeout(timer);
+    }, [searchText]);
+    const listQuery = useMemo(() => ({ search: debouncedSearch, animal_type: typeFilter,
+        health_status: statusFilter, pen: penFilter }), [debouncedSearch, typeFilter, statusFilter, penFilter]);
     const vaccinationRequestRef = useRef(null);
     const vaccinationInFlightRef = useRef(false);
     const [savingVaccination, setSavingVaccination] = useState(false);
@@ -423,271 +433,48 @@ function Livestock() {
                 ),
         }), []);
 
-    const loadLivestock =
-        useCallback(async () => {
-            try {
-                setLivestockLoading(true);
-                setLivestockError("");
-
-                const livestockList =
-                    await livestockService.getLivestock();
-
-                // Card data comes from one list request. Histories are fetched
-                // only when an authorized user opens the corresponding record.
-                const detailedLivestock = livestockList.map(decorateLivestockRecord);
-
-                setLivestock(
-                    detailedLivestock
-                );
-
-                return detailedLivestock;
-            } catch (error) {
-                console.error(
-                    "Failed to load livestock:",
-                    error
-                );
-
-                setLivestockError(
-                    error?.message ||
-                        "Unable to load livestock records."
-                );
-
-                return [];
-            } finally {
-                setLivestockLoading(false);
-            }
-        }, [decorateLivestockRecord]);
-
+    const loadLivestock = useCallback(async (offset = 0) => {
+        const requestId = ++listRequestRef.current;
+        if (offset) { moreRequestRef.current = true; setLoadingMore(true); }
+        else { moreRequestRef.current = false; setLoadingMore(false); setLivestockLoading(true); }
+        setLivestockError("");
+        try {
+            const page = await livestockService.getLivestockPage({ ...listQuery, offset, limit: 50 });
+            if (requestId !== listRequestRef.current) return [];
+            const rows = page.items.map(decorateLivestockRecord);
+            setLivestock(current => offset ? [...current, ...rows.filter(row => !current.some(item => item.id === row.id))] : rows);
+            setLivestockTotal(page.total); setLivestockOverview(page.overview);
+            return rows;
+        } catch (error) {
+            if (requestId === listRequestRef.current) { setLivestockError(error?.message || "Unable to load livestock records."); if (!offset) setLivestockOverview(null); }
+            return [];
+        } finally {
+            if (requestId === listRequestRef.current) { setLivestockLoading(false); setLoadingMore(false); moreRequestRef.current = false; }
+        }
+    }, [decorateLivestockRecord, listQuery]);
+    const loadMoreLivestock = () => {
+        if (!livestockLoading && !moreRequestRef.current && livestock.length < livestockTotal) void loadLivestock(livestock.length);
+    };
     const openDetailedAnimal = useCallback(async (animal, setTarget) => {
+        const requestId = ++detailRequestRef.current;
         try {
             const details = await livestockService.getLivestockRecord(animal.id);
-            setTarget(decorateLivestockRecord(details));
-        } catch (error) {
-            notify(error?.message || "Unable to load livestock details.");
-        }
+            if (requestId === detailRequestRef.current) setTarget(decorateLivestockRecord(details));
+        } catch (error) { if (requestId === detailRequestRef.current) notify(error?.message || "Unable to load livestock details."); }
     }, [decorateLivestockRecord]);
-
-    useEffect(() => {
-        loadLivestock();
-    }, [loadLivestock]);
-
-    useEffect(() => {
-        const refreshFromWorkflow = async () => {
-            const rows = await loadLivestock();
-            setSelectedAnimal((current) =>
-                current ? (rows.find((row) => row.id === current.id) || null) : current
-            );
-        };
-        window.addEventListener("joross:livestock-updated", refreshFromWorkflow);
-        return () => window.removeEventListener("joross:livestock-updated", refreshFromWorkflow);
-    }, [loadLivestock]);
-
-    const livestockTypes =
-        useMemo(() => {
-            return [
-                ...new Set(
-                    livestock.map(
-                        (animal) =>
-                            animal.type
-                    )
-                ),
-            ];
-        }, [livestock]);
-
-    const penLocations =
-        useMemo(() => {
-            return [
-                ...new Set(
-                    livestock.map(
-                        (animal) =>
-                            animal.penLocation
-                    )
-                ),
-            ];
-        }, [livestock]);
-
-    const filteredLivestock =
-        useMemo(() => {
-            const search =
-                searchText
-                    .trim()
-                    .toLowerCase();
-
-            return livestock.filter(
-                (animal) => {
-                    const matchesSearch =
-                        !search ||
-                        animal.animalId
-                            .toLowerCase()
-                            .includes(
-                                search
-                            ) ||
-                        animal.recordName
-                            .toLowerCase()
-                            .includes(
-                                search
-                            ) ||
-                        animal.type
-                            .toLowerCase()
-                            .includes(
-                                search
-                            ) ||
-                        animal.breed
-                            .toLowerCase()
-                            .includes(
-                                search
-                            ) ||
-                        animal.penLocation
-                            .toLowerCase()
-                            .includes(
-                                search
-                            );
-
-                    const matchesType =
-                        typeFilter ===
-                            "All" ||
-                        animal.type ===
-                            typeFilter;
-
-                    const statusCounts = {
-                        Healthy: Number(animal.healthyQuantity || 0),
-                        "At Risk": Number(animal.atRiskQuantity || 0),
-                        Sick: Number(animal.sickQuantity || 0),
-                        "Under Treatment": Number(animal.underTreatmentQuantity || 0),
-                    };
-                    const matchesStatus =
-                        statusFilter === "All" ||
-                        animal.healthStatus === statusFilter ||
-                        (statusFilter !== "Mixed" && Number(statusCounts[statusFilter] || 0) > 0);
-
-                    const matchesPen =
-                        penFilter ===
-                            "All" ||
-                        animal.penLocation ===
-                            penFilter;
-
-                    return (
-                        matchesSearch &&
-                        matchesType &&
-                        matchesStatus &&
-                        matchesPen
-                    );
-                }
-            );
-        }, [
-            livestock,
-            searchText,
-            typeFilter,
-            statusFilter,
-            penFilter,
-        ]);
-
-    const statistics = useMemo(() => {
-        const totalAnimalCount =
-            livestock.reduce(
-                (total, animal) =>
-                    total +
-                    Number(
-                        animal.quantity
-                    ),
-                0
-            );
-
-        const healthy = livestock.reduce((total, animal) => {
-            const explicit = Number(animal.healthyQuantity || 0);
-            if (explicit > 0 || animal.healthStatus === "Mixed") return total + explicit;
-            return animal.healthStatus === "Healthy" ? total + Number(animal.quantity || 0) : total;
-        }, 0);
-
-        const sickOrAtRisk = livestock.reduce((total, animal) => {
-            const breakdown =
-                Number(animal.sickQuantity || 0) +
-                Number(animal.atRiskQuantity || 0) +
-                Number(animal.underTreatmentQuantity || 0);
-            if (breakdown > 0 || animal.healthStatus === "Mixed") return total + breakdown;
-            return ["Sick", "At Risk", "Under Treatment"].includes(animal.healthStatus)
-                ? total + Number(animal.quantity || 0)
-                : total;
-        }, 0);
-
-        const vaccinationDue =
-            livestock.reduce(
-                (total, animal) =>
-                    [
-                        "Due",
-                        "Due Soon",
-                    ].includes(
-                        animal.vaccinationStatus
-                    )
-                        ? total +
-                          Number(
-                              animal.quantity
-                          )
-                        : total,
-                0
-            );
-
-        const births =
-            livestock.reduce(
-                (total, animal) =>
-                    animal.isNewBirth
-                        ? total +
-                          Number(
-                              animal.quantity
-                          )
-                        : total,
-                0
-            );
-
-        return [
-            {
-                id: 1,
-                title:
-                    "Total Livestock",
-                value:
-                    totalAnimalCount,
-                icon: "pets",
-                className: "total",
-            },
-            {
-                id: 2,
-                title:
-                    "Healthy Animals",
-                value: healthy,
-                icon:
-                    "health_and_safety",
-                className: "healthy",
-            },
-            {
-                id: 3,
-                title:
-                    "Sick / At Risk",
-                value:
-                    sickOrAtRisk,
-                icon:
-                    "medical_information",
-                className: "risk",
-            },
-            {
-                id: 4,
-                title:
-                    "Due for Vaccination",
-                value:
-                    vaccinationDue,
-                icon: "vaccines",
-                className:
-                    "vaccination",
-            },
-            {
-                id: 5,
-                title:
-                    "Total Births",
-                value: births,
-                icon: "child_care",
-                className: "births",
-            },
-        ];
-    }, [livestock]);
+    useEffect(() => { void loadLivestock(); return () => { listRequestRef.current += 1; }; }, [loadLivestock]);
+    // Module and legacy events share the deferred refresh hook below. Never
+    // replace the detailed open animal with a lightweight list row.
+    const livestockTypes = livestockOverview?.types || [];
+    const penLocations = livestockOverview?.pens || [];
+    const filteredLivestock = livestock;
+    const statistics = useMemo(() => [
+        { id: 1, title: "Total Livestock", key: "total", icon: "pets", className: "total" },
+        { id: 2, title: "Healthy Animals", key: "healthy", icon: "health_and_safety", className: "healthy" },
+        { id: 3, title: "Sick / At Risk", key: "risk", icon: "medical_information", className: "risk" },
+        { id: 4, title: "Due for Vaccination", key: "vaccination_due", icon: "vaccines", className: "vaccination" },
+        { id: 5, title: "Total Births", key: "births", icon: "child_care", className: "births" },
+    ].map(card => ({ ...card, value: livestockLoading ? "…" : !livestockOverview || livestockError ? "—" : livestockOverview[card.key] })), [livestockOverview, livestockLoading, livestockError]);
 
     const clearFilters = () => {
         setSearchText("");
@@ -795,6 +582,7 @@ function Livestock() {
             setLivestockFormOpen(false);
             setEditingAnimal(null);
         } catch (error) {
+            if (isRecordEditConflict(error)) throw error;
             console.error(
                 "Failed to save livestock:",
                 error
@@ -853,7 +641,7 @@ function Livestock() {
             livestock.find(
                 (animal) =>
                     animal.id === animalId
-            );
+            ) || (selectedAnimal?.id === animalId ? selectedAnimal : null);
 
         try {
             await livestockService.addVaccinationRecord(
@@ -933,7 +721,7 @@ function Livestock() {
             livestock.find(
                 (animal) =>
                     animal.id === animalId
-            );
+            ) || (selectedAnimal?.id === animalId ? selectedAnimal : null);
 
         try {
             const savedRecord =
@@ -988,12 +776,13 @@ function Livestock() {
             livestock.find(
                 (animal) =>
                     animal.id === animalId
-            );
+            ) || (selectedAnimal?.id === animalId ? selectedAnimal : null);
 
         try {
             await livestockService.updateLivestock(
                 animalId,
                 {
+                    editVersion: feedingSchedule.editVersion,
                     feedInventoryItemId: feedingSchedule.inventoryItemId || null,
                     feedingSchedule,
                 }
@@ -1040,7 +829,9 @@ function Livestock() {
             notify(
                 "Feeding schedule updated successfully."
             );
+            return updatedAnimal;
         } catch (error) {
+            if (isRecordEditConflict(error)) throw error;
             console.error(
                 "Failed to update feeding schedule:",
                 error
@@ -1061,7 +852,7 @@ function Livestock() {
             livestock.find(
                 (animal) =>
                     animal.id === animalId
-            );
+            ) || (selectedAnimal?.id === animalId ? selectedAnimal : null);
 
         try {
             await livestockService.updateLivestock(
@@ -1113,7 +904,9 @@ function Livestock() {
             notify(
                 "Health record updated successfully."
             );
+            return updatedAnimal;
         } catch (error) {
+            if (isRecordEditConflict(error)) throw error;
             console.error(
                 "Failed to update health record:",
                 error
@@ -1206,7 +999,7 @@ function Livestock() {
     };
 
 
-    useFarmModuleUpdates(["livestock", "archives"], loadLivestock, { editing: livestockFormOpen || Boolean(selectedAnimal) });
+    useFarmModuleUpdates(["livestock", "archives"], loadLivestock, { editing: livestockFormOpen || Boolean(selectedAnimal || selectedFeedingHistoryAnimal || movementAnimal) || penManagementOpen });
 
     return (
         <div className="livestock-layout">
@@ -1345,7 +1138,7 @@ function Livestock() {
                 </>}>
                 {(navigation) => <>
                 <RecordHeader className="livestock-action-row" title="Livestock Records" navigation={navigation}
-                    summary={`${filteredLivestock.length} livestock records found`} actions={<><button
+                    summary={`Showing ${livestock.length} of ${livestockTotal} matching livestock records`} actions={<><button
                             type="button"
                             className="livestock-manage-pens-button"
                             onClick={() => setPenManagementOpen(true)}
@@ -1652,14 +1445,17 @@ function Livestock() {
 
                 </RecordTableSurface>
 
-                <LivestockAnalytics
-                    livestock={livestock}
-                />
+                {livestockError && <button type="button" className="workforce-button secondary" onClick={() => loadLivestock()}>Retry livestock</button>}
+                {!livestockError && livestock.length < livestockTotal && <button type="button" className="workforce-button secondary" onClick={loadMoreLivestock} disabled={livestockLoading || loadingMore}>{loadingMore ? "Loading…" : "Load more livestock"}</button>}
+                {!livestockLoading && !livestockError && livestockOverview && <LivestockAnalytics
+                    summary={livestockOverview}
+                    onOpenAnimal={animal => openDetailedAnimal(animal, setSelectedAnimal)}
+                />}
                 </>}
                 </ArchiveWorkspace>
             </main>
 
-            <LivestockFormModal
+            {livestockFormOpen && <LivestockFormModal
                 saving={savingLivestock}
                 open={
                     livestockFormOpen
@@ -1678,9 +1474,10 @@ function Livestock() {
                 onSave={
                     handleSaveLivestock
                 }
-            />
+            />}
 
-            <LivestockDetailsModal
+            {selectedAnimal && <LivestockDetailsModal
+                onReloadRecord={record => setSelectedAnimal(decorateLivestockRecord(record))}
                 animal={
                     selectedAnimal
                 }
@@ -1709,7 +1506,7 @@ function Livestock() {
                 onSaveHealth={
                     handleSaveHealth
                 }
-            />
+            />}
 
             {selectedFeedingHistoryAnimal && (
                 <FeedingHistoryModal
@@ -1718,13 +1515,13 @@ function Livestock() {
                 />
             )}
 
-            <PenManagementModal
+            {penManagementOpen && <PenManagementModal
                 open={penManagementOpen}
                 onClose={() => setPenManagementOpen(false)}
                 onChanged={async () => {
                     await loadLivestock();
                 }}
-            />
+            />}
 
             {movementAnimal && (
                 <LivestockMovementModal

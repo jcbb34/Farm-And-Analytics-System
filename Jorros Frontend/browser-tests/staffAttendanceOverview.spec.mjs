@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { test, expect } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { serveSessionPolicy } from "./helpers/serveSessionPolicy.mjs";
@@ -36,7 +37,7 @@ async function setup(page, { path = "/staff-calendar", permission = "admin", fai
         }
         return result;
     };
-    await page.route("**/api/v1/**", async (route) => {
+    await page.route("**/api/v1/**", withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), url = new URL(request.url()), pathname = url.pathname;
         if (pathname === "/api/v1/auth/me") return route.fulfill({ json: user });
@@ -57,7 +58,7 @@ async function setup(page, { path = "/staff-calendar", permission = "admin", fai
             return route.fulfill({ json: saved });
         }
         return route.fulfill({ json: [] });
-    });
+    }));
     await page.goto(path); await page.mouse.move(1100, 10);
     if (permission !== "employee") {
         await expect(page.locator(".staff-attendance-overview")).toBeVisible();

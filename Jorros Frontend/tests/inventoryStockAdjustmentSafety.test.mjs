@@ -14,7 +14,7 @@ test("stock adjustment has an immediate one-flight guard and visible saving stat
     assert.match(modalSource, /const adjustmentSubmittingRef = useRef\(false\)/);
     assert.match(modalSource, /if \(adjustmentSubmittingRef\.current\) \{\s*return;\s*\}/);
     assert.match(modalSource, /adjustmentSubmittingRef\.current = true/);
-    assert.match(modalSource, /disabled=\{adjustmentSaving\}/);
+    assert.match(modalSource, /disabled=\{adjustmentSaving(?: \|\| [^}]+)?\}/);
     assert.match(modalSource, /Saving Stock Adjustment\.\.\./);
     assert.match(modalCss, /\.inventory-stock-form-footer button:disabled/);
 });
@@ -28,11 +28,12 @@ test("stock adjustment retries use a stable idempotency key end to end", () => {
     assert.match(hookSource, /\{ idempotencyKey \}/);
 });
 
-test("successful adjustment applies POST result locally instead of waiting for a second item GET", () => {
+test("fresh adjustment applies POST result locally; historical replays request current metadata", () => {
     const start = hookSource.indexOf("const handleAdjustStock");
     const end = hookSource.indexOf("const archiveInventoryItem", start);
     const block = hookSource.slice(start, end);
     assert.match(block, /const stockRecord = await inventoryService\.addStockAdjustment/);
-    assert.match(block, /quantity: stockRecord\.newQuantity/);
-    assert.doesNotMatch(block, /getInventoryItem\(/);
+    assert.match(block, /quantity:[^\n]*stockRecord\.newQuantity/);
+    assert.match(block, /if \(!canMerge\)/);
+    assert.match(block, /getInventoryItem\(itemId\)/);
 });

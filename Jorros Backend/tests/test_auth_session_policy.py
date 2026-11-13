@@ -62,7 +62,14 @@ def claims(headers):
     return jwt.decode(headers['Authorization'].split(' ', 1)[1], settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
 
 
-def test_login_has_a_fifteen_minute_lease_and_eight_hour_token(site):
+def test_login_has_a_fifteen_minute_lease_and_eight_hour_token(site, monkeypatch):
+    # Token minting and the mocked server clock must agree at second boundaries.
+    class TokenClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            value = site.clock[0].replace(tzinfo=timezone.utc)
+            return value.astimezone(tz) if tz else value.replace(tzinfo=None)
+    monkeypatch.setattr(security, 'datetime', TokenClock)
     headers = sign_in(site)
     response = status(site, headers)
     assert response.headers['cache-control'] == 'no-store'

@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
@@ -18,7 +19,7 @@ async function prepare(page, initialToday = "2026-10-29") {
             accessToken: "leave-browser-test-token", user: profile, expiresAt: Date.now() + 86400000,
         }));
     }, user);
-    await page.route("**/api/v1/**", async (route) => {
+    await page.route("**/api/v1/**", withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const path = new URL(route.request().url()).pathname;
         if (path === "/api/v1/auth/me") return route.fulfill({ json: user });
@@ -31,7 +32,7 @@ async function prepare(page, initialToday = "2026-10-29") {
         if (path.endsWith("/my-schedule")) return route.fulfill({ json: { tasks: [], attendance: [], leave: [], shifts: [], availability: [] } });
         if (path.endsWith("/my-tasks/page")) return route.fulfill({ json: { items: [], total: 0, page: 1, page_size: 20 } });
         return route.fulfill({ json: [] });
-    });
+    }));
     await page.goto("/my-tasks?tab=leave");
     const form = page.locator("form.my-leave-request");
     await expect(form).toBeVisible();

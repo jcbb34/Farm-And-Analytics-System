@@ -48,7 +48,7 @@ export const workforceService = Object.freeze({
     }),
 
     getTasks: (options = {}) => httpClient.get("/workforce/tasks", { query: query(options), cache: "no-store" }),
-    getTasksPage: (options = {}) => httpClient.get("/workforce/tasks/page", { query: query(options), cache: "no-store" }),
+    getTasksPage: (options = {}, { signal } = {}) => httpClient.get("/workforce/tasks/page", { query: query(options), cache: "no-store", signal }),
     getTaskManagementSummary: () => httpClient.get("/workforce/tasks/summary", { cache: "no-store" }),
     getTaskDetail: (id) => httpClient.get(`/workforce/tasks/${id}`, { cache: "no-store" }),
     getMyTasks: (viewOrIncludeCompleted = "active", { sharedDevice = false, signal = undefined, scope = undefined } = {}) => {
@@ -88,7 +88,7 @@ export const workforceService = Object.freeze({
         const publicId = evidenceUrl.split('/').pop();
         return httpClient.delete(`/workforce/tasks/evidence/${publicId}`);
     },
-    downloadEvidencePhoto: (evidenceUrl) => httpClient.download(evidenceUrl),
+    downloadEvidencePhoto: (evidenceUrl, options = {}) => httpClient.download(evidenceUrl, options),
     submitTask: async (id, payload, idempotencyKey = null) => {
         const response = await httpClient.post(`/workforce/tasks/${id}/submit`, payload, {
             headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {},
@@ -141,8 +141,9 @@ export const workforceService = Object.freeze({
     createShift: (payload) => httpClient.post("/workforce/shifts", payload),
     updateShift: (id, payload) => httpClient.put(`/workforce/shifts/${id}`, payload),
     cancelShift: (id) => httpClient.post(`/workforce/shifts/${id}/cancel`, {}),
-    getCalendar: (dateFrom, dateTo, employeeId = null) =>
+    getCalendar: (dateFrom, dateTo, employeeId = null, options = {}) =>
         httpClient.get("/workforce/calendar", {
+            signal: options.signal,
             query: query({ date_from: dateFrom, date_to: dateTo, employee_id: employeeId }),
             cache: "no-store",
         }),

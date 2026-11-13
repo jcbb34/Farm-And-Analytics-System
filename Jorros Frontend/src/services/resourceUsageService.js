@@ -64,6 +64,11 @@ function normalizeSummary(record = {}) {
 }
 
 export const resourceUsageService = Object.freeze({
+    async getConsumption({ startDate, endDate }) {
+        const data = await httpClient.get("/resource-usages/consumption-summary", { query: { start_date: startDate, end_date: endDate }, cache: "no-store" });
+        if (!Array.isArray(data?.rows) || !Number.isInteger(data.total) || data.total < 0) throw new Error("Resource totals could not be read. Please retry.");
+        return { rows: data.rows.map(row => ({ usageType: row.usage_type, unit: row.unit, quantity: Number(row.quantity) })), total: data.total };
+    },
     async getUsages({
         module,
         targetId,

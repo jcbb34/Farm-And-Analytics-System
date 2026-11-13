@@ -1,3 +1,4 @@
+import { isRecordEditConflict } from "../../../services/recordEditing.js";
 "use client";
 import { requestArchive } from "../../../services/archiveService.js";
 
@@ -35,6 +36,19 @@ export default function useCropsPage() {
     const [cropsLoading, setCropsLoading] = useState(true);
     const [cropsError, setCropsError] = useState("");
     const [employees, setEmployees] = useState([]);
+    const [overview, setOverview] = useState(null);
+    const [overviewLoading, setOverviewLoading] = useState(true), [overviewError, setOverviewError] = useState("");
+    const overviewSequence = useRef(0);
+    const [cropTotal, setCropTotal] = useState(0);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [yieldTotal, setYieldTotal] = useState(0);
+    const [yieldLoading, setYieldLoading] = useState(true);
+    const [yieldError, setYieldError] = useState("");
+    const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
+    const enableAnalytics = useCallback(() => setAnalyticsEnabled(true), []);
+    const [harvestChoices, setHarvestChoices] = useState([]);
+    const requestRef = useRef(0), moreRef = useRef(false), detailsRef = useRef(0), yieldsRef = useRef(0);
+    const [debouncedSearch, setDebouncedSearch] = useState("");
 
     // Filters
     const [searchText, setSearchText] = useState("");
@@ -54,40 +68,83 @@ export default function useCropsPage() {
     const cropHarvestRequestRef = useRef(null);
     const cropHarvestInFlightRef = useRef(false);
 
-    const loadCrops = useCallback(async () => {
-        try {
-            setCropsLoading(true);
-            setCropsError("");
-
-            const cropList = await cropService.getCrops(true, true);
-            setCrops(cropList);
-
-            const allYieldRecords = cropList.flatMap((crop) =>
-                (crop.yieldRecords ?? []).map((record) => ({
-                    ...record,
-                    cropName: crop.name,
-                    field: crop.field,
-                    area: crop.area,
-                }))
-            );
-
-            setYieldRecords(allYieldRecords);
-            return cropList;
-        } catch (error) {
-            console.error("Failed to load crops:", error);
-            setCropsError(error?.message || "Unable to load crop records.");
-            return [];
-        } finally {
-            setCropsLoading(false);
-        }
-    }, []);
-
     useEffect(() => {
-        loadCrops();
-    }, [loadCrops]);
-    useFarmModuleUpdates(["crops", "production_sales"], loadCrops, {
-        editing: addCropOpen || addYieldOpen || Boolean(editCrop) || Boolean(reopenCropTarget),
+        const timer = window.setTimeout(() => setDebouncedSearch(searchText.trim()), 300);
+        return () => window.clearTimeout(timer);
+    }, [searchText]);
+    const query = useMemo(() => ({ search: debouncedSearch, crop_type: cropType,
+        status_filter: statusFilter, field: fieldFilter, planting_date: dateFilter || undefined }),
+    [debouncedSearch, cropType, statusFilter, fieldFilter, dateFilter]);
+    const loadCrops = useCallback(async () => {
+        const requestId = ++requestRef.current;
+        moreRef.current = false; setLoadingMore(false); setCropsLoading(true); setCropsError("");
+        try {
+            const page = await cropService.getCropPage({ ...query, offset: 0, limit: 50, include_overview: false });
+            if (requestId !== requestRef.current) return [];
+            setCrops(page.items); setCropTotal(page.total);
+            return page.items;
+        } catch (error) {
+            if (requestId === requestRef.current) { setCropsError(error?.message || "Unable to load crop records."); }
+            return [];
+        } finally { if (requestId === requestRef.current) setCropsLoading(false); }
+    }, [query]);
+    const loadCropSummary = useCallback(async () => {
+        const id = ++overviewSequence.current;
+        setOverviewLoading(true); setOverviewError("");
+        try {
+            const value = await cropService.getSummary();
+            if (id === overviewSequence.current) setOverview(value);
+        } catch (error) {
+            if (id === overviewSequence.current) { setOverview(null); setOverviewError(error?.message || "Unable to load crop totals."); }
+        } finally { if (id === overviewSequence.current) setOverviewLoading(false); }
+    }, []);
+    const refreshCrops = useCallback(async () => {
+        const [rows] = await Promise.all([loadCrops(), loadCropSummary()]);
+        return rows;
+    }, [loadCrops, loadCropSummary]);
+    useEffect(() => { void loadCropSummary(); return () => { overviewSequence.current++; }; }, [loadCropSummary]);
+    const loadMoreCrops = async () => {
+        if (cropsLoading || moreRef.current || crops.length >= cropTotal) return;
+        const requestId = requestRef.current;
+        moreRef.current = true; setLoadingMore(true);
+        try {
+            const page = await cropService.getCropPage({ ...query, offset: crops.length, limit: 50, include_overview: false });
+            if (requestId !== requestRef.current) return;
+            setCrops(current => [...current, ...page.items.filter(row => !current.some(item => item.id === row.id))]);
+            setCropTotal(page.total);
+        } catch (error) { if (requestId === requestRef.current) setCropsError(error?.message || "Unable to load more crops."); }
+        finally { if (requestId === requestRef.current) { moreRef.current = false; setLoadingMore(false); } }
+    };
+    const loadYields = useCallback(async (offset = 0) => {
+        const requestId = ++yieldsRef.current;
+        setYieldLoading(true); setYieldError("");
+        try {
+            const page = await cropService.getYieldPage(offset);
+            if (requestId !== yieldsRef.current) return;
+            setYieldRecords(current => offset ? [...current, ...page.items.filter(row => !current.some(item => item.id === row.id))] : page.items);
+            setYieldTotal(page.total);
+        } catch (error) { if (requestId === yieldsRef.current) setYieldError(error?.message || "Unable to load harvest history."); }
+        finally { if (requestId === yieldsRef.current) setYieldLoading(false); }
+    }, []);
+    useEffect(() => { void loadCrops(); return () => { requestRef.current += 1; }; }, [loadCrops]);
+    useEffect(() => { if (analyticsEnabled) void loadYields(); }, [loadYields, analyticsEnabled]);
+    useFarmModuleUpdates(["crops", "production_sales"], () => Promise.all([refreshCrops(), ...(analyticsEnabled ? [loadYields()] : [])]), {
+        editing: addCropOpen || addYieldOpen || Boolean(editCrop || selectedCrop || reopenCropTarget),
     });
+    const openCropDetails = useCallback(async (crop, setter = setSelectedCrop) => {
+        const requestId = ++detailsRef.current;
+        try {
+            const detail = await cropService.getCrop(crop.id);
+            if (requestId === detailsRef.current) setter(detail);
+        } catch (error) { notify(error?.message || "Unable to load crop details."); }
+    }, []);
+    useEffect(() => {
+        if (!addYieldOpen) return;
+        let active = true;
+        cropService.getCrops(false, false).then(rows => { if (active) setHarvestChoices(rows); })
+            .catch(error => notify(error?.message || "Unable to load harvest choices."));
+        return () => { active = false; };
+    }, [addYieldOpen]);
 
     useEffect(() => {
         if (!canUpdateCrops) return;
@@ -99,126 +156,32 @@ export default function useCropsPage() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const requestedStatus = params.get("status");
-        if (CROP_LIFECYCLE_FILTERS.includes(requestedStatus)) {
-            setStatusFilter(requestedStatus);
-        }
+        if (CROP_LIFECYCLE_FILTERS.includes(requestedStatus)) setStatusFilter(requestedStatus);
         const requestedCropId = Number(params.get("cropId") || 0);
-        if (requestedCropId) {
-            const found = crops.find((crop) => crop.id === requestedCropId);
-            if (found) setSelectedCrop(found);
-        }
+        if (requestedCropId && params.get("addYield") !== "1") void openCropDetails({ id: requestedCropId });
         if (params.get("addYield") === "1" && canUpdateCrops) {
             if (requestedCropId) setHarvestCropId(requestedCropId);
             setAddYieldOpen(true);
-            params.delete("addYield");
-            const next = params.toString();
-            window.history.replaceState({}, "", `${window.location.pathname}${next ? `?${next}` : ""}`);
         }
-    }, [canUpdateCrops, crops]);
+        if (requestedCropId || params.has("addYield")) {
+            params.delete("cropId"); params.delete("addYield");
+            const next = params.toString();
+            window.history.replaceState(window.history.state, "", `${window.location.pathname}${next ? `?${next}` : ""}`);
+        }
+    }, [canUpdateCrops, openCropDetails]);
 
-    const cropSummary = useMemo(() => {
-        const activeCrops = crops.filter(
-            (crop) => crop.status !== "Harvested" && crop.status !== "Failed"
-        ).length;
-
-        const harvestedCrops = crops.filter(
-            (crop) => crop.status === "Harvested"
-        ).length;
-
-        const cropAlerts = crops.filter(
-            (crop) => crop.activePestDisease !== null
-        ).length;
-
-        return [
-            {
-                id: 1,
-                title: "Total Crops",
-                value: crops.length,
-                icon: "potted_plant",
-                className: "total",
-            },
-            {
-                id: 2,
-                title: "Active Crops",
-                value: activeCrops,
-                icon: "eco",
-                className: "active",
-            },
-            {
-                id: 3,
-                title: "Harvested",
-                value: harvestedCrops,
-                icon: "agriculture",
-                className: "harvested",
-            },
-            {
-                id: 4,
-                title: "Crop Alerts",
-                value: cropAlerts,
-                icon: "warning",
-                className: "alerts",
-            },
-        ];
-    }, [crops]);
-
-    const cropTypes = useMemo(
-        () => [...new Set(crops.map((crop) => crop.name).filter(Boolean))],
-        [crops]
-    );
-
-    const cropFields = useMemo(
-        () => [...new Set(crops.map((crop) => crop.field).filter(Boolean))],
-        [crops]
-    );
-
-    const harvestEligibleCrops = useMemo(
-        () => crops.filter((crop) => ["Ready for Harvest", "Harvesting"].includes(crop.status) && !crop.isArchived && !crop.pendingHarvestTaskId),
-        [crops]
-    );
-
-    const readyForHarvestCount = useMemo(
-        () => crops.filter((crop) => crop.status === "Ready for Harvest" && !crop.isArchived).length,
-        [crops]
-    );
-
-    const filteredCrops = useMemo(() => {
-        const normalizedSearch = searchText.trim().toLowerCase();
-
-        const filtered = crops.filter((crop) => {
-            const name = String(crop.name || "").toLowerCase();
-            const variety = String(crop.variety || "").toLowerCase();
-            const field = String(crop.field || "").toLowerCase();
-
-            const matchesSearch =
-                !normalizedSearch ||
-                name.includes(normalizedSearch) ||
-                variety.includes(normalizedSearch) ||
-                field.includes(normalizedSearch);
-
-            const matchesType = cropType === "All" || crop.name === cropType;
-            const matchesStatus = matchesCropLifecycleFilter(crop, statusFilter);
-            const matchesField =
-                fieldFilter === "All" || crop.field === fieldFilter;
-            const matchesDate =
-                !dateFilter || crop.plantingDate === dateFilter;
-
-            return (
-                matchesSearch &&
-                matchesType &&
-                matchesStatus &&
-                matchesField &&
-                matchesDate
-            );
-        });
-        return sortCropsByHarvestPriority(filtered);
-    }, [
-        crops,
-        searchText,
-        cropType,
-        statusFilter,
-        fieldFilter,
-        dateFilter,
-    ]);
+    const cropSummary = useMemo(() => [
+        { id: 1, title: "Total Crops", key: "total", icon: "potted_plant", className: "total" },
+        { id: 2, title: "Active Crops", key: "active", icon: "eco", className: "active" },
+        { id: 3, title: "Harvested", key: "harvested", icon: "agriculture", className: "harvested" },
+        { id: 4, title: "Crop Alerts", key: "alerts", icon: "warning", className: "alerts" },
+    ].map(card => ({ ...card, value: overviewLoading ? "…" : overviewError || !overview ? "—" : overview[card.key] })), [overview, overviewLoading, overviewError]);
+    const cropTypes = overview?.names || [];
+    const cropFields = overview?.fields || [];
+    const harvestEligibleCrops = useMemo(() => harvestChoices.filter(crop =>
+        ["Ready for Harvest", "Harvesting"].includes(crop.status) && !crop.isArchived && !crop.pendingHarvestTaskId), [harvestChoices]);
+    const readyForHarvestCount = overviewLoading ? "…" : overviewError ? "—" : overview?.ready ?? "—";
+    const filteredCrops = crops;
 
     const clearFilters = () => {
         setSearchText("");
@@ -240,7 +203,7 @@ export default function useCropsPage() {
                 { idempotencyKey }
             );
             clearStableIdempotencyKey(cropCreateRequestRef);
-            await loadCrops();
+            await refreshCrops();
             setAddCropOpen(false);
 
 
@@ -261,10 +224,9 @@ export default function useCropsPage() {
                 updatedCropData
             );
 
-            const refreshedCrops = await loadCrops();
+            const refreshedCrops = await refreshCrops();
             const refreshedCrop =
-                refreshedCrops.find((crop) => crop.id === editCrop.id) ??
-                updatedCrop;
+                await cropService.getCrop(editCrop.id);
 
             if (selectedCrop?.id === editCrop.id) {
                 setSelectedCrop(refreshedCrop);
@@ -275,6 +237,7 @@ export default function useCropsPage() {
             setEditCrop(null);
             notify("Crop information updated successfully.");
         } catch (error) {
+            if (isRecordEditConflict(error)) throw error;
             console.error("Failed to edit crop:", error);
             notify(error?.message || "Unable to update crop information.");
         }
@@ -284,7 +247,7 @@ export default function useCropsPage() {
         if (cropHarvestInFlightRef.current) {
             return;
         }
-        const selectedCropRecord = crops.find(
+        const selectedCropRecord = harvestChoices.find(
             (crop) => crop.id === yieldData.cropId
         );
 
@@ -303,14 +266,14 @@ export default function useCropsPage() {
         try {
             await cropService.addYieldRecord(yieldData.cropId, yieldData, { idempotencyKey });
             clearStableIdempotencyKey(cropHarvestRequestRef);
-            const refreshedCrops = await loadCrops();
+            const refreshedCrops = await refreshCrops();
 
             if (selectedCrop?.id === yieldData.cropId) {
                 const refreshedCrop = refreshedCrops.find(
                     (crop) => crop.id === yieldData.cropId
                 );
 
-                if (refreshedCrop) setSelectedCrop(refreshedCrop);
+                setSelectedCrop(await cropService.getCrop(yieldData.cropId));
             }
 
             logAudit({
@@ -365,7 +328,7 @@ export default function useCropsPage() {
     const handleConfirmReady = async (crop) => {
         try {
             await cropService.confirmReady(crop.id);
-            await loadCrops();
+            await refreshCrops();
             notify(`${crop.name} is now confirmed Ready for Harvest.`);
         } catch (error) {
             notify(error?.message || "Unable to confirm crop readiness.");
@@ -379,13 +342,13 @@ export default function useCropsPage() {
             throw new Error("The crop still appears Fully Harvested. Please retry or check the crop history.");
         }
         setCrops((current) => current.map((crop) => crop.id === reopened.id ? reopened : crop));
-        const refreshedCrops = await loadCrops();
+        const refreshedCrops = await refreshCrops();
         const refreshed = refreshedCrops.find((crop) => crop.id === reopenCropTarget.id);
         if (refreshed && refreshed.status !== newStatus) {
             throw new Error("The crop list still shows Fully Harvested after reopening. Please retry.");
         }
         if (selectedCrop?.id === reopenCropTarget.id) {
-            setSelectedCrop(refreshed || reopened);
+            setSelectedCrop(await cropService.getCrop(reopenCropTarget.id));
         }
         setReopenCropTarget(null);
         notify("Crop cycle reopened. Existing harvest and report history were kept.");
@@ -400,7 +363,7 @@ export default function useCropsPage() {
         if (!confirmed) return;
 
         try {
-            await loadCrops();
+            await refreshCrops();
 
             if (selectedCrop?.id === cropId) {
                 setSelectedCrop(null);
@@ -416,7 +379,7 @@ export default function useCropsPage() {
     };
 
     const handleSavePestDisease = async (cropId, pestDisease) => {
-        const pestCrop = crops.find((crop) => crop.id === cropId);
+        const pestCrop = crops.find((crop) => crop.id === cropId) || (selectedCrop?.id === cropId ? selectedCrop : null);
 
         if (!pestCrop) {
             notify("Selected crop record was not found.");
@@ -464,14 +427,14 @@ export default function useCropsPage() {
     };
 
     const handleSaveGrowthCheck = async (cropId, growthData) => {
-        const growthCrop = crops.find((crop) => crop.id === cropId);
+        const growthCrop = crops.find((crop) => crop.id === cropId) || (selectedCrop?.id === cropId ? selectedCrop : null);
         if (!growthCrop) return;
 
         try {
             await cropService.addGrowthRecord(cropId, growthData);
-            const refreshedCrops = await loadCrops();
+            const refreshedCrops = await refreshCrops();
             const refreshedCrop = refreshedCrops.find((crop) => crop.id === cropId);
-            if (refreshedCrop) setSelectedCrop(refreshedCrop);
+            setSelectedCrop(await cropService.getCrop(cropId));
 
             logAudit({
                 action: "Recorded crop growth check",
@@ -497,7 +460,7 @@ export default function useCropsPage() {
     };
 
     const handleUpdatePestDisease = async (cropId, pestId, pestData) => {
-        const pestCrop = crops.find((crop) => crop.id === cropId);
+        const pestCrop = crops.find((crop) => crop.id === cropId) || (selectedCrop?.id === cropId ? selectedCrop : null);
         if (!pestCrop) return;
 
         try {
@@ -534,6 +497,11 @@ export default function useCropsPage() {
         cropsLoading,
         cropsError,
         cropSummary,
+        cropTotal, loadingMore, loadMoreCrops, loadCrops, overviewLoading, overviewError, loadCropSummary,
+        yieldTotal, yieldLoading, yieldError, loadYields, enableAnalytics,
+        analytics: overview?.analytics,
+        openCropDetails,
+        openEditCrop: (crop) => openCropDetails(crop, setEditCrop),
         filteredCrops,
         cropTypes,
         cropFields,

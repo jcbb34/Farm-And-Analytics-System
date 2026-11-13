@@ -1,4 +1,5 @@
 "use client";
+import useResourceChoices from "../../hooks/useResourceChoices.js";
 import { ArchiveRecords } from "../../components/Archives/Archives.jsx";
 
 import { useVoidAuthorization } from "../../context/VoidAuthorizationContext.jsx";
@@ -77,13 +78,11 @@ function TaskManagement() {
         archivedEmployees,
         employees,
         error,
-        farmCrops,
-        farmLivestock,
+        employeesLoading, employeesError, loadEmployees,
+        summaryLoading, summaryError, loadSummary,
         handleManualRefresh,
-        inventoryItems,
         load,
         loadMore,
-        loadResources,
         loadSupportData,
         loading,
         positions,
@@ -170,22 +169,8 @@ function TaskManagement() {
     const deepLinkAssistedOpenedRef = useRef("");
     const [taskForm, setTaskForm] = useState(EMPTY_TASK);
     const [employeeForm, setEmployeeForm] = useState(EMPTY_EMPLOYEE);
-    useEffect(() => {
-        if (showTaskForm || assistedTask || showEmployeeForm) void loadResources();
-    }, [showTaskForm, assistedTask, showEmployeeForm, loadResources]);
 
-    const localStats = useMemo(() => {
-        const todayKey = today();
-        return {
-            pending: tasks.filter((x) => !x.work_suspended && x.status === "Pending" && x.activity_date <= todayKey).length,
-            progress: tasks.filter((x) => !x.work_suspended && x.status === "In Progress" && x.activity_date <= todayKey).length,
-            review: tasks.filter((x) => x.status === "Submitted for Review").length,
-            held: tasks.filter((x) => x.work_suspended).length,
-            overdue: tasks.filter((x) => !x.work_suspended && !["Completed", "Cancelled", "Resolved", "Voided"].includes(x.status) && x.activity_date < todayKey).length,
-            reassign: tasks.filter((x) => !x.work_suspended && x.needs_reassignment && OPEN_TASK_STATUSES.has(x.status)).length,
-        };
-    }, [tasks]);
-    const stats = taskSummary || localStats;
+    const stats = taskSummary;
 
     const allEmployeesById = useMemo(() => new Map(
         [...employees, ...archivedEmployees].map((employee) => [Number(employee.id), employee]),
@@ -204,40 +189,33 @@ function TaskManagement() {
             });
     }, [assistedTask, employees, archivedEmployees]);
 
-    const assistedResourceItems = useMemo(() => {
-        if (!assistedTask) return [];
-        const taskText = [assistedTask.name, assistedTask.category, assistedTask.instructions].filter(Boolean).join(" ");
-        return inventoryItems
-            .filter((item) => resourceFitsTask(item, assistedTask.source_module, taskText))
-            .sort((a, b) => `${a.category} ${a.name}`.localeCompare(`${b.category} ${b.name}`));
-    }, [assistedTask, inventoryItems]);
+    const assistedInventoryChoices = useResourceChoices({
+        active: Boolean(assistedTask?.resource_required), domain: "Inventory",
+        selectedId: assistedTask?.resource_linked ? assistedTask.planned_inventory_item_id : assistedForm.inventory_item_id,
+        workModule: ["Crop", "Livestock"].includes(assistedTask?.source_module) ? assistedTask.source_module : undefined,
+        workText: [assistedTask?.name, assistedTask?.category, assistedTask?.instructions].filter(Boolean).join(" "),
+    });
+    const assistedResourceItems = assistedInventoryChoices.items;
+    const assistedSelectedInventoryItem = assistedResourceItems.find(item => String(item.id) === String(
+        assistedTask?.resource_linked ? assistedTask.planned_inventory_item_id : assistedForm.inventory_item_id,
+    )) || null;
 
-    const assistedSelectedInventoryItem = useMemo(
-        () => inventoryItems.find((item) => String(item.id) === String(assistedForm.inventory_item_id)) || null,
-        [inventoryItems, assistedForm.inventory_item_id],
-    );
     const assistedIsCropHarvest = Boolean(
         assistedTask?.source_module === "Crop" && assistedTask?.source_type === "crop_harvest",
     );
 
-    const taskSourceOptions = useMemo(() => {
-        if (taskForm.source_module === "Crop") return farmCrops;
-        if (taskForm.source_module === "Livestock") return farmLivestock;
-        if (taskForm.source_module === "Inventory") return inventoryItems;
-        return [];
-    }, [taskForm.source_module, farmCrops, farmLivestock, inventoryItems]);
-
-    const manualTaskResourceItems = useMemo(() => {
-        const taskText = [taskForm.name, taskForm.category, taskForm.instructions].filter(Boolean).join(" ");
-        return inventoryItems
-            .filter((item) => resourceFitsTask(item, taskForm.source_module, taskText))
-            .sort((a, b) => `${a.category} ${a.name}`.localeCompare(`${b.category} ${b.name}`));
-    }, [taskForm.source_module, taskForm.name, taskForm.category, taskForm.instructions, inventoryItems]);
-
-    const selectedTaskInventoryItem = useMemo(
-        () => inventoryItems.find((item) => String(item.id) === String(taskForm.planned_inventory_item_id)) || null,
-        [inventoryItems, taskForm.planned_inventory_item_id],
-    );
+    const taskRecordChoices = useResourceChoices({
+        active: showTaskForm, domain: taskForm.source_module, selectedId: taskForm.source_record_id,
+    });
+    const taskSupplyChoices = useResourceChoices({
+        active: showTaskForm && ["Crop", "Livestock"].includes(taskForm.source_module)
+            && Boolean(taskForm.source_record_id) && !["Weight Monitoring", "Crop Growth Monitoring"].includes(taskForm.category),
+        domain: "Inventory", selectedId: taskForm.planned_inventory_item_id, workModule: taskForm.source_module,
+        workText: [taskForm.name, taskForm.category, taskForm.instructions].join(" "),
+    });
+    const taskSourceOptions = taskRecordChoices.items;
+    const manualTaskResourceItems = taskSupplyChoices.items;
+    const selectedTaskInventoryItem = manualTaskResourceItems.find(item => String(item.id) === String(taskForm.planned_inventory_item_id)) || null;
 
     const taskPlannedQuantityNumber = useMemo(() => {
         if (taskForm.planned_quantity === "" || taskForm.planned_quantity == null) return null;
@@ -567,7 +545,7 @@ function TaskManagement() {
                     // Another task or inventory transaction may have changed stock
                     // after this modal was opened. Refresh the current stock values
                     // so the inline Assign Task warning immediately reflects it.
-                    await loadSupportData();
+                    await taskSupplyChoices.retry();
                 }
             }
         } finally {
@@ -762,6 +740,10 @@ function TaskManagement() {
 
     const submitAssistedWork = async (approveNow = false) => {
         if (!assistedTask) return;
+        if (assistedTask.resource_required && (assistedInventoryChoices.loading || assistedInventoryChoices.error || !assistedSelectedInventoryItem)) {
+            notification.error(assistedInventoryChoices.error || (assistedInventoryChoices.loading ? "Wait for the inventory choices to finish loading." : "Select an available inventory resource before submitting."), "Inventory Resource");
+            return;
+        }
         if (!assistedForm.employee_id) {
             notification.error("Select the employee who actually performed the work.", "Assisted Submission");
             return;
@@ -1233,6 +1215,7 @@ function TaskManagement() {
                     </div>
                 )}
                 {error && <div className="workforce-error">{error} <button type="button" className="workforce-button secondary compact" onClick={load}>Retry</button></div>}
+                {employeesError && <div className="workforce-error" role="status">{employeesError} <button type="button" className="workforce-button secondary compact" onClick={loadEmployees}>Retry employees</button></div>}
                 <TaskManagementTabs
                     activeTab={tab}
                     canManageCareProtocols={canManageCareProtocols}
@@ -1241,7 +1224,7 @@ function TaskManagement() {
                 />
 
                 {tab === "tasks" && <>
-                    <TaskSummaryCards stats={stats} />
+                    <TaskSummaryCards stats={stats} loading={summaryLoading} error={summaryError} onRetry={loadSummary} />
                     <AssignmentsPanel
                         allEmployeesById={allEmployeesById}
                         filteredTasks={filteredTasks}
@@ -1286,7 +1269,7 @@ function TaskManagement() {
                         onRefresh={handleManualRefresh}
                         onVoidUsage={voidCompletedTask}
                         refreshing={refreshing}
-                        stats={stats}
+                        stats={stats || {}}
                         tasks={tasks}
                         taskTotal={taskTotal}
                         visibleTasks={visibleTasks}
@@ -1296,7 +1279,7 @@ function TaskManagement() {
                 {tab === "employees" && (
                     <EmployeesPanel
                         employees={employees}
-                        loading={loading}
+                        loading={employeesLoading}
                         onAdd={openAddEmployee}
                         onArchive={openArchiveEmployee}
                         onEdit={openEditEmployee}
@@ -1348,7 +1331,7 @@ function TaskManagement() {
                     assistedEmployeeOptions,
                     assistedForm,
                     assistedIsCropHarvest,
-                    assistedResourceItems,
+                    assistedResourceItems, assistedInventoryChoices,
                     assistedSaving,
                     assistedSelectedInventoryItem,
                     assistedTask,
@@ -1367,7 +1350,6 @@ function TaskManagement() {
                     employeeForm,
                     employees,
                     filteredPositionGroups,
-                    inventoryItems,
                     manualTaskResourceItems,
                     openEditEmployee,
                     otherReassignCandidates,
@@ -1402,6 +1384,7 @@ function TaskManagement() {
                     taskSaving,
                     existingTaskId,
                     taskSourceOptions,
+                    taskRecordChoices, taskSupplyChoices, taskInventoryItems: taskSupplyChoices.items,
                     tasks,
                     toggleAdditionalPosition,
                     toggleEmployeeWorkAssignment,

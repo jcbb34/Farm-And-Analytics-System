@@ -1,4 +1,6 @@
 """Real HTTP regressions for token separation, stock retries, and crop audit atomicity."""
+
+from edit_helpers import versioned_edit
 import json
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
@@ -172,7 +174,7 @@ def test_retry_still_requires_permission_and_same_actor(stock, operation):
 
 def test_crop_edit_has_server_actor_before_after_and_single_audit(farm):
     url = f'/api/v1/crops/{farm.ids["Crop"]}'
-    response = farm.client.put(url, json={'field': 'New farm field'}, headers=farm.headers['manager'])
+    response = farm.client.put(url, json=versioned_edit(farm.client, url, {'field': 'New farm field'}, farm.headers['manager']), headers=farm.headers['manager'])
     assert response.status_code == 200, response.text
     with Session(farm.engine) as db:
         rows = list(db.scalars(select(AuditLog).where(AuditLog.module == 'Crop')))
@@ -182,7 +184,7 @@ def test_crop_edit_has_server_actor_before_after_and_single_audit(farm):
         assert record.entity_id == 'MON-CROP'
         assert json.loads(record.details)['changes']['field'] == {'before': 'Test field', 'after': 'New farm field'}
     # Saving an identical edit creates no duplicate change entry.
-    assert farm.client.put(url, json={'field': 'New farm field'}, headers=farm.headers['manager']).status_code == 200
+    assert farm.client.put(url, json=versioned_edit(farm.client, url, {'field': 'New farm field'}, farm.headers['manager']), headers=farm.headers['manager']).status_code == 200
     with Session(farm.engine) as db:
         assert db.scalar(select(func.count()).select_from(AuditLog).where(AuditLog.module == 'Crop')) == 2
     assert farm.client.put(url, json={'field': 'Unauthorized'}, headers=farm.headers['worker']).status_code == 403
@@ -193,7 +195,7 @@ def test_crop_audit_failure_rolls_back_edit_and_generated_tasks(farm):
         old_task_ids = set(db.scalars(select(FarmActivity.id)))
     with patch('app.routers.crops.record_crop_change', side_effect=RuntimeError('Forced audit failure')):
         with pytest.raises(RuntimeError):
-            farm.client.put(f'/api/v1/crops/{farm.ids["Crop"]}', json={'field': 'Must roll back'},
+            farm.client.put(f'/api/v1/crops/{farm.ids["Crop"]}', json=versioned_edit(farm.client, f'/api/v1/crops/{farm.ids["Crop"]}', {'field': 'Must roll back'}, farm.headers['manager']),
                             headers=farm.headers['manager'])
     with Session(farm.engine) as db:
         assert db.get(Crop, farm.ids['Crop']).field == 'Test field'

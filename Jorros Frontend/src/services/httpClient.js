@@ -210,7 +210,7 @@ async function request(
 
             throw new ApiError(message, {
                 status: response.status,
-                code: data?.code || "HTTP_ERROR",
+                code: data?.code || response.headers.get("X-Record-Conflict") || "HTTP_ERROR",
                 details:
                     data?.errors || data?.details || (response.headers.get("X-Existing-Task-Id") ? { existingTaskId: Number(response.headers.get("X-Existing-Task-Id")) } : null),
                 response: data,

@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from '@playwright/test';
 
@@ -17,7 +18,7 @@ async function prepare(page) {
     const mutations = [];
     await page.clock.install({ time: new Date(`${today}T02:00:00Z`) });
     await page.addInitScript((user) => sessionStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-dialog-token', user, expiresAt: Date.now() + 86400000 })), admin);
-    await page.route('**/api/v1/**', async (route) => {
+    await page.route('**/api/v1/**', withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request();
         const path = new URL(request.url()).pathname;
@@ -30,7 +31,7 @@ async function prepare(page) {
         if (path === '/api/v1/workforce/tasks/summary') return route.fulfill({ json: {} });
         if (path === '/api/v1/workforce/tasks/101') return route.fulfill({ json: { id: 101, name: activities[0].name, status: 'Pending', activity_date: today, needs_reassignment: true } });
         return route.fulfill({ json: [] });
-    });
+    }));
     await page.goto('/dashboard');
     return mutations;
 }

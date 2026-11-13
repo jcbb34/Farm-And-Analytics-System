@@ -687,3 +687,18 @@
         flex-direction: column;
     }
 }
+/* Bounded record histories and whole-farm aggregates. */
+.livestock-aggregate-list { display: grid; gap: 16px; padding: 18px; }
+.livestock-aggregate-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; }
+.livestock-aggregate-list meter { width: 100%; height: 12px; grid-column: 1 / -1; accent-color: #176b39; }
+.livestock-paged-disclosure { margin-top: 18px; padding: 18px; border: 1px solid var(--border-color, #dfe6e1); border-radius: 16px; background: var(--card-bg, #fff); }
+.livestock-paged-disclosure > summary { min-height: 44px; display: list-item; align-content: center; cursor: pointer; font-size: 16px; font-weight: 700; color: var(--primary-color, #176b39); }
+.livestock-paged-disclosure > summary:focus-visible { outline: 3px solid #258547; outline-offset: 3px; border-radius: 4px; }
+.livestock-paged-table { overflow-x: auto; margin: 12px 0; }
+.livestock-paged-table table { width: 100%; border-collapse: collapse; }
+.livestock-paged-table th, .livestock-paged-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color, #dfe6e1); }
+.livestock-paged-table small { display: block; margin-top: 4px; color: var(--text-muted, #65756c); }
+.livestock-list-caption { color: var(--text-muted, #65756c); }
+[data-theme="dark"] .livestock-paged-disclosure { background: #1d2924; color: #e6eee9; border-color: #3b5044; }
+[data-theme="dark"] .livestock-paged-disclosure > summary { color: #9de1af; }
+@media (max-width: 600px) { .livestock-paged-disclosure { padding: 12px; } .livestock-aggregate-list { padding: 12px; } }

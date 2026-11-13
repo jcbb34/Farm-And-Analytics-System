@@ -3102,12 +3102,14 @@ def generate_report_pdf(
         / filename
     )
 
+    from uuid import uuid4
+    temporary_path = output_path.with_name(output_path.name + "." + uuid4().hex + ".tmp")
     styles = _styles()
 
     document = (
         SimpleDocTemplate(
             str(
-                output_path
+                temporary_path
             ),
             pagesize=A4,
             rightMargin=18 * mm,
@@ -3314,9 +3316,9 @@ def generate_report_pdf(
         signature_table
     )
 
-    document.build(
-        story,
-        canvasmaker=NumberedCanvas,
-    )
-
+    try:
+        document.build(story,canvasmaker=NumberedCanvas)
+        temporary_path.replace(output_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
     return output_path

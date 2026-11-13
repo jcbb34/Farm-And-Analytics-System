@@ -27,6 +27,9 @@ from app.core.database import Base
 
 class InventoryItem(Base):
     __tablename__ = "inventory_items"
+
+    edit_version: Mapped[int] = mapped_column(nullable=False, default=1, server_default=text("1"))
+    __mapper_args__ = {"version_id_col": edit_version}
     __table_args__ = (
         Index("ix_inventory_items_active_page", "is_archived", "id"),
     )

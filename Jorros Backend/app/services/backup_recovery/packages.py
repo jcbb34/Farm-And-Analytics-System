@@ -13,6 +13,30 @@ from .crypto import BackupError, sha256_file
 
 BACKEND = Path(__file__).resolve().parents[3]
 
+RECOVERY_INSTRUCTIONS = """Joross Farm recovery
+
+Keep the recovery key separately from backup files. The application source in
+this kit is not an installer and does not contain your server credentials.
+
+1. Install the matching Python and Node dependencies and a compatible SQL Server
+   with the required ODBC driver on the replacement computer. Configure the
+   backend environment, database connection and Google OAuth again as needed.
+2. Build the frontend inside Jorros Frontend with npm run build, then start the
+   system using run_farm.py --production. Use the approved administrator account.
+3. Open Settings > System Data > Restore Backup. Select the recovery ZIP, or the
+   native BAK together with its matching photos and manifest companion. Supply
+   the separately saved recovery key if the files are encrypted.
+4. Validate the files and run a restore test in a separate database and photo
+   folder. Review compatibility, record counts, photos and test results. File
+   validation alone does not prove that restoration works.
+5. Activate only the tested copy after deliberate administrator confirmation.
+   Preserve the previous database and photos for rollback. Sign in again with
+   an account from the restored database and verify the essential workflows.
+
+Do not overwrite the only working database or delete existing backups during
+recovery. Test the complete procedure on your actual SQL Server installation.
+"""
+
 
 def current_revision():
     config = Config(str(BACKEND / "alembic.ini"))
@@ -199,8 +223,10 @@ def write_kit(target, backup_id):
                 }
             ),
         )
+        instructions = BACKEND / "BACKUP_RECOVERY.md"
         archive.writestr(
-            "RECOVERY_INSTRUCTIONS.md", (BACKEND / "BACKUP_RECOVERY.md").read_bytes()
+            "RECOVERY_INSTRUCTIONS.txt",
+            instructions.read_bytes() if instructions.is_file() else RECOVERY_INSTRUCTIONS.encode("utf-8"),
         )
         archive.writestr(
             "CONFIGURATION.txt",

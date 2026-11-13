@@ -188,6 +188,8 @@ class LivestockCreate(BaseModel):
 
 
 class LivestockUpdate(BaseModel):
+    expected_version: int | None = Field(default=None, ge=1)
+
     model_config = ConfigDict(str_strip_whitespace=True)
     monitoring_enabled: bool | None = None
     monitoring_start_date: date | None = None
@@ -412,6 +414,8 @@ class LivestockGrowthResponse(BaseModel):
 
 
 class LivestockResponse(BaseModel):
+    edit_version: int = Field(default=1, ge=1)
+
     @computed_field
     @property
     def feeding_slots(self) -> list[str]:

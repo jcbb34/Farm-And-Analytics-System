@@ -1,3 +1,4 @@
+from app.services.record_editing import check_edit_version
 from app.routers.archives import ArchiveRequest
 from app.services.archive_service import change_archive_state, permanent_delete
 import re
@@ -1648,9 +1649,10 @@ def update_livestock(
 def _update_livestock(livestock_id, payload, db, current_user):
     livestock = lock_livestock_or_404(livestock_id, db)
     ensure_not_archived(livestock)
+    check_edit_version(livestock, payload.expected_version)
     before = livestock_snapshot(livestock)
 
-    changes = payload.model_dump(exclude_unset=True)
+    changes = payload.model_dump(exclude_unset=True, exclude={"expected_version"})
     future_care_task_action = changes.pop("future_care_task_action", None)
     old_care_template_id = livestock.care_template_id
     old_date_acquired = livestock.date_acquired

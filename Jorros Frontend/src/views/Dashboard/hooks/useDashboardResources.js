@@ -3,8 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { resourceUsageService } from "../../../services/resourceUsageService.js";
 import { buildResourceCards, resourcePeriodRange } from "../resourceOverview.js";
 
-export default function useDashboardResources({ period, inventory, inventoryError, inventoryLoading, access }) {
+export default function useDashboardResources({ period, inventory, inventoryError, inventoryLoading, stockSummary, access }) {
     const [rows, setRows] = useState([]);
+    const [totalRecords, setTotalRecords] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [reload, setReload] = useState(0);
@@ -15,11 +16,11 @@ export default function useDashboardResources({ period, inventory, inventoryErro
         let active = true;
         setLoading(true);
         setError("");
-        if (!enabled) { setRows([]); setLoading(false); return; }
-        resourceUsageService.getUsages({ startDate: range.startDate, endDate: range.endDate }).then((records) => {
+        if (!enabled) { setRows([]); setTotalRecords(0); setLoading(false); return; }
+        resourceUsageService.getConsumption({ startDate: range.startDate, endDate: range.endDate }).then(({ rows: records, total }) => {
             // Reject malformed quantities before they can look like a valid zero.
             buildResourceCards(records, null, { crop: true, livestock: true });
-            if (active) setRows(records);
+            if (active) { setRows(records); setTotalRecords(total); }
         }).catch((failure) => {
             if (active) { setRows([]); setError(failure?.message || "Unable to load resource consumption."); }
         }).finally(() => { if (active) setLoading(false); });
@@ -40,12 +41,15 @@ export default function useDashboardResources({ period, inventory, inventoryErro
         const limit = new Date(`${today}T00:00:00+08:00`);
         limit.setUTCDate(limit.getUTCDate() + 30);
         const end = limit.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-        const stock = inventoryError || inventoryLoading ? null : {
+        const stock = inventoryError || inventoryLoading ? null : stockSummary ? {
+            lowStockItems: stockSummary.low_stock + stockSummary.out_of_stock,
+            expiringItems: stockSummary.expiring_soon,
+        } : {
             lowStockItems: inventory.filter((item) => Number(item.quantity) <= Number(item.reorderLevel)).length,
             expiringItems: inventory.filter((item) => item.expirationDate && item.expirationDate >= today && item.expirationDate <= end).length,
         };
         const result = buildResourceCards(rows, stock, access);
         return inventoryLoading ? result.map((card) => card.id === "stock-watch" ? { ...card, value: "Loading…" } : card) : result;
-    }, [rows, inventory, inventoryError, inventoryLoading, access]);
-    return { cards, loading, error, retry, totalRecords: rows.length, periodLabel: range.label };
+    }, [rows, inventory, inventoryError, inventoryLoading, stockSummary, access]);
+    return { cards, loading, error, retry, totalRecords, periodLabel: range.label };
 }

@@ -1,4 +1,8 @@
 "use client";
+import useResourceChoices from "../../hooks/useResourceChoices.js";
+import useCalendarData from "./useCalendarData.js";
+import { calendarRanges } from "./calendarRanges.js";
+import { resourcePeriodRange } from "../../views/Dashboard/resourceOverview.js";
 
 import { eventCreatePath } from "../FarmEvents/eventView.js";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -324,9 +328,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
     const [eventEmployees, setEventEmployees] = useState([]), [employeesLoading, setEmployeesLoading] = useState(false);
     const [employeeError, setEmployeeError] = useState(""), [employeeRetry, setEmployeeRetry] = useState(0);
     const [existingEventTaskId, setExistingEventTaskId] = useState(null);
-    const [eventResources, setEventResources] = useState({ crops: [], livestock: [], inventory: [] });
-    const [resourcesLoading, setResourcesLoading] = useState(false), [resourceError, setResourceError] = useState("");
-    const [resourceRetry, setResourceRetry] = useState(0), [eventSaving, setEventSaving] = useState(false);
+    const [eventSaving, setEventSaving] = useState(false);
     const eventSavingRef = useRef(false), eventRequestRef = useRef(null), eventDialogRef = useRef(null);
     const handledCreationRequestRef = useRef(0);
 
@@ -350,15 +352,6 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
         setSelectedDate,
     ] = useState(initialSelectedDate);
 
-    const [events, setEvents] =
-        useState([]);
-
-    const [calendarLoading, setCalendarLoading] =
-        useState(true);
-
-    const [calendarError, setCalendarError] =
-        useState("");
-
     const [
         showFullCalendar,
         setShowFullCalendar,
@@ -373,6 +366,12 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
         fullCalendarView,
         setFullCalendarView,
     ] = useState("Month");
+    const ranges = useMemo(() => calendarRanges(currentMonth, selectedDate, fullCalendarView, showFullCalendar), [currentMonth, selectedDate, fullCalendarView, showFullCalendar]);
+    const calendar = useCalendarData(ranges, showFullCalendar && fullCalendarView === "Agenda");
+    const calendarLoading = calendar.loading, calendarError = calendar.error;
+    const loadCalendarActivities = calendar.refresh;
+    const dayMetadata = useMemo(() => new Map(calendar.days.map(day => [day.date, day])), [calendar.days]);
+
 
     const [
         eventForm,
@@ -384,10 +383,25 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
     );
 
     const needsResource = eventNeedsResource(eventForm);
+    const eventKind = eventDomain(eventForm.type);
+    const choiceDomain = eventKind === "General" ? eventForm.sourceModule : eventKind;
+    const recordChoices = useResourceChoices({
+        active: showEventModal && (eventKind !== "General" || needsResource),
+        domain: choiceDomain, selectedId: eventForm.sourceRecordId,
+    });
+    const supplyChoices = useResourceChoices({
+        active: showEventModal && needsResource, domain: "Inventory", selectedId: eventForm.inventoryItemId,
+        workModule: eventForm.sourceModule, workText: `${eventForm.title} ${eventForm.type}`,
+    });
+    const eventResources = useMemo(() => ({
+        crops: choiceDomain === "Crop" ? recordChoices.items : [],
+        livestock: choiceDomain === "Livestock" ? recordChoices.items : [],
+        inventory: choiceDomain === "Inventory" ? recordChoices.items : supplyChoices.items,
+    }), [choiceDomain, recordChoices.items, supplyChoices.items]);
+    const resourcesLoading = recordChoices.loading || supplyChoices.loading;
     const selectedEventInventory = eventResources.inventory.find((item) => String(item.id) === String(eventForm.inventoryItemId));
     const eventTargets = eventRecordChoices(eventForm, eventResources);
     const selectedEventRecord = eventTargets.find((row) => String(row.id) === String(eventForm.sourceRecordId));
-    const eventKind = eventDomain(eventForm.type);
     const inventoryPlan = eventKind === "Inventory";
     const eventLocationOptions = selectedEventRecord
         ? [eventRecordLocation(selectedEventRecord, eventForm.sourceModule)]
@@ -402,70 +416,12 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
             .finally(() => { if (alive) setEmployeesLoading(false); });
         return () => { alive = false; };
     }, [showEventModal, canAssignEmployees, employeeRetry]);
+
+
+    // The dashboard chooses the initial date/view; calendar navigation then
+    // requests its own visible month, week or day.
     useEffect(() => {
-        if (!showEventModal) return;
-        const controller = new AbortController(); let alive = true; setResourcesLoading(true); setResourceError("");
-        activityService.getEventResources(controller.signal).then((data) => {
-            if (alive) setEventResources({ crops: Array.isArray(data?.crops) ? data.crops : [], livestock: Array.isArray(data?.livestock) ? data.livestock : [], inventory: Array.isArray(data?.inventory) ? data.inventory : [] });
-        }).catch((error) => { if (alive) setResourceError(error?.message || "Unable to load linked work choices."); })
-            .finally(() => { if (alive) setResourcesLoading(false); });
-        return () => { alive = false; controller.abort(); };
-    }, [showEventModal, resourceRetry]);
-
-    const loadCalendarActivities = useCallback(
-        async () => {
-            try {
-                setCalendarLoading(true);
-                setCalendarError("");
-
-                const records =
-                    await activityService.getActivities(false);
-
-                setEvents(
-                    records.map(
-                        activityToCalendarEvent
-                    )
-                );
-            } catch (error) {
-                console.error(
-                    "Failed to load calendar activities:",
-                    error
-                );
-
-                setCalendarError(
-                    error?.message ||
-                        "Unable to load calendar activities."
-                );
-            } finally {
-                setCalendarLoading(false);
-            }
-        },
-        []
-    );
-
-    useEffect(() => {
-        loadCalendarActivities();
-
-        const refreshActivities = () => {
-            loadCalendarActivities();
-        };
-
-        window.addEventListener(
-            "joross:activities-updated",
-            refreshActivities
-        );
-
-        return () => {
-            window.removeEventListener(
-                "joross:activities-updated",
-                refreshActivities
-            );
-        };
-    }, [loadCalendarActivities]);
-
-    // Changing the dashboard period brings the calendar back to the current date.
-    useEffect(() => {
-        const today = new Date();
+        const today = typeof period === "string" && period.includes(" to ") ? parseDateKey(resourcePeriodRange(period).startDate) : new Date();
 
         setSelectedDate(today);
         setCurrentMonth(
@@ -529,76 +485,10 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
             [currentMonth]
         );
 
-    // Only events inside the dashboard's selected period are shown.
-    const visibleEvents = useMemo(
-        () =>
-            events.filter((farmEvent) =>
-                eventIsInPeriod(
-                    farmEvent.date,
-                    period
-                )
-            ),
-        [events, period]
-    );
-
-    const selectedDateKey =
-        formatDateKey(selectedDate);
-
-    const selectedEvents =
-        useMemo(
-            () =>
-                visibleEvents
-                    .filter(
-                        (event) =>
-                            event.date ===
-                            selectedDateKey
-                    )
-                    .sort((first, second) =>
-                        first.startTime.localeCompare(
-                            second.startTime
-                        )
-                    ),
-            [visibleEvents, selectedDateKey]
-        );
-
-    const upcomingEvents =
-        useMemo(() => {
-            const selectedStart =
-                new Date(
-                    selectedDate.getFullYear(),
-                    selectedDate.getMonth(),
-                    selectedDate.getDate()
-                );
-
-            return visibleEvents
-                .filter((event) => {
-                    const eventDate =
-                        parseDateKey(
-                            event.date
-                        );
-
-                    const difference =
-                        Math.round(
-                            (eventDate -
-                                selectedStart) /
-                                86400000
-                        );
-
-                    return (
-                        difference > 0 &&
-                        difference <= 7
-                    );
-                })
-                .sort(
-                    (first, second) =>
-                        first.date.localeCompare(
-                            second.date
-                        ) ||
-                        first.startTime.localeCompare(
-                            second.startTime
-                        )
-                );
-        }, [visibleEvents, selectedDate]);
+    const visibleEvents = useMemo(() => calendar.days.flatMap(day => day.items.map(activityToCalendarEvent)), [calendar.days]);
+    const selectedDateKey = formatDateKey(selectedDate);
+    const selectedEvents = useMemo(() => calendar.day.map(activityToCalendarEvent), [calendar.day]);
+    const upcomingEvents = useMemo(() => calendar.upcoming.map(activityToCalendarEvent), [calendar.upcoming]);
 
     const weekDates =
         useMemo(
@@ -609,73 +499,27 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
             [selectedDate]
         );
 
-    const sortedAgendaEvents =
-        useMemo(
-            () =>
-                [...visibleEvents].sort(
-                    (first, second) =>
-                        first.date.localeCompare(
-                            second.date
-                        ) ||
-                        first.startTime.localeCompare(
-                            second.startTime
-                        )
-                ),
-            [visibleEvents]
-        );
-
-    const calendarSummary =
-        useMemo(
-            () => ({
-                total: visibleEvents.length,
-
-                harvests: visibleEvents.filter(
-                    (event) =>
-                        event.type ===
-                        "Harvesting"
-                ).length,
-
-                livestock: visibleEvents.filter(
-                    (event) =>
-                        event.type.includes(
-                            "Livestock"
-                        ) ||
-                        event.type ===
-                            "Vaccination"
-                ).length,
-
-                completed: visibleEvents.filter(
-                    (event) =>
-                        event.status ===
-                        "Completed"
-                ).length,
-            }),
-            [visibleEvents]
-        );
-
-    const goToPreviousMonth = () => {
-        setCurrentMonth(
-            (previousMonth) =>
-                new Date(
-                    previousMonth.getFullYear(),
-                    previousMonth.getMonth() -
-                        1,
-                    1
-                )
-        );
+    const sortedAgendaEvents = useMemo(() => calendar.agenda.map(activityToCalendarEvent), [calendar.agenda]);
+    const calendarSummary = Object.fromEntries(["total", "harvests", "livestock", "completed"].map(name =>
+        [name, calendarLoading ? "…" : calendarError ? "—" : calendar.summary[name] ?? 0]));
+    const renderMoreEvents = kind => {
+        const rows = kind === "day" ? selectedEvents : kind === "agenda" ? sortedAgendaEvents : upcomingEvents;
+        const total = calendar[kind + "Total"];
+        const action = kind === "day" ? calendar.loadMoreDay : kind === "agenda" ? calendar.loadMoreAgenda : calendar.loadMoreUpcoming;
+        return <div className="fc-event-paging">
+            <small>{calendarLoading ? "Loading events…" : calendarError ? "Events unavailable" : `Showing ${rows.length} of ${total} events`}</small>
+            {calendar.moreError && <p role="alert">{calendar.moreError}</p>}
+            {!calendarError && rows.length < total && <button type="button" className="fc-btn" onClick={action} disabled={calendar.loadingMore}>{calendar.loadingMore ? "Loading…" : calendar.moreError ? "Retry more events" : "Load more events"}</button>}
+        </div>;
     };
-
-    const goToNextMonth = () => {
-        setCurrentMonth(
-            (previousMonth) =>
-                new Date(
-                    previousMonth.getFullYear(),
-                    previousMonth.getMonth() +
-                        1,
-                    1
-                )
-        );
+    const navigateCalendar = direction => {
+        if (showFullCalendar && ["Week", "Day"].includes(fullCalendarView)) {
+            const next = new Date(selectedDate); next.setDate(next.getDate() + direction * (fullCalendarView === "Week" ? 7 : 1));
+            setSelectedDate(next); setCurrentMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+        } else setCurrentMonth(month => new Date(month.getFullYear(), month.getMonth() + direction, 1));
     };
+    const goToPreviousMonth = () => navigateCalendar(-1);
+    const goToNextMonth = () => navigateCalendar(1);
 
     const goToToday = () => {
         const today = new Date();
@@ -800,8 +644,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
             ...(needsResource ? { plannedInventoryItemId: Number(eventForm.inventoryItemId), plannedQuantity: Number(eventForm.plannedQuantity), plannedUnit: selectedEventInventory.unit } : {}) };
         eventSavingRef.current = true; setEventSaving(true); setExistingEventTaskId(null);
         try {
-            const key = stableIdempotencyKey(eventRequestRef, payload, "calendar-event"), saved = await activityService.createActivity(payload, key), newEvent = activityToCalendarEvent(saved);
-            setEvents((rows) => [...rows.filter((row) => row.id !== newEvent.id), newEvent]);
+            const key = stableIdempotencyKey(eventRequestRef, payload, "calendar-event"); await activityService.createActivity(payload, key);
             const date = parseDateKey(eventForm.date); setSelectedDate(date); setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
             clearStableIdempotencyKey(eventRequestRef); setShowEventModal(false);
             notify(employee ? "Farm event saved and assigned. The employee can see it in My Tasks." : "Farm event saved successfully.");
@@ -849,6 +692,8 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                 calendarDay.dateKey
                         );
 
+                    const dayEventTotal = dayMetadata.get(calendarDay.dateKey)?.total ?? 0;
+
                     const isSelected =
                         calendarDay.dateKey ===
                         selectedDateKey;
@@ -884,7 +729,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                 }
                             </span>
 
-                            {dayEvents.length >
+                            {dayEventTotal >
                                 0 && (
                                 <div className="fc-dots">
                                     {dayEvents
@@ -906,11 +751,11 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                 </div>
                             )}
 
-                            {dayEvents.length >
+                            {dayEventTotal >
                                 4 && (
                                 <small className="fc-more-events">
                                     +
-                                    {dayEvents.length -
+                                    {dayEventTotal -
                                         4}
                                 </small>
                             )}
@@ -999,10 +844,11 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                 )
                             ) : (
                                 <span className="fc-week-empty">
-                                    No events
+                                    {calendarLoading ? "Loading…" : calendarError ? "Unavailable" : "No events"}
                                 </span>
                             )}
                         </div>
+                        {(dayMetadata.get(dateKey)?.total ?? 0) > dayEvents.length && <button type="button" className="fc-btn" onClick={() => { setSelectedDate(date); setFullCalendarView("Day"); }}>View all {dayMetadata.get(dateKey).total} events</button>}
                     </section>
                 );
             })}
@@ -1025,9 +871,9 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
 
                     <p>
                         {
-                            selectedEvents.length
+                            calendarLoading ? "…" : calendarError ? "—" : calendar.dayTotal
                         }{" "}
-                        {selectedEvents.length ===
+                        {calendar.dayTotal ===
                         1
                             ? "scheduled event"
                             : "scheduled events"}
@@ -1078,11 +924,11 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                     )
                 ) : (
                     <div className="fc-empty large">
-                        No events scheduled
-                        for this date.
+                        {calendarLoading ? "Loading events…" : calendarError ? "Events unavailable" : "No events scheduled for this date."}
                     </div>
                 )}
             </div>
+            {renderMoreEvents("day")}
         </div>
     );
 
@@ -1092,7 +938,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                 <h3>Farm Agenda</h3>
 
                 <span>
-                    {sortedAgendaEvents.length}{" "}
+                    {calendarLoading ? "…" : calendarError ? "—" : calendar.agendaTotal}{" "}
                     events
                 </span>
             </div>
@@ -1173,6 +1019,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                     )
                 )}
             </div>
+            {renderMoreEvents("agenda")}
         </div>
     );
 
@@ -1211,7 +1058,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                 onClick={
                                     goToPreviousMonth
                                 }
-                                aria-label="Previous month"
+                                aria-label={showFullCalendar && ["Week", "Day"].includes(fullCalendarView) ? `Previous ${fullCalendarView.toLowerCase()}` : "Previous month"}
                             >
                                 <span className="material-symbols-outlined">
                                     chevron_left
@@ -1232,7 +1079,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                 onClick={
                                     goToNextMonth
                                 }
-                                aria-label="Next month"
+                                aria-label={showFullCalendar && ["Week", "Day"].includes(fullCalendarView) ? `Next ${fullCalendarView.toLowerCase()}` : "Next month"}
                             >
                                 <span className="material-symbols-outlined">
                                     chevron_right
@@ -1327,10 +1174,10 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                 </h3>
 
                                 <span>
-                                    {selectedEvents.length > 3
-                                        ? `3 of ${selectedEvents.length} Events`
-                                        : `${selectedEvents.length} ${
-                                              selectedEvents.length === 1
+                                    {calendarLoading ? "Loading events…" : calendarError ? "Events unavailable" : calendar.dayTotal > 3
+                                        ? `3 of ${calendar.dayTotal} Events`
+                                        : `${calendar.dayTotal} ${
+                                              calendar.dayTotal === 1
                                                   ? "Event"
                                                   : "Events"
                                           }`}
@@ -1405,9 +1252,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                     </span>
 
                                     <p>
-                                        No events
-                                        scheduled for
-                                        this date.
+                                        {calendarLoading ? "Loading events…" : calendarError ? "Events unavailable" : "No events scheduled for this date."}
                                     </p>
                                 </div>
                             )}
@@ -1507,7 +1352,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                     onClick={
                                         goToPreviousMonth
                                     }
-                                    aria-label="Previous month"
+                                    aria-label={showFullCalendar && ["Week", "Day"].includes(fullCalendarView) ? `Previous ${fullCalendarView.toLowerCase()}` : "Previous month"}
                                 >
                                     <span className="material-symbols-outlined">
                                         chevron_left
@@ -1520,7 +1365,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                     onClick={
                                         goToNextMonth
                                     }
-                                    aria-label="Next month"
+                                    aria-label={showFullCalendar && ["Week", "Day"].includes(fullCalendarView) ? `Next ${fullCalendarView.toLowerCase()}` : "Next month"}
                                 >
                                     <span className="material-symbols-outlined">
                                         chevron_right
@@ -1594,7 +1439,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                         <div className="fc-content">
                             <section className="fc-summary-section">
                                 <h3>
-                                    Farm Summary
+                                    Summary for Visible Dates
                                 </h3>
 
                                 <div className="fc-summary-row">
@@ -1741,6 +1586,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                                 </div>
                                             )}
                                         </div>
+                                        {renderMoreEvents("day")}
                                     </section>
 
                                     <section className="fc-card">
@@ -1756,6 +1602,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                             </span>
                                         </div>
 
+                                        {renderMoreEvents("upcoming")}
                                         <div className="fc-upcoming-list">
                                             {upcomingEvents.length >
                                             0 ? (
@@ -2078,7 +1925,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                             </div>
 
                             {existingEventTaskId && <p role="status">This occurrence is already scheduled. <a href={`/task-management?taskId=${existingEventTaskId}`}>Open existing task</a></p>}
-                            <EventContextFields form={eventForm} onChange={setEventForm} resources={eventResources} loading={resourcesLoading} error={resourceError} retry={() => setResourceRetry((old) => old + 1)} busy={eventSaving} needsResource={needsResource} />
+                            <EventContextFields form={eventForm} onChange={setEventForm} resources={eventResources} loading={recordChoices.loading} error={recordChoices.error} retry={recordChoices.retry} choice={recordChoices} busy={eventSaving} needsResource={needsResource} />
                             <div className="calendar-form-row two-columns">
                                 <div className="calendar-form-group">
                                     <label htmlFor="eventLocation">
@@ -2102,7 +1949,7 @@ function DashboardCalendar({ period = "month", eventCreationRequest = 0 }) {
                                 </div>
                             </div>
 
-                            {needsResource && <EventResourceFields form={eventForm} onChange={setEventForm} resources={eventResources} loading={resourcesLoading} error={resourceError} retry={() => setResourceRetry((old) => old + 1)} busy={eventSaving} />}
+                            {needsResource && <EventResourceFields form={eventForm} onChange={setEventForm} resources={eventResources} loading={supplyChoices.loading} choice={supplyChoices} busy={eventSaving} />}
 
                             <div className="calendar-form-group">
                                 <label htmlFor="eventDescription">

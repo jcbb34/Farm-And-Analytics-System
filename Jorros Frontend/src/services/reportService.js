@@ -522,8 +522,29 @@ function createAutomationPayload(
 }
 
 
+export function renderReportPreviewMessage(previewWindow, title, message, failed = false) {
+    const document = previewWindow.document;
+    document.title = title;
+    const panel = document.createElement("div");
+    panel.style.cssText = "max-width:520px;text-align:center";
+    const heading = document.createElement("h2");
+    heading.textContent = failed ? "Unable to open report" : "Joross Farm";
+    const paragraph = document.createElement("p");
+    paragraph.textContent = String(message);
+    panel.append(heading, paragraph);
+    document.body.style.cssText = `margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;background:#f8fafc;color:${failed ? "#991b1b" : "#14532d"};padding:24px;box-sizing:border-box`;
+    document.body.replaceChildren(panel);
+}
+
 async function getAuthenticatedBlob(path, accept) {
-    return httpClient.download(path, { accept });
+    const blob = await httpClient.download(path, { accept });
+    if (accept === "application/pdf" && blob.type.includes("json")) {
+        const job = JSON.parse(await blob.text());
+        const failure = new Error(job.status === "Failed" ? (job.error || "PDF generation failed. Retry the PDF.") : "The PDF is being prepared. Download it when its status is Ready.");
+        failure.pdfJob = job;
+        throw failure;
+    }
+    return blob;
 }
 
 
@@ -585,6 +606,8 @@ export const reportService =
                 await httpClient.get(
                     "/reports",
                     {
+                        signal: options.signal,
+                        cache: "no-store",
                         query: {
                             include_archived: includeArchived,
                             offset: options.offset ?? 0,
@@ -615,6 +638,8 @@ export const reportService =
 
         async getReportSummary(options = {}) {
             const response = await httpClient.get("/reports/summary", {
+                signal: options.signal,
+                cache: "no-store",
                 query: {
                     search: options.search || undefined,
                     category: options.category || undefined,
@@ -877,6 +902,18 @@ export const reportService =
         },
 
 
+        async getPdfJobs(ids, signal) {
+            const values = String(ids).split(",").filter(Boolean);
+            const requests = [];
+            for (let offset = 0; offset < values.length; offset += 100) {
+                requests.push(httpClient.get("/reports/pdf-jobs/status", { query: { report_ids: values.slice(offset, offset + 100).join(",") }, cache: "no-store", signal }));
+            }
+            const batches = await Promise.all(requests);
+            return batches.flat();
+        },
+
+        preparePdf(report) { return httpClient.post(`/reports/${report.id}/pdf-job`, {}); },
+
         async previewPdf(report) {
             /*
              * Open immediately while still inside the click event.
@@ -896,30 +933,9 @@ export const reportService =
             }
 
             try {
-                previewWindow.document.title =
-                    "Loading Report PDF...";
-
-                previewWindow.document.body.innerHTML =
-                    `
-                    <div style="
-                        min-height:100vh;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-family:Arial,sans-serif;
-                        background:#f8fafc;
-                        color:#14532d;
-                    ">
-                        <div style="text-align:center;">
-                            <h2 style="margin:0 0 8px;">
-                                Joross Farm
-                            </h2>
-                            <p style="margin:0;">
-                                Preparing report preview...
-                            </p>
-                        </div>
-                    </div>
-                    `;
+                const job = await reportService.preparePdf(report);
+                if (job.status !== "Ready") { previewWindow.close(); return job; }
+                renderReportPreviewMessage(previewWindow, "Loading Report PDF...", "Preparing report preview...");
 
                 const blob =
                     await getAuthenticatedBlob(
@@ -945,37 +961,7 @@ export const reportService =
                 );
             } catch (error) {
                 try {
-                    previewWindow.document.title =
-                        "Report Preview Error";
-
-                    previewWindow.document.body.innerHTML =
-                        `
-                        <div style="
-                            min-height:100vh;
-                            display:flex;
-                            align-items:center;
-                            justify-content:center;
-                            font-family:Arial,sans-serif;
-                            background:#f8fafc;
-                            color:#991b1b;
-                            padding:24px;
-                        ">
-                            <div style="
-                                max-width:520px;
-                                text-align:center;
-                            ">
-                                <h2 style="margin:0 0 8px;">
-                                    Unable to open report
-                                </h2>
-                                <p style="margin:0;">
-                                    ${
-                                        error?.message ||
-                                        "The PDF could not be loaded."
-                                    }
-                                </p>
-                            </div>
-                        </div>
-                        `;
+                    renderReportPreviewMessage(previewWindow, "Report Preview Error", error?.message || "The PDF could not be loaded.", true);
                 } catch {
                     previewWindow.close();
                 }
@@ -986,6 +972,8 @@ export const reportService =
 
 
         async downloadPdf(report) {
+            const job = await reportService.preparePdf(report);
+            if (job.status !== "Ready") return job;
             const blob =
                 await getAuthenticatedBlob(
                     `/reports/${report.id}/pdf?download=true`,
@@ -1001,6 +989,7 @@ export const reportService =
                         report.title
                     )}.pdf`
             );
+            return { status: "Ready" };
         },
 
 

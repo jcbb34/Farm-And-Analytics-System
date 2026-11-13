@@ -36,6 +36,7 @@ from app.services.idempotency import begin_creation_command, record_creation_com
 from app.services.task_assignment import record_assignment_change, recalculate_task_reassignment
 from app.services.task_engine import evaluate_automatic_tasks
 from app.services.event_planning import event_domain, is_equipment_category
+from app.services.calendar_queries import calendar_summary, calendar_events
 from app.schemas.activity import (
     ALLOWED_ACTIVITY_PRIORITIES,
     ALLOWED_ACTIVITY_STATUSES,
@@ -313,10 +314,76 @@ def _activity_response(
     )
 
 
-@router.get(
-    "",
-    response_model=list[FarmActivityResponse],
-)
+def _visible_activity_query(db, current_user):
+    from sqlalchemy import false
+    employee_id = _current_employee_id(db, current_user)
+    statement = select(FarmActivity).where(FarmActivity.is_archived == False)
+    if not has_permission(current_user, "workforce:manage") and not has_permission(current_user, "activities:update"):
+        statement = statement.where(FarmActivity.assigned_employee_id == employee_id) if employee_id else statement.where(false())
+    return statement, employee_id
+
+
+def _calendar_range(start, end):
+    if start > end or (end - start).days > 370:
+        raise HTTPException(422, "Choose a calendar range of no more than 371 days with the start date first.")
+
+
+@router.get("/calendar/summary")
+def activity_calendar_summary(date_from: date, date_to: date, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    _calendar_range(date_from, date_to)
+    visible, _ = _visible_activity_query(db, current_user)
+    return calendar_summary(db, visible, date_from, date_to)
+
+
+@router.get("/calendar/events")
+def activity_calendar_events(date_from: date, date_to: date, offset: int = Query(0, ge=0), limit: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    _calendar_range(date_from, date_to)
+    visible, _ = _visible_activity_query(db, current_user)
+    return calendar_events(db, visible, date_from, date_to, offset, limit)
+
+
+@router.get("/page")
+def activity_page(date_from: date, date_to: date, view: str = Query("recent", pattern="^(recent|upcoming)$"),
+    offset: int = Query(0, ge=0), limit: int = Query(25, ge=1, le=100),
+    search: str = Query("", max_length=120), category_filter: str = "All", location_filter: str = "All",
+    status_filter: str = "All", date_filter: date | None = None, sort: str = "Latest",
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy import func, or_
+    if date_from > date_to: raise HTTPException(422, "The start date must not follow the end date.")
+    base, employee_id = _visible_activity_query(db, current_user)
+    base = base.where(FarmActivity.activity_date >= date_from, FarmActivity.activity_date <= date_to,
+        FarmActivity.status.in_(["Pending"] if view == "upcoming" else ["In Progress", "Completed"]))
+    categories = list(db.scalars(base.with_only_columns(FarmActivity.category).distinct().order_by(FarmActivity.category)).all())
+    locations = list(db.scalars(base.with_only_columns(FarmActivity.location).distinct().order_by(FarmActivity.location)).all())
+    statement = base
+    if search.strip():
+        needle = "%" + search.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        statement = statement.where(or_(*(column.ilike(needle, escape="\\") for column in (
+            FarmActivity.name, FarmActivity.related_to, FarmActivity.location, FarmActivity.category, FarmActivity.description))))
+    if category_filter != "All": statement = statement.where(FarmActivity.category == category_filter)
+    if location_filter != "All": statement = statement.where(FarmActivity.location == location_filter)
+    if status_filter != "All": statement = statement.where(FarmActivity.status == status_filter)
+    if date_filter: statement = statement.where(FarmActivity.activity_date == date_filter)
+    total = db.scalar(select(func.count()).select_from(statement.subquery())) or 0
+    ascending = view == "upcoming" or sort == "Oldest"
+    ordering = [column.asc() if ascending else column.desc() for column in (FarmActivity.activity_date, FarmActivity.start_time, FarmActivity.id)]
+    if sort in {"A - Z", "Z - A"} and view == "recent":
+        ordering = [func.lower(FarmActivity.name).asc() if sort == "A - Z" else func.lower(FarmActivity.name).desc(), FarmActivity.id]
+    rows = db.scalars(statement.order_by(*ordering).offset(offset).limit(limit)).all()
+    return {"items": [_activity_response(row, current_user, current_employee_id=employee_id).model_dump(mode="json") for row in rows],
+        "total": total, "offset": offset, "limit": limit, "categories": categories, "locations": locations}
+
+
+@router.get("/summary")
+def activity_summary(activity_date: date, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy import func
+    statement, _ = _visible_activity_query(db, current_user)
+    statement = statement.where(FarmActivity.activity_date == activity_date, FarmActivity.status.in_(["Pending", "In Progress"]))
+    return {"tasks_today": db.scalar(select(func.count()).select_from(statement.subquery())) or 0}
+
+
+@router.get("", response_model=list[FarmActivityResponse])
 def list_activities(
     include_archived: bool = Query(default=False),
     date_from: date | None = Query(default=None),
@@ -367,6 +434,28 @@ def evaluate_tasks(
     _: User = Depends(get_current_user),
 ):
     return evaluate_automatic_tasks(db, skip_if_busy=True)
+
+
+@router.get("/resource-choices")
+def resource_choices(
+    domain: str = Query(..., pattern="^(Crop|Livestock|Inventory)$"),
+    search: str = Query("", max_length=120),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(25, ge=1, le=100),
+    selected_id: int | None = Query(None, ge=1),
+    work_module: str | None = Query(None, pattern="^(Crop|Livestock)$"),
+    work_kind: str = Query("all", pattern="^(all|fertilizer|herbicide|pesticide|fungicide|feed|vaccine|medicine|supplement|disinfectant)$"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    permission = {"Crop": "crops:view", "Livestock": "livestock:view", "Inventory": "inventory:view"}[domain]
+    if not (has_permission(current_user, permission) or has_permission(current_user, "workforce:manage")):
+        raise HTTPException(403, "Viewing permission for this farm module is required.")
+    from app.services.resource_choices import resource_choice_page
+    return resource_choice_page(
+        db, domain=domain, search=search, offset=offset, limit=limit,
+        selected_id=selected_id, work_module=work_module, work_kind=work_kind,
+    )
 
 
 @router.get("/event-resources")

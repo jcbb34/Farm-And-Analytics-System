@@ -1135,3 +1135,9 @@
     font-size: 0.72rem;
     line-height: 1.35;
 }
+
+.inventory-history-feedback { display: grid; gap: 8px; margin-top: 12px; }
+.inventory-history-feedback button { justify-self: start; min-height: 44px; padding: 10px 14px; border: 1px solid #ccd8ce; border-radius: 8px; background: #fff; color: #176538; font: inherit; font-weight: 600; cursor: pointer; }
+.inventory-history-feedback button:focus-visible { outline: 2px solid #20813d; outline-offset: 2px; }
+.inventory-history-feedback button:disabled { opacity: .65; cursor: default; }
+.inventory-stock-baseline { color: #53675a; }

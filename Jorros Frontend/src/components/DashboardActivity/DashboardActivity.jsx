@@ -1,4 +1,5 @@
 "use client";
+import { resourcePeriodRange } from "../../views/Dashboard/resourceOverview.js";
 
 import { notify } from "../../context/NotificationContext.jsx";
 
@@ -223,12 +224,16 @@ function DashboardActivity({ period = "month", onAddEvent }) {
     const [busyActivityIds, setBusyActivityIds] = useState(() => new Set());
     const [activities, setActivities] =
         useState([]);
+    const [activityTotal, setActivityTotal] = useState(0), [taskTotal, setTaskTotal] = useState(0);
+    const [facets, setFacets] = useState({ categories: [], locations: [] });
+    const [loadingMore, setLoadingMore] = useState(false);
+    const requestRef = useRef(0), moreRef = useRef(false);
+    const range = useMemo(() => resourcePeriodRange(period), [period]);
     const categoryOptions = useMemo(() => [...new Set([
-        ...WORK_TYPES, ...activities.map((activity) => activity.category).filter(Boolean),
-    ])].sort(), [activities]);
+        ...WORK_TYPES, ...facets.categories,
+    ])].sort(), [facets]);
 
-    const locationOptions = useMemo(() => [...new Set(activities.map((activity) => activity.location).filter(Boolean))]
-        .sort((left, right) => left.localeCompare(right)), [activities]);
+    const locationOptions = facets.locations;
 
     const [activitiesLoading, setActivitiesLoading] =
         useState(true);
@@ -246,6 +251,8 @@ function DashboardActivity({ period = "month", onAddEvent }) {
     const closeListModal = useCallback(() => {
         setActivityModalOpen(false);
         setTaskModalOpen(false);
+        setTaskSearch("");
+        setActivityFilters({ search: "", category: "All", location: "All", status: "All", date: "", sort: "Latest" });
     }, []);
     const closeListFromBackdrop = useCallback((event) => {
         if (event.target !== event.currentTarget) return;
@@ -305,48 +312,47 @@ function DashboardActivity({ period = "month", onAddEvent }) {
     const [activityActionNotice, setActivityActionNotice] =
         useState(null);
 
-    // Loads all active farm activities from the backend
-    const loadActivities = useCallback(
-        async ({ synchronize = false } = {}) => {
-            try {
-                setActivitiesLoading(true);
-                setActivitiesError("");
-
-                if (synchronize) {
-                    try {
-                        await activityService.syncAutomaticActivities();
-                    } catch (syncError) {
-                        console.warn(
-                            "Unable to synchronize automatic farm activities before loading:",
-                            syncError
-                        );
-                    }
-                }
-
-                const records =
-                    await activityService.getActivities(false);
-
-                setActivities(
-                    records.filter(
-                        (activity) => !activity.isArchived
-                    )
-                );
-            } catch (error) {
-                console.error(
-                    "Failed to load farm activities:",
-                    error
-                );
-
-                setActivitiesError(
-                    error?.message ||
-                        "Unable to load farm activities."
-                );
-            } finally {
-                setActivitiesLoading(false);
-            }
-        },
-        []
-    );
+    const [debouncedFilters, setDebouncedFilters] = useState(() => ({ activity: activityFilters, task: taskSearch }));
+    useEffect(() => {
+        const timer = window.setTimeout(() => setDebouncedFilters({ activity: activityFilters, task: taskSearch }), 250);
+        return () => window.clearTimeout(timer);
+    }, [activityFilters, taskSearch]);
+    const pageQuery = useCallback((view, offset = 0) => ({
+        date_from: range.startDate, date_to: range.endDate, view, offset, limit: 25,
+        search: view === "recent" ? debouncedFilters.activity.search : debouncedFilters.task,
+        ...(view === "recent" ? { category_filter: debouncedFilters.activity.category,
+            location_filter: debouncedFilters.activity.location, status_filter: debouncedFilters.activity.status,
+            date_filter: debouncedFilters.activity.date || undefined, sort: debouncedFilters.activity.sort } : {}),
+    }), [range.startDate, range.endDate, debouncedFilters]);
+    const loadActivities = useCallback(async () => {
+        const requestId = ++requestRef.current;
+        moreRef.current = false; setLoadingMore(false); setActivitiesLoading(true); setActivitiesError("");
+        try {
+            const [recent, upcoming] = await Promise.all([
+                activityService.getPage(pageQuery("recent")), activityService.getPage(pageQuery("upcoming")),
+            ]);
+            if (requestId !== requestRef.current) return;
+            setActivities([...recent.items, ...upcoming.items]);
+            setActivityTotal(recent.total); setTaskTotal(upcoming.total);
+            setFacets({ categories: [...new Set([...recent.categories, ...upcoming.categories])].filter(Boolean),
+                locations: [...new Set([...recent.locations, ...upcoming.locations])].filter(Boolean) });
+        } catch (error) {
+            if (requestId === requestRef.current) setActivitiesError(error?.message || "Unable to load farm activities.");
+        } finally { if (requestId === requestRef.current) setActivitiesLoading(false); }
+    }, [pageQuery]);
+    const loadMore = async view => {
+        if (activitiesLoading || moreRef.current) return;
+        const requestId = requestRef.current;
+        moreRef.current = true; setLoadingMore(true);
+        const offset = activities.filter(row => view === "recent" ? ["In Progress", "Completed"].includes(row.status) : row.status === "Pending").length;
+        try {
+            const page = await activityService.getPage(pageQuery(view, offset));
+            if (requestId !== requestRef.current) return;
+            setActivities(current => [...current, ...page.items.filter(row => !current.some(item => item.id === row.id))]);
+            if (view === "recent") setActivityTotal(page.total); else setTaskTotal(page.total);
+        } catch (error) { if (requestId === requestRef.current) setActivitiesError(error?.message || "Unable to load more records."); }
+        finally { if (requestId === requestRef.current) { moreRef.current = false; setLoadingMore(false); } }
+    };
 
     // Refresh this component when another part of the system updates activities
     useEffect(() => {
@@ -371,202 +377,16 @@ function DashboardActivity({ period = "month", onAddEvent }) {
     }, [loadActivities]);
 
     // Only active/completed work belongs in Recent Farm Activity
-    const recentActivities = useMemo(
-        () =>
-            activities
-                .filter(
-                    (activity) =>
-                        [
-                            "In Progress",
-                            "Completed",
-                        ].includes(
-                            activity.status
-                        ) &&
-                        activityIsInPeriod(
-                            activity.date,
-                            period
-                        )
-                )
-                .sort((first, second) => {
-                    const firstKey = `${String(
-                        first.date || ""
-                    ).slice(0, 10)}T${
-                        first.startTime || "00:00"
-                    }`;
+    const recentActivities = useMemo(() => activities.filter(row => ["In Progress", "Completed"].includes(row.status)), [activities]);
+    const tasks = useMemo(() => activities.filter(row => row.status === "Pending").map(row => ({ ...row, title: row.name, time: row.startTime })), [activities]);
+    const filteredActivities = recentActivities;
+    const filteredTasks = tasks;
 
-                    const secondKey = `${String(
-                        second.date || ""
-                    ).slice(0, 10)}T${
-                        second.startTime || "00:00"
-                    }`;
-
-                    return secondKey.localeCompare(
-                        firstKey
-                    );
-                }),
-        [activities, period]
-    );
-
-    // Pending activities are treated as upcoming tasks
-    const tasks = useMemo(
-        () =>
-            activities
-                .filter(
-                    (activity) =>
-                        activity.status === "Pending" &&
-                        activityIsInPeriod(
-                            activity.date,
-                            period
-                        )
-                )
-                .sort((first, second) => {
-                    const firstKey = `${String(
-                        first.date || ""
-                    ).slice(0, 10)}T${
-                        first.startTime || "00:00"
-                    }`;
-
-                    const secondKey = `${String(
-                        second.date || ""
-                    ).slice(0, 10)}T${
-                        second.startTime || "00:00"
-                    }`;
-
-                    return firstKey.localeCompare(
-                        secondKey
-                    );
-                })
-                .map((activity) => ({
-                    ...activity,
-                    title: activity.name,
-                    time: activity.startTime,
-                })),
-        [activities, period]
-    );
-
-    // Filters used inside the Recent Farm Activity modal
-    const filteredActivities = useMemo(() => {
-        const searchText =
-            activityFilters.search
-                .trim()
-                .toLowerCase();
-
-        const results = recentActivities.filter(
-            (activity) => {
-                const matchesSearch =
-                    !searchText ||
-                    String(activity.name || "")
-                        .toLowerCase()
-                        .includes(searchText) ||
-                    String(activity.relatedTo || "")
-                        .toLowerCase()
-                        .includes(searchText) ||
-                    String(activity.location || "")
-                        .toLowerCase()
-                        .includes(searchText);
-
-                const matchesCategory =
-                    activityFilters.category === "All" ||
-                    activity.category ===
-                        activityFilters.category;
-
-                const matchesLocation =
-                    activityFilters.location === "All" ||
-                    activity.location ===
-                        activityFilters.location;
-
-                const matchesStatus =
-                    activityFilters.status === "All" ||
-                    activity.status ===
-                        activityFilters.status;
-
-                const matchesDate =
-                    !activityFilters.date ||
-                    String(activity.date || "").slice(
-                        0,
-                        10
-                    ) === activityFilters.date;
-
-                return (
-                    matchesSearch &&
-                    matchesCategory &&
-                    matchesLocation &&
-                    matchesStatus &&
-                    matchesDate
-                );
-            }
-        );
-
-        return [...results].sort((first, second) => {
-            if (activityFilters.sort === "Oldest") {
-                return String(
-                    first.date || ""
-                ).localeCompare(
-                    String(second.date || "")
-                );
-            }
-
-            if (activityFilters.sort === "A - Z") {
-                return String(
-                    first.name || ""
-                ).localeCompare(
-                    String(second.name || "")
-                );
-            }
-
-            if (activityFilters.sort === "Z - A") {
-                return String(
-                    second.name || ""
-                ).localeCompare(
-                    String(first.name || "")
-                );
-            }
-
-            return String(
-                second.date || ""
-            ).localeCompare(
-                String(first.date || "")
-            );
-        });
-    }, [recentActivities, activityFilters]);
-
-    const filteredTasks = useMemo(() => {
-        const searchText =
-            taskSearch.trim().toLowerCase();
-
-        return tasks.filter((task) => {
-            if (!searchText) {
-                return true;
-            }
-
-            return (
-                String(task.title || "")
-                    .toLowerCase()
-                    .includes(searchText) ||
-                String(task.relatedTo || "")
-                    .toLowerCase()
-                    .includes(searchText) ||
-                String(task.location || "")
-                    .toLowerCase()
-                    .includes(searchText)
-            );
-        });
-    }, [tasks, taskSearch]);
-
-    const handleActivityFilterChange = (event) => {
+    const handleActivityFilterChange = event => {
         const { name, value } = event.target;
-
-        setActivityFilters((currentFilters) => ({
-            ...currentFilters,
-            [name]: value,
-        }));
+        setActivityFilters(current => ({ ...current, [name]: value }));
     };
-
-    const openAddActivity = () => {
-        setActivityModalOpen(false);
-        setTaskModalOpen(false);
-        onAddEvent?.();
-    };
+    const openAddActivity = () => { closeListModal(); onAddEvent?.(); };
 
     // Keeps the backend and dashboard status in sync for the small set of
     // standalone activities the backend explicitly allows to mutate directly.
@@ -1364,20 +1184,19 @@ function DashboardActivity({ period = "month", onAddEvent }) {
                             )}
 
                             <div className="activity-table-card">
+                                {activitiesLoading && <p role="status">Loading recent activity…</p>}
+                                {activitiesError && <p role="alert">{activitiesError} <button type="button" onClick={loadActivities}>Retry activities</button></p>}
                                 <div className="activity-table-heading">
                                     <h3>
                                         Recent activity list
                                     </h3>
 
                                     <span>
-                                        {
-                                            filteredActivities.length
-                                        }{" "}
-                                        records
+                                        Showing {filteredActivities.length} of {activityTotal} records
                                     </span>
                                 </div>
 
-                                <div className="activity-table-wrapper">
+                                <div className="activity-table-wrapper" hidden={activitiesLoading || Boolean(activitiesError)}>
                                     <table className="activity-table">
                                         <thead>
                                             <tr>
@@ -1517,6 +1336,7 @@ function DashboardActivity({ period = "month", onAddEvent }) {
                                         </tbody>
                                     </table>
                                 </div>
+                                {filteredActivities.length < activityTotal && <button type="button" className="workforce-button secondary" onClick={() => loadMore("recent")} disabled={loadingMore || activitiesLoading}>{loadingMore ? "Loading…" : "Load more activities"}</button>}
                             </div>
                         </div>
                     </div>
@@ -1565,7 +1385,7 @@ function DashboardActivity({ period = "month", onAddEvent }) {
                                 <input
                                     type="search"
                                     aria-label="Search upcoming tasks"
-                                    placeholder="Search task..."
+                                    maxLength={120} placeholder="Search task..."
                                     value={taskSearch}
                                     onChange={(event) =>
                                         setTaskSearch(
@@ -1585,7 +1405,9 @@ function DashboardActivity({ period = "month", onAddEvent }) {
                                 </button>
                             </div>
 
-                            <div className="task-full-list">
+                            {activitiesError && <p role="alert">{activitiesError} <button type="button" onClick={loadActivities}>Retry activities</button></p>}
+                            <p role="status">{activitiesLoading ? "Loading tasks…" : activitiesError ? "Task data unavailable" : `Showing ${filteredTasks.length} of ${taskTotal} matching tasks`}</p>
+                            <div className="task-full-list" hidden={activitiesLoading || Boolean(activitiesError)}>
                                 {filteredTasks.length > 0 ? (
                                     filteredTasks.map(
                                         (task) => (
@@ -1650,6 +1472,7 @@ function DashboardActivity({ period = "month", onAddEvent }) {
                                     </div>
                                 )}
                             </div>
+                            {filteredTasks.length < taskTotal && <button type="button" className="workforce-button secondary" onClick={() => loadMore("upcoming")} disabled={loadingMore || activitiesLoading}>{loadingMore ? "Loading…" : "Load more tasks"}</button>}
                         </div>
                     </div>
                 </div>

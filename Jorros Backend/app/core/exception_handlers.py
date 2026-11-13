@@ -23,3 +23,12 @@ async def database_lock_busy_handler(request: Request, error: DatabaseLockBusy):
         },
         headers={"Retry-After": "2", "Cache-Control": "no-store"},
     )
+
+
+async def stale_record_handler(request: Request, error):
+    from app.services.record_editing import CONFLICT_MESSAGE
+    return JSONResponse(
+        status_code=409,
+        content={"detail": CONFLICT_MESSAGE, "code": "RECORD_CONFLICT"},
+        headers={"Cache-Control": "no-store"},
+    )

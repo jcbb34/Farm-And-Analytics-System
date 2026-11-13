@@ -9,7 +9,7 @@ from app.models import AuditLog
 def livestock_snapshot(record):
     return {column.key: getattr(record, column.key)
             for column in inspect(type(record)).column_attrs
-            if column.key not in {"created_at", "updated_at"}}
+            if column.key not in {"created_at", "updated_at", "edit_version"}}
 
 
 def record_livestock_change(db, record, actor, *, action, before=None):

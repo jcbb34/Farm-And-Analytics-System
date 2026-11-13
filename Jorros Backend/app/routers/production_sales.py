@@ -35,7 +35,10 @@ from app.schemas.production_sales import (
     SaleResponse,
     SaleVoidRequest,
 )
+from app.services.production_overview import source_sales_totals, production_stock_totals
+from app.services.sale_stock import production_availability, stock_page
 from app.services.production_sales_service import (
+    build_serialization_context,
     add_sale_payment,
     create_processing,
     create_production,
@@ -112,6 +115,21 @@ def _sale_source_filter(source_type: str | None):
     )
 
 
+def _text_match(search: str, *columns):
+    needle = "%" + search.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    return or_(*(column.ilike(needle, escape="\\") for column in columns))
+
+
+def _animal_match(parent_id, search: str):
+    return select(Livestock.id).where(Livestock.id == parent_id,
+        _text_match(search, Livestock.record_name, Livestock.animal_code)).exists()
+
+
+def _crop_match(parent_id, search: str):
+    return select(Crop.id).where(Crop.id == parent_id,
+        _text_match(search, Crop.name, Crop.crop_code, Crop.field)).exists()
+
+
 @router.get("/overview", response_model=OverviewResponse)
 def overview(
     db: Session = Depends(get_db),
@@ -140,40 +158,14 @@ def overview(
         select(func.count(LivestockSale.id)).where(LivestockSale.is_voided == False)
     ) or 0
 
-    def sale_sum(field):
-        statement = select(func.coalesce(func.sum(field), 0)).where(
-            LivestockSale.is_voided == False
-        )
-        return float(db.scalar(statement) or 0)
-
-    total_revenue = sale_sum(LivestockSale.total_amount)
-    cash_collected = sale_sum(LivestockSale.amount_paid)
-    outstanding_balance = sale_sum(LivestockSale.balance_due)
-
-    active_sales = list(
-        db.scalars(select(LivestockSale).where(LivestockSale.is_voided == False)).all()
+    total_revenue, cash_collected, outstanding_balance = (
+        float(value or 0) for value in db.execute(select(
+            func.sum(LivestockSale.total_amount), func.sum(LivestockSale.amount_paid), func.sum(LivestockSale.balance_due)
+        ).where(LivestockSale.is_voided == False)).one()
     )
-    serialized_active_sales = [serialize_sale(db, sale) for sale in active_sales]
-
-    def allocated_source_totals(source: str):
-        gross = paid = balance = 0.0
-        for sale in serialized_active_sales:
-            invoice_total = float(sale["total_amount"] or 0)
-            source_total = sum(
-                float(item["line_total"] or 0)
-                for item in sale["items"]
-                if str(item["source_type"]).lower() == source
-            )
-            if source_total <= 0:
-                continue
-            ratio = source_total / invoice_total if invoice_total > 0 else 0
-            gross += source_total
-            paid += float(sale["amount_paid"] or 0) * ratio
-            balance += float(sale["balance_due"] or 0) * ratio
-        return gross, paid, balance
-
-    livestock_revenue, livestock_cash, livestock_receivable = allocated_source_totals("livestock")
-    crop_revenue, crop_cash, crop_receivable = allocated_source_totals("crop")
+    allocations = source_sales_totals(db)
+    livestock_revenue, livestock_cash, livestock_receivable = allocations["livestock"]
+    crop_revenue, crop_cash, crop_receivable = allocations["crop"]
 
     recent_production_records = list(
         db.scalars(
@@ -193,46 +185,15 @@ def overview(
             .limit(10)
         ).all()
     )
+    context = build_serialization_context(db, recent_production_records + recent_sales_records)
     recent_sold = production_sold_map(db, [record.id for record in recent_production_records])
     recent_production = [
-        serialize_production(db, record, sold_quantity=recent_sold.get(record.id, 0))
+        serialize_production(db, record, sold_quantity=recent_sold.get(record.id, 0), context=context)
         for record in recent_production_records
     ]
-    recent_sales = [serialize_sale(db, record) for record in recent_sales_records]
+    recent_sales = [serialize_sale(db, record, context=context) for record in recent_sales_records]
 
-    stock_records = list(
-        db.scalars(
-            select(LivestockProductionRecord).where(
-                LivestockProductionRecord.track_sale_inventory == True
-            )
-        ).all()
-    )
-    sold_map = production_sold_map(db, [record.id for record in stock_records])
-    eggs_available = 0.0
-    meat_available_kg = 0.0
-    milk_available_l = 0.0
-    crop_available_kg = 0.0
-    crop_product_lots = 0
-    livestock_product_lots = 0
-    for record in stock_records:
-        available = max(0.0, float(record.quantity or 0) - float(sold_map.get(record.id, 0)))
-        if available <= 0:
-            continue
-        source = str(record.source_type or ("Crop" if record.crop_id else "Livestock")).lower()
-        output = str(record.output_type or "").lower()
-        unit = str(record.unit or "").strip().lower()
-        if source == "crop":
-            crop_product_lots += 1
-            if unit == "kg":
-                crop_available_kg += available
-        else:
-            livestock_product_lots += 1
-            if "egg" in output:
-                eggs_available += available
-            if "meat" in output and unit == "kg":
-                meat_available_kg += available
-            if "milk" in output and unit in {"l", "liter", "liters", "litre", "litres"}:
-                milk_available_l += available
+    stock_totals = production_stock_totals(db)
 
     return {
         "active_livestock": int(active_livestock),
@@ -250,15 +211,23 @@ def overview(
         "crop_revenue": crop_revenue,
         "crop_cash_collected": crop_cash,
         "crop_outstanding_balance": crop_receivable,
-        "eggs_available": eggs_available,
-        "meat_available_kg": meat_available_kg,
-        "milk_available_l": milk_available_l,
-        "crop_available_kg": crop_available_kg,
-        "crop_product_lots": crop_product_lots,
-        "livestock_product_lots": livestock_product_lots,
+        **stock_totals,
         "recent_production": recent_production,
         "recent_sales": recent_sales,
     }
+
+
+@router.get("/stock")
+def available_stock(
+    kind: Annotated[str, Query(pattern="^(Production|Live Animal|Inventory)$")] = "Production",
+    search: Annotated[str, Query(max_length=120)] = "",
+    source_type: str | None = None,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_viewer),
+):
+    return stock_page(db, kind=kind, search=search, source_type=source_type, offset=offset, limit=limit)
 
 
 @router.get("/reproduction", response_model=list[ReproductionResponse])
@@ -266,6 +235,7 @@ def list_reproduction(
     livestock_id: int | None = Query(default=None, ge=1),
     limit: int = Query(default=100, ge=1, le=500),
     offset: Annotated[int, Query(ge=0)] = 0,
+    search: Annotated[str | None, Query(max_length=120)] = None,
     db: Session = Depends(get_db),
     _: User = Depends(require_viewer),
 ):
@@ -275,8 +245,12 @@ def list_reproduction(
     )
     if livestock_id:
         statement = statement.where(LivestockReproductionRecord.livestock_id == livestock_id)
+    if search and search.strip():
+        statement = statement.where(or_(_animal_match(LivestockReproductionRecord.livestock_id, search),
+            _text_match(search, LivestockReproductionRecord.record_type, LivestockReproductionRecord.reproductive_status)))
     records = list(db.scalars(statement.offset(offset).limit(limit)).all())
-    return [serialize_reproduction(db, record) for record in records]
+    context = build_serialization_context(db, records)
+    return [serialize_reproduction(db, record, context=context) for record in records]
 
 
 @router.post("/reproduction", response_model=ReproductionResponse, status_code=status.HTTP_201_CREATED)
@@ -311,6 +285,7 @@ def list_production(
     available_only: bool = Query(default=False),
     limit: int = Query(default=100, ge=1, le=500),
     offset: Annotated[int, Query(ge=0)] = 0,
+    search: Annotated[str | None, Query(max_length=120)] = None,
     db: Session = Depends(get_db),
     _: User = Depends(require_viewer),
 ):
@@ -325,40 +300,20 @@ def list_production(
     source_clause = _source_filter(LivestockProductionRecord.source_type, source_type)
     if source_clause is not None:
         statement = statement.where(source_clause)
+    if search and search.strip():
+        statement = statement.where(or_(_animal_match(LivestockProductionRecord.livestock_id, search),
+            _crop_match(LivestockProductionRecord.crop_id, search),
+            _text_match(search, LivestockProductionRecord.output_type, LivestockProductionRecord.destination)))
     if available_only:
-        # Filter before LIMIT/OFFSET. Filtering a page after it is loaded can
-        # return empty pages while older saleable lots still exist.
-        sold_lines = (
-            select(func.coalesce(func.sum(LivestockSaleItem.quantity), 0))
-            .join(LivestockSale, LivestockSale.id == LivestockSaleItem.sale_id)
-            .where(
-                LivestockSaleItem.production_record_id == LivestockProductionRecord.id,
-                LivestockSale.is_voided == False,
-            )
-            .correlate(LivestockProductionRecord)
-            .scalar_subquery()
-        )
-        legacy_sales = (
-            select(func.coalesce(func.sum(LivestockSale.quantity), 0))
-            .where(
-                LivestockSale.production_record_id == LivestockProductionRecord.id,
-                LivestockSale.is_voided == False,
-                ~select(LivestockSaleItem.id)
-                .where(LivestockSaleItem.sale_id == LivestockSale.id)
-                .correlate(LivestockSale)
-                .exists(),
-            )
-            .correlate(LivestockProductionRecord)
-            .scalar_subquery()
-        )
-        statement = statement.where(
-            LivestockProductionRecord.track_sale_inventory == True,
-            LivestockProductionRecord.quantity > sold_lines + legacy_sales,
+        availability = production_availability()
+        statement = statement.join(availability, availability.c.production_id == LivestockProductionRecord.id).where(
+            LivestockProductionRecord.track_sale_inventory == True, availability.c.available_quantity > 0,
         )
     records = list(db.scalars(statement.offset(offset).limit(limit)).all())
     sold_map = production_sold_map(db, [record.id for record in records])
+    context = build_serialization_context(db, records)
     serialized = [
-        serialize_production(db, record, sold_quantity=sold_map.get(record.id, 0))
+        serialize_production(db, record, sold_quantity=sold_map.get(record.id, 0), context=context)
         for record in records
     ]
     return serialized
@@ -393,6 +348,7 @@ def list_processing(
     include_voided: bool = Query(default=False),
     limit: int = Query(default=100, ge=1, le=500),
     offset: Annotated[int, Query(ge=0)] = 0,
+    search: Annotated[str | None, Query(max_length=120)] = None,
     db: Session = Depends(get_db),
     _: User = Depends(require_viewer),
 ):
@@ -404,8 +360,12 @@ def list_processing(
         statement = statement.where(LivestockProcessingRecord.livestock_id == livestock_id)
     if not include_voided:
         statement = statement.where(LivestockProcessingRecord.is_voided == False)
+    if search and search.strip():
+        statement = statement.where(or_(_animal_match(LivestockProcessingRecord.livestock_id, search),
+            _text_match(search, LivestockProcessingRecord.quality_grade)))
     records = list(db.scalars(statement.offset(offset).limit(limit)).all())
-    return [serialize_processing(db, record) for record in records]
+    context = build_serialization_context(db, records)
+    return [serialize_processing(db, record, context=context) for record in records]
 
 
 @router.post("/processing", response_model=ProcessingResponse, status_code=status.HTTP_201_CREATED)
@@ -460,6 +420,7 @@ def list_sales(
     include_voided: bool = Query(default=False),
     limit: int = Query(default=100, ge=1, le=500),
     offset: Annotated[int, Query(ge=0)] = 0,
+    search: Annotated[str | None, Query(max_length=120)] = None,
     db: Session = Depends(get_db),
     _: User = Depends(require_viewer),
 ):
@@ -475,8 +436,16 @@ def list_sales(
     source_clause = _sale_source_filter(source_type)
     if source_clause is not None:
         statement = statement.where(source_clause)
+    if search and search.strip():
+        matching_line = select(LivestockSaleItem.id).where(LivestockSaleItem.sale_id == LivestockSale.id,
+            _text_match(search, LivestockSaleItem.product_type, LivestockSaleItem.source_name_snapshot,
+                        LivestockSaleItem.source_code_snapshot)).exists()
+        statement = statement.where(or_(matching_line, _animal_match(LivestockSale.livestock_id, search),
+            _crop_match(LivestockSale.crop_id, search), _text_match(search, LivestockSale.sale_code,
+                LivestockSale.product_type, LivestockSale.buyer_name, LivestockSale.payment_status)))
     records = list(db.scalars(statement.offset(offset).limit(limit)).all())
-    return [serialize_sale(db, record) for record in records]
+    context = build_serialization_context(db, records)
+    return [serialize_sale(db, record, context=context) for record in records]
 
 
 @router.post("/sales", response_model=SaleResponse, status_code=status.HTTP_201_CREATED)

@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
@@ -16,14 +17,14 @@ async function prepare(page, phoneHandler) {
             accessToken: "qr-browser-test-token", user: profile, expiresAt: Date.now() + 3600000,
         }));
     }, user);
-    await page.route("**/api/v1/**", async (route) => {
+    await page.route("**/api/v1/**", withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const path = new URL(route.request().url()).pathname;
         if (path === "/api/v1/system/phone-access") return phoneHandler(route);
         if (path === "/api/v1/auth/me") return route.fulfill({ json: user });
         if (path.includes("/weather")) return route.fulfill({ status: 503, json: { detail: "Weather unavailable in isolated QR tests." } });
         return route.fulfill({ json: [] });
-    });
+    }));
     await page.goto("/dashboard");
     await expect(page.getByRole("button", { name: "Show phone QR code" })).toBeVisible();
 }

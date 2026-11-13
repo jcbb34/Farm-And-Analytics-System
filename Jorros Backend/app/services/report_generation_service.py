@@ -391,12 +391,16 @@ def create_report_record(
     frequency: str | None = None,
     automation_period_key: str | None = None,
     generate_pdf: bool = True,
+    queue_pdf: bool = False,
     revision_group_code: str | None = None,
     revision_number: int = 1,
     revision_of_report_id: int | None = None,
     included_sections: list[str] | None = None,
     filters: dict[str, object] | None = None,
 ) -> FarmReport:
+    if queue_pdf:
+        from app.services.report_pdf_jobs import ensure_pdf_schema
+        ensure_pdf_schema(db)
     analytics = _analytics_payload(
         db,
         category=category,
@@ -486,12 +490,16 @@ def create_report_record(
     db.add(
         report
     )
+    if queue_pdf:
+        db.flush()
+        from app.services.report_pdf_jobs import queue_pdf as enqueue_pdf
+        enqueue_pdf(db,report)
     db.commit()
     db.refresh(
         report
     )
 
-    if generate_pdf:
+    if generate_pdf and not queue_pdf:
         try:
             pdf_path = (
                 generate_report_pdf(
@@ -678,6 +686,7 @@ def create_revision(
     db: Session,
     source: FarmReport,
     generated_by_user_id: int | None,
+    *, queue_pdf: bool = False,
 ) -> FarmReport:
     series_code = (
         source.revision_group_code
@@ -735,6 +744,7 @@ def create_revision(
         frequency=None,
         automation_period_key=None,
         generate_pdf=True,
+        queue_pdf=queue_pdf,
         revision_group_code=series_code,
         revision_number=next_revision,
         revision_of_report_id=source.id,

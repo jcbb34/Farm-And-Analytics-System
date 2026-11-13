@@ -51,5 +51,6 @@ test("only explicit meat-purpose livestock enters processing", () => {
 test("inventory products require an explicit saleable flag", () => {
     assert.match(inventoryService, /isSaleable/);
     assert.match(inventoryService, /is_saleable/);
-    assert.match(productionSales, /item\.isSaleable/);
+    const stockApi = fs.readFileSync(new URL("../../Jorros Backend/app/services/sale_stock.py", import.meta.url), "utf8");
+    assert.match(stockApi, /InventoryItem\.is_saleable == True/);
 });

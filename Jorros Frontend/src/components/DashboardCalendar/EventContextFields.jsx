@@ -1,5 +1,6 @@
+import ResourceChoiceTools from "../ResourceChoiceTools/ResourceChoiceTools.jsx";
 import { eventDomain, eventRecordChoices, eventRecordLocation } from '../../services/eventPlanning.js';
-export default function EventContextFields({ form, onChange, resources, loading, error, retry, busy, needsResource }) {
+export default function EventContextFields({ form, onChange, resources, loading, error, retry, busy, needsResource, choice }) {
     const domain = eventDomain(form.type);
     const general = domain === 'General';
     if (general && !needsResource) return null;
@@ -13,11 +14,12 @@ export default function EventContextFields({ form, onChange, resources, loading,
     const label = domain === 'Inventory' ? 'Inventory Item' : 'Related Record';
     return <section className="calendar-linked-work" aria-label="Event record selection">
         <h3>{title}</h3>
-        {error && <p className="calendar-choice-error" role="status">{error} <button type="button" onClick={retry}>Retry records</button></p>}
+        {!choice && error && <p className="calendar-choice-error" role="status">{error} <button type="button" onClick={retry}>Retry records</button></p>}
         <div className="calendar-form-row two-columns">
             {general && <div className="calendar-form-group"><label htmlFor="eventSourceModule">Record Type *</label><select id="eventSourceModule" value={form.sourceModule} disabled={busy} onChange={(event) => onChange({ ...form, sourceModule: event.target.value, sourceRecordId: '', inventoryItemId: '', plannedQuantity: '', feedingSlot: '', location: '' })}><option value="Crop">Crop</option><option value="Livestock">Livestock</option></select></div>}
             <div className="calendar-form-group"><label htmlFor="eventSourceRecord">{label}{required ? ' *' : ' (optional)'}</label>
-                <select id="eventSourceRecord" required={required} disabled={loading || busy} value={form.sourceRecordId} onChange={(event) => {
+                {choice && <ResourceChoiceTools id="event-record-search" label="Search farm records" choice={choice} disabled={busy} />}
+                <select id="eventSourceRecord" required={required} disabled={loading || busy || Boolean(error)} value={form.sourceRecordId} onChange={(event) => {
                     const target = targets.find((row) => String(row.id) === event.target.value);
                     onChange({ ...form, sourceRecordId: event.target.value, location: eventRecordLocation(target, form.sourceModule), inventoryItemId: '', plannedQuantity: '', feedingSlot: '' });
                 }}><option value="">{loading ? 'Loading records…' : domain === 'Inventory' ? 'Select the item to restock' : 'Select a related record or use a custom location'}</option>

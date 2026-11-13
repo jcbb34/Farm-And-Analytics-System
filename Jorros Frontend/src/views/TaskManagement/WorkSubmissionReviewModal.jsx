@@ -49,11 +49,13 @@ export default function WorkSubmissionReviewModal({
     const [confirmedReady, setConfirmedReady] = useState(false);
     const [feedback, setFeedback] = useState("");
     const [feedbackError, setFeedbackError] = useState("");
+    const [returnFeedbackError, setReturnFeedbackError] = useState("");
     const [harvestType, setHarvestType] = useState("Partial Harvest");
     const [finalHarvestConfirmed, setFinalHarvestConfirmed] = useState(false);
     const [harvestError, setHarvestError] = useState("");
     const modalRef = useRef(null);
     const closeRef = useRef(null);
+    const feedbackRef = useRef(null);
     const previousFocusRef = useRef(null);
 
     const busy = Boolean(processingAction);
@@ -68,6 +70,7 @@ export default function WorkSubmissionReviewModal({
             ? "This crop is already Fully Harvested. Select Final Harvest to confirm its missing final yield, or correct the crop record in Crops before approving a Partial Harvest."
             : ""
     ));
+    const footerError = returnFeedbackError || actionError || harvestError || approvalBlocker;
 
     useEffect(() => {
         if (!open) return;
@@ -75,6 +78,7 @@ export default function WorkSubmissionReviewModal({
         setConfirmedReady(false);
         setFeedback("");
         setFeedbackError("");
+        setReturnFeedbackError("");
         setHarvestType(submission?.harvest_type_intent || "Partial Harvest");
         setFinalHarvestConfirmed(false);
         setHarvestError("");
@@ -141,9 +145,14 @@ export default function WorkSubmissionReviewModal({
         if (!canReview) return;
         const trimmed = feedback.trim();
         if (!trimmed) {
-            setFeedbackError("Feedback is required before returning this work for correction.");
+            setReturnFeedbackError("Feedback is required before returning this work for correction.");
+            window.requestAnimationFrame(() => {
+                feedbackRef.current?.focus({ preventScroll: true });
+                feedbackRef.current?.scrollIntoView({ block: "center", behavior: "instant" });
+            });
             return;
         }
+        setReturnFeedbackError("");
         setFeedbackError("");
         await onReturn?.(trimmed);
     };
@@ -333,7 +342,7 @@ export default function WorkSubmissionReviewModal({
                                 <div className="work-review-section-title"><span className="material-symbols-outlined" aria-hidden="true">rate_review</span><div><h3>Reviewer Feedback</h3><p>Optional for approval. Required when returning work for correction.</p></div></div>
                                 <label className="review-feedback-field" htmlFor="review-feedback">
                                     <span>Feedback to employee</span>
-                                    <textarea id="review-feedback" rows="4" value={feedback} onChange={(event) => { setFeedback(event.target.value); if (event.target.value.trim()) setFeedbackError(""); }} disabled={busy} placeholder="Add review notes or explain what needs correction…" />
+                                    <textarea ref={feedbackRef} id="review-feedback" rows="4" value={feedback} aria-invalid={Boolean(returnFeedbackError)} aria-describedby={returnFeedbackError ? "review-return-feedback-error" : undefined} onChange={(event) => { setFeedback(event.target.value); if (event.target.value.trim()) { setFeedbackError(""); setReturnFeedbackError(""); } }} disabled={busy} placeholder="Add review notes or explain what needs correction…" />
                                 </label>
                                 {feedbackError && <div className="review-inline-validation" role="alert">{feedbackError}</div>}
                             </section>
@@ -341,10 +350,10 @@ export default function WorkSubmissionReviewModal({
                     )}
                 </div>
 
-                {(actionError || harvestError || approvalBlocker) && (
-                    <div className="work-review-footer-error" role="alert">
+                {footerError && (
+                    <div id={returnFeedbackError ? "review-return-feedback-error" : undefined} className="work-review-footer-error" role="alert">
                         <span className="material-symbols-outlined" aria-hidden="true">error</span>
-                        <span>{actionError || harvestError || approvalBlocker}</span>
+                        <span>{footerError}</span>
                     </div>
                 )}
                 <footer className="work-review-footer">
@@ -354,6 +363,7 @@ export default function WorkSubmissionReviewModal({
                         </button>
                         <button type="button" className="work-review-approve" onClick={() => {
                             if (!canReview) return;
+                            setReturnFeedbackError("");
                             if (isCropHarvest && submission?.harvest_type_intent && harvestType !== submission.harvest_type_intent && !feedback.trim()) {
                                 setHarvestError(`Add reviewer feedback explaining why ${submission.harvest_type_intent} is being changed to ${harvestType}.`);
                                 return;

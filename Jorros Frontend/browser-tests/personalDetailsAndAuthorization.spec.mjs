@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
@@ -18,7 +19,7 @@ async function setup(page, { worker = false, failApproval = false, failLocations
     await page.route("**/reference-data/philippine_locations.2026-Q3.json", (route) => bundleUnavailable
         ? route.fulfill({ status: 503, json: { detail: "Synthetic bundled reference failure" } })
         : route.continue());
-    await page.route("**/api/v1/**", async (route) => {
+    await page.route("**/api/v1/**", withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), url = new URL(request.url()), path = url.pathname;
         if (path.endsWith("/events/stream")) return route.fulfill({ status: 503, json: {} });
@@ -56,7 +57,7 @@ async function setup(page, { worker = false, failApproval = false, failLocations
         if (path.endsWith("/summary")) return route.fulfill({ json: {} });
         if (path.endsWith("/my-schedule")) return route.fulfill({ json: { availability: [], attendance: [], leave: [], shifts: [], tasks: [] } });
         return route.fulfill({ json: [] });
-    });
+    }));
     return { writes, approvals, release, effectCount: () => effects, locationRequestCount: () => locationRequests, restoreBundle: () => { bundleUnavailable = false; } };
 }
 async function names(dialog) {

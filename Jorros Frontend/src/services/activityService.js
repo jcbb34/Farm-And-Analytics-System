@@ -412,6 +412,23 @@ function notifyLinkedFarmDataUpdated(activity) {
 }
 
 export const activityService = Object.freeze({
+    async getCalendarSummary(options, signal) {
+        const data = await httpClient.get("/activities/calendar/summary", { query: options, signal, cache: "no-store" });
+        if (!Array.isArray(data?.days) || !data?.summary) throw new Error("Calendar totals could not be read. Please retry.");
+        return { ...data, days: data.days.map(day => ({ ...day, items: day.items.map(normalizeActivity) })) };
+    },
+    async getCalendarEvents(options, signal) {
+        const data = await httpClient.get("/activities/calendar/events", { query: options, signal, cache: "no-store" });
+        if (!Array.isArray(data?.items) || !Number.isInteger(data.total) || data.total < 0) throw new Error("Calendar events could not be read. Please retry.");
+        return { ...data, items: data.items.map(normalizeActivity) };
+    },
+    async getPage(options) {
+        const page = await httpClient.get("/activities/page", { query: options, cache: "no-store" });
+        return { ...page, items: page.items.map(normalizeActivity) };
+    },
+    getSummary(activityDate) {
+        return httpClient.get("/activities/summary", { query: { activity_date: activityDate }, cache: "no-store" });
+    },
     async syncAutomaticActivities() {
         if (automaticSyncRequest) return automaticSyncRequest;
         automaticSyncRequest = httpClient.post("/activities/evaluate", {}).then((response) => {

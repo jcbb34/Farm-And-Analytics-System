@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { test, expect } from '@playwright/test';
 const baseTime = Date.parse('2026-11-05T02:00:00Z');
 const user = { id: 1, username: 'session.test', fullName: 'Session Test Administrator', role: 'System Administrator', status: 'Active', permissions: ['*'] };
@@ -15,7 +16,7 @@ async function prepare(page, { absoluteSeconds = 28800, persistent = false, bloc
         const original = Storage.prototype.setItem;
         Storage.prototype.setItem = function(name, value) { if (name === key) throw new DOMException('Storage blocked', 'SecurityError'); return original.call(this, name, value); };
     }, authKey);
-    await page.route('**/api/v1/**', async (route) => {
+    await page.route('**/api/v1/**', withDisplayData(async (route) => {
         const req = route.request(), path = new URL(req.url()).pathname;
         try { server.now = Math.max(server.now, await page.evaluate(() => Date.now())); }
         catch { try { await route.abort('aborted'); } catch {} return; }
@@ -41,7 +42,7 @@ async function prepare(page, { absoluteSeconds = 28800, persistent = false, bloc
         if (path.includes('/weather') || path.endsWith('/events/stream')) return route.fulfill({ status: 503, json: {} });
         if (path.endsWith('/page')) return route.fulfill({ json: { items: [], total: 0 } });
         return route.fulfill({ json: [] });
-    });
+    }));
     return server;
 }
 

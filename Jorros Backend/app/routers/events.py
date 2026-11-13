@@ -13,6 +13,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.core.database import get_db
 from app.core.dependencies import has_permission, is_task_only_user
+from app.core.server_lifecycle import streams_draining
 from app.models import Employee, FarmChangeEvent, User
 from app.routers.auth import bearer_scheme, get_current_user
 
@@ -98,6 +99,9 @@ async def stream_changes(request: Request, since: int | None = Query(default=Non
                          last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
                          db: Session = Depends(get_db, scope="function"),
                          user: User = Depends(get_stream_user)):
+    if streams_draining():
+        raise HTTPException(503, "The farm server is stopping. Reconnect shortly.",
+                            headers={"Retry-After": "5"})
     engine = db.get_bind()
     employee_id = db.scalar(select(Employee.id).where(Employee.login_user_id == user.id))
     try:
@@ -116,13 +120,15 @@ async def stream_changes(request: Request, since: int | None = Query(default=Non
 
     async def body():
         nonlocal cursor
+        if streams_draining():
+            return
         yield ": connected\n\n"
         # The client refreshes its visible view at this boundary. A commit
         # between the initial page request and the first stream request is
         # otherwise lost when a new subscription starts at max(id).
         yield f"event: ready\ndata: {json.dumps({'cursor': cursor})}\n\n"
         heartbeat = asyncio.get_running_loop().time()
-        while not await request.is_disconnected():
+        while not streams_draining() and not await request.is_disconnected():
             try:
                 rows, cursor = await run_in_threadpool(poll, cursor)
             except HTTPException:
@@ -130,6 +136,8 @@ async def stream_changes(request: Request, since: int | None = Query(default=Non
                 break
             except Exception:
                 LOGGER.exception("Committed event poll failed")
+                break
+            if streams_draining():
                 break
             for row in rows:
                 yield f"id: {row['id']}\nevent: change\ndata: {json.dumps(row, separators=(',', ':'))}\n\n"

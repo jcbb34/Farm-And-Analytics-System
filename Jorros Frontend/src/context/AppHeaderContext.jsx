@@ -505,6 +505,12 @@ export function AppHeaderProvider({ children }) {
                 return;
             }
 
+            // Visibility changes already refresh the bell on return. Avoid
+            // polling a hidden tab when the event stream is disconnected.
+            if (document.visibilityState === "hidden") {
+                return;
+            }
+
             if (alertLoadRunningRef.current) {
                 return;
             }

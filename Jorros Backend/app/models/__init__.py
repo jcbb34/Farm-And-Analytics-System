@@ -146,3 +146,5 @@ __all__ = [
 # Import after all mapped classes have been registered.
 from app.services.change_events import install_change_events
 install_change_events()
+
+from app.models.report_pdf_job import ReportPdfJob

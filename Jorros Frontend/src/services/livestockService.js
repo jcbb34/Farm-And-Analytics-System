@@ -1,3 +1,4 @@
+import { recordEditVersion } from "./recordEditing.js";
 import { schedulePayload, normalizeSchedule, assertMonitoringSaved } from "../components/Monitoring/monitoring.js";
 import { httpClient } from "./httpClient.js";
 
@@ -295,6 +296,7 @@ function normalizeLivestock(record = {}) {
         [];
 
     return {
+        editVersion: record.editVersion ?? record.edit_version,
         ...normalizeSchedule(record),
         id: record.id,
 
@@ -597,6 +599,7 @@ function createLivestockPayload(data = {}) {
 
 function createUpdatePayload(data = {}) {
     const payload = {};
+    if (data.editVersion !== undefined || data.edit_version !== undefined) payload.expected_version = recordEditVersion(data);
 
     const assignText = (
         frontendKey,
@@ -760,6 +763,19 @@ export const livestockService =
             );
         },
 
+        async getLivestockPage(options = {}) {
+            const page = await httpClient.get("/display/livestock", { query: options, cache: "no-store" });
+            return { ...page, items: page.items.map(normalizeLivestock) };
+        },
+        async getOverview({ startDate, endDate }) {
+            const data = await httpClient.get("/display/livestock/overview", { query: { start_date: startDate, end_date: endDate }, cache: "no-store" });
+            return { ...data, chart_records: data.chart_records.map(normalizeLivestock) };
+        },
+        async getChart({ startDate, endDate }) {
+            const data = await httpClient.get("/display/livestock/chart", { query: { start_date: startDate, end_date: endDate }, cache: "no-store" });
+            return data.items.map(normalizeLivestock);
+        },
+
         async getPens(
             includeArchived = false
         ) {
@@ -877,6 +893,7 @@ export const livestockService =
             livestockId,
             data
         ) {
+            recordEditVersion(data);
             const payload = createUpdatePayload(data);
             const response =
                 await httpClient.put(

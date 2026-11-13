@@ -10,7 +10,10 @@ import InventorySummaryCards from "./components/InventorySummaryCards.jsx";
 import InventoryToolbar from "./components/InventoryToolbar.jsx";
 import InventoryRecordsTable from "./components/InventoryRecordsTable.jsx";
 import useInventoryPage from "./hooks/useInventoryPage.js";
-import InventoryAnalytics from "../../components/InventoryAnalytics/InventoryAnalytics.jsx";
+import DeferredSection from "../../components/DeferredSection/DeferredSection.jsx";
+const InventoryAnalytics = dynamic(() => import("../../components/InventoryAnalytics/InventoryAnalytics.jsx"), {
+    ssr: false, loading: () => <p role="status">Loading inventory analytics…</p>,
+});
 
 // Load large inventory forms only when needed.
 const InventoryFormModal = dynamic(
@@ -51,6 +54,10 @@ function Inventory() {
                 </header>
 
                 <InventorySummaryCards cards={page.inventorySummary} />
+                {(page.summaryError || page.movementError) && <div className="workforce-error" role="alert">
+                    <strong>Inventory analytics unavailable.</strong> {page.summaryError || page.movementError}{" "}
+                    <button type="button" className="workforce-button secondary compact" onClick={page.loadSummary} disabled={page.summaryLoading}>Retry totals</button>
+                </div>}
 
                 <ArchiveWorkspace module="Inventory" before={<>
                 <InventoryToolbar
@@ -86,7 +93,7 @@ function Inventory() {
                     onArchive={page.archiveInventoryItem}
                 />
 
-                <InventoryAnalytics inventory={page.inventory} movementSummary={page.movementSummary} summary={page.inventorySummaryData} />
+                {page.summaryLoading ? <p role="status">Loading inventory analytics…</p> : !page.summaryError && !page.movementError && <DeferredSection label="inventory analytics"><InventoryAnalytics inventory={page.inventory} movementSummary={page.movementSummary} summary={page.inventorySummaryData} /></DeferredSection>}
                 </>}
                 </ArchiveWorkspace>
             </main>

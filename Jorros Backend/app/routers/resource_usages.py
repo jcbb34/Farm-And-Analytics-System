@@ -5,7 +5,7 @@ import io
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -107,6 +107,18 @@ def list_resource_usages(
         statement = statement.where(ResourceUsage.usage_date <= end_date)
 
     return [serialize_usage(db, usage) for usage in db.scalars(statement).all()]
+
+
+@router.get("/consumption-summary")
+def consumption_summary(start_date: date, end_date: date, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if start_date > end_date: raise HTTPException(422, "The start date must not follow the end date.")
+    statement = select(ResourceUsage.usage_type, ResourceUsage.unit, func.sum(ResourceUsage.quantity), func.count(ResourceUsage.id))\
+        .where(ResourceUsage.module.in_(sorted(_allowed_view_modules(current_user))), ResourceUsage.is_voided == False,
+            ResourceUsage.usage_date >= start_date, ResourceUsage.usage_date <= end_date)\
+        .group_by(ResourceUsage.usage_type, ResourceUsage.unit).order_by(ResourceUsage.usage_type, ResourceUsage.unit)
+    groups = db.execute(statement).all()
+    return {"rows": [{"usage_type": kind, "unit": unit, "quantity": float(quantity)} for kind, unit, quantity, _ in groups],
+            "total": sum(count for _, _, _, count in groups)}
 
 
 @router.post("", response_model=ResourceUsageResponse, status_code=status.HTTP_201_CREATED)

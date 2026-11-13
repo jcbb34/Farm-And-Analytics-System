@@ -4,8 +4,8 @@ import { livestockService } from "../src/services/livestockService.js";
 import { invalidateReadCache } from "../src/services/httpClient.js";
 
 const original = Object.fromEntries(["window", "sessionStorage", "localStorage", "fetch"].map((key) => [key, globalThis[key]]));
-const plan = { monitoringEnabled: true, monitoringStartDate: "2026-10-29", monitoringEndDate: "2026-11-30", monitoringFrequencyDays: 3, assignedEmployeeId: 7 };
-const stored = { id: 42, monitoring_enabled: true, monitoring_start_date: "2026-10-29", monitoring_end_date: "2026-11-30", monitoring_frequency_days: 3, assigned_employee_id: 7 };
+const plan = { editVersion: 1, monitoringEnabled: true, monitoringStartDate: "2026-10-29", monitoringEndDate: "2026-11-30", monitoringFrequencyDays: 3, assignedEmployeeId: 7 };
+const stored = { id: 42, edit_version: 1, monitoring_enabled: true, monitoring_start_date: "2026-10-29", monitoring_end_date: "2026-11-30", monitoring_frequency_days: 3, assigned_employee_id: 7 };
 const disabled = { ...stored, monitoring_enabled: false };
 
 test.beforeEach(() => {
@@ -63,7 +63,7 @@ test("a changed interval or employee must also survive the database read-back", 
 test("unrelated livestock updates keep their existing API behavior", async () => {
     const requests = [];
     globalThis.fetch = async (_url, options) => { requests.push(options.method); return Response.json({ id: 42, health_status: "Healthy" }); };
-    assert.equal((await livestockService.updateLivestock(42, { healthStatus: "Healthy" })).healthStatus, "Healthy");
+    assert.equal((await livestockService.updateLivestock(42, { editVersion: 1, healthStatus: "Healthy" })).healthStatus, "Healthy");
     assert.deepEqual(requests, ["PUT"]);
 });
 

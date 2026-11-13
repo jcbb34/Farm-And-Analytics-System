@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
@@ -20,7 +21,7 @@ async function prepare(page, { viewer = false, attendanceOnly = false, failSave 
     await page.addInitScript((profile) => sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({
         accessToken: "synthetic-calendar-token", user: profile, expiresAt: Date.now() + 86400000,
     })), user);
-    await page.route("**/api/v1/**", async (route) => {
+    await page.route("**/api/v1/**", withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (path === "/api/v1/auth/me") return route.fulfill({ json: user });
@@ -54,7 +55,7 @@ async function prepare(page, { viewer = false, attendanceOnly = false, failSave 
             return route.fulfill({ json: attendance[0] });
         }
         return route.fulfill({ json: [] });
-    });
+    }));
     await page.goto(path);
     if (viewer) await expect(page.getByRole("heading", { name: "Access Restricted", exact: true })).toBeVisible();
     else {

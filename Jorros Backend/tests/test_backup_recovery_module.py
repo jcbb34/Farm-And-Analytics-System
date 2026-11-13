@@ -727,3 +727,22 @@ def test_interrupted_restore_test_stays_visible_and_can_be_discarded(recovery):
     assert service.catalog.job(job["id"])["status"] == "Incomplete"
     assert service.catalog.get("candidate", selected["id"])["status"] == "Test failed"
     assert service.discard(selected["id"])["status"] == "Discarded"
+
+
+def test_recovery_kit_works_without_external_markdown(tmp_path, monkeypatch):
+    from zipfile import ZipFile
+    from app.services.backup_recovery import packages
+    backend = tmp_path / "application" / "Jorros Backend"
+    (backend / "app").mkdir(parents=True)
+    (backend / "app" / "example.py").write_text("# synthetic recovery source")
+    monkeypatch.setattr(packages, "BACKEND", backend)
+    monkeypatch.setattr(packages, "current_revision", lambda: "synthetic-test-revision")
+    destination = tmp_path / "kit.zip"
+    packages.write_kit(destination, "test-backup")
+    with ZipFile(destination) as archive:
+        assert archive.testzip() is None
+        instructions = archive.read("RECOVERY_INSTRUCTIONS.txt").decode()
+        assert "restore test" in instructions
+        assert "rollback" in instructions
+        assert "application/Jorros Backend/app/example.py" in archive.namelist()
+        assert not any(name.lower().endswith(".md") for name in archive.namelist())

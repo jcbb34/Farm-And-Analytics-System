@@ -1,4 +1,6 @@
 """Real HTTP approval, history and scheduler regression coverage."""
+
+from edit_helpers import versioned_edit
 import os
 from datetime import timedelta, time
 from io import BytesIO
@@ -294,7 +296,7 @@ def test_history_range_includes_boundaries_and_rejects_reversed_range(farm, modu
 
 def test_direct_count_edit_cannot_be_overwritten_by_older_inspection(farm):
     url = f"/api/v1/crops/{farm.ids['Crop']}"
-    edited = farm.client.put(url, json={"current_surviving": 89}, headers=farm.headers["manager"])
+    edited = farm.client.put(url, json=versioned_edit(farm.client, url, {"current_surviving": 89}, farm.headers["manager"]), headers=farm.headers["manager"])
     assert edited.status_code == 200, edited.text
     assert edited.json()["survival_count_date"] == str(farm.today)
     response = farm.client.post(url + "/growth-records", json={"update_date": str(farm.today-timedelta(days=3)), "current_surviving": 96, "observed_stage": "Flowering"}, headers=farm.headers["manager"])
@@ -417,7 +419,7 @@ def test_edit_enable_monitoring_persists_and_employee_receives_tasks(farm):
     payload = {"monitoring_enabled": True, "monitoring_start_date": str(farm.today),
                "monitoring_end_date": str(farm.today+timedelta(days=20)), "monitoring_frequency_days": 3,
                "assigned_employee_id": farm.employees["worker"]}
-    response = farm.client.put(url, json=payload, headers=farm.headers["manager"])
+    response = farm.client.put(url, json=versioned_edit(farm.client, url, payload, farm.headers["manager"]), headers=farm.headers["manager"])
     assert response.status_code == 200, response.text
     assert response.json()["monitoring_enabled"] is True
     assert response.json()["monitoring_summary"]["next_date"] == str(farm.today)
@@ -434,7 +436,7 @@ def test_edit_enable_monitoring_persists_and_employee_receives_tasks(farm):
     assert all(task["assigned_employee_id"] == farm.employees["worker"] for task in monitoring)
 
     before = {task["id"] for task in monitoring}
-    assert farm.client.put(url, json=payload, headers=farm.headers["manager"]).status_code == 200
+    assert farm.client.put(url, json=versioned_edit(farm.client, url, payload, farm.headers["manager"]), headers=farm.headers["manager"]).status_code == 200
     repeated = farm.client.get("/api/v1/workforce/my-tasks/page", params={"limit": 100}, headers=farm.headers["worker"]).json()["items"]
     assert {task["id"] for task in repeated if task["source_type"] == "livestock_growth_check" and task["source_record_id"] == animal_id} == before
     outsider = farm.client.get("/api/v1/workforce/my-tasks/page", params={"limit": 100}, headers=farm.headers["other"]).json()["items"]
@@ -448,14 +450,14 @@ def test_monitoring_edit_and_task_generation_roll_back_together(farm):
         db.commit()
     with patch("app.routers.livestock.evaluate_automatic_tasks", side_effect=RuntimeError("test scheduling failure")):
         with pytest.raises(RuntimeError):
-            farm.client.put(f"/api/v1/livestock/{farm.ids['Livestock']}", json={"monitoring_enabled": True}, headers=farm.headers["manager"])
+            farm.client.put(f"/api/v1/livestock/{farm.ids['Livestock']}", json=versioned_edit(farm.client, f"/api/v1/livestock/{farm.ids['Livestock']}", {"monitoring_enabled": True}, farm.headers["manager"]), headers=farm.headers["manager"])
     with Session(farm.engine) as db:
         assert db.get(Livestock, farm.ids["Livestock"]).monitoring_enabled is False
 
 
 def test_monitoring_edit_rejects_incomplete_plan_without_saving(farm):
     url = f"/api/v1/livestock/{farm.ids['Livestock']}"
-    response = farm.client.put(url, json={"monitoring_enabled": True, "monitoring_frequency_days": None}, headers=farm.headers["manager"])
+    response = farm.client.put(url, json=versioned_edit(farm.client, url, {"monitoring_enabled": True, "monitoring_frequency_days": None}, farm.headers["manager"]), headers=farm.headers["manager"])
     assert response.status_code == 400
     with Session(farm.engine) as db:
         assert db.get(Livestock, farm.ids["Livestock"]).monitoring_frequency_days == 2

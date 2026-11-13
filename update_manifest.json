@@ -1,0 +1,168 @@
+{
+  "update_id": "joross-inventory-optimization-2026-11-13",
+  "required_database_revision": "a7b8c9d0e1f2",
+  "requires": [
+    {
+      "path": "run_farm.py",
+      "sha256": "fb68a1a391c4e68b0afe8434fd5fe095abdfdf0ec2ca6e3152911e18611e4c33"
+    },
+    {
+      "path": "Jorros Backend/app/core/server_lifecycle.py",
+      "sha256": "635305b1a9fba0f520bc9f4598f4f63848472ac7667ac73fe06c9287b72af866"
+    },
+    {
+      "path": "Jorros Backend/app/services/record_editing.py",
+      "sha256": "99f85b935e5bc0acda48040e9ffe5f6cc2a3c9576008a93dcf96639a75c9a5d3"
+    },
+    {
+      "path": "Jorros Backend/migrations/versions/a7b8c9d0e1f2_record_edit_versions.py",
+      "sha256": "e0ae096a03f96db9c5dc1be5744af3c704455921a89d1a19c804fc4ac342feb3"
+    },
+    {
+      "path": "Jorros Frontend/package.json",
+      "sha256": "f2f873bfe8725b478ea7fc11bd0914f8e43d5428deeb047fd2466376142fe4a0"
+    }
+  ],
+  "files": [
+    {
+      "path": "Jorros Backend/app/routers/inventory.py",
+      "sha256": "6ebe23ce9b1d1c0d7443c04e1a3b20c3744c8a9dae4ccd769b4ac8d7dd43a20a",
+      "accepted_before_sha256": [
+        "c7e80dca711ce5282e4a422366a2c6fee7d55d4d4c40a1f65bb190229fd04f8f"
+      ]
+    },
+    {
+      "path": "Jorros Backend/app/schemas/inventory.py",
+      "sha256": "0191e5feb74dab0aec3dcd9b6655f52170f77c7a2891d3a4610fedb679fc624c",
+      "accepted_before_sha256": [
+        "7a630bb8079f884ed21d508f8d6f50ad6c830b6bea2adf2738e3aea9f7341f3c"
+      ]
+    },
+    {
+      "path": "Jorros Backend/app/services/idempotency.py",
+      "sha256": "6be1aac397874f3c2cccc50f5c3ea127d7faca1679ac7dbe617059e97524513f",
+      "accepted_before_sha256": [
+        "98bb11f6d9d46535d49f02cdfcbe99b1a08bb994f30c399dea95620e16c5d263"
+      ]
+    },
+    {
+      "path": "Jorros Backend/app/services/performance_diagnostics.py",
+      "sha256": "e0de991933ac12951f42670eb5b6bb6e4a3f24b90b543fb9ffe0f22afebd62d5",
+      "accepted_before_sha256": [
+        "bd0d0ff5f5fb006b9d1e05d5b0b7556f01c36155c8d28a6651128c72196c73b4"
+      ]
+    },
+    {
+      "path": "Jorros Backend/app/services/resource_choices.py",
+      "sha256": "8c496c74ec5309e8eef3b9150eb7286a73c584137fb8f6ae1001e67409f7a43c",
+      "accepted_before_sha256": [
+        "2149b6067e09466df63d8c3f44a3b8e0c638c04eca5f66191f0ca2e07b4de28f"
+      ]
+    },
+    {
+      "path": "Jorros Backend/scripts/diagnose_performance.py",
+      "sha256": "20d457ed883be5a4c6510ef5789dba0ae50481a32cb1a731dc39d0a88dae807a",
+      "accepted_before_sha256": [
+        "7bf4b59edc86491edbb7020a9d482dfcfe4fa3f36b64b4f4716ea697e2053de4"
+      ]
+    },
+    {
+      "path": "Jorros Backend/tests/test_inventory_paging_and_corrections.py",
+      "sha256": "59fb7ba4c21d9db2306cd039e634bf049e924d8f2d961c765edcbc5b45a11538",
+      "accepted_before_sha256": [
+        null
+      ]
+    },
+    {
+      "path": "Jorros Backend/tests/test_performance_diagnostics.py",
+      "sha256": "fe9a96484c1c67f9b5d258691cb3d20e53562cc2138dd9fb335784a7ea1ccfc2",
+      "accepted_before_sha256": [
+        "ede47089342cc27eff009ddc8c4ea206660d3734547a39f3ddd917afdd8b37c9"
+      ]
+    },
+    {
+      "path": "Jorros Frontend/browser-tests/helpers/displayApiFixtures.mjs",
+      "sha256": "7814d62e636f0993899d90c6a82b110b29eaa036f7731d0e92a38d4cef4d0348",
+      "accepted_before_sha256": [
+        "63a96a013f9d18ebf9b30ef72dd1138048f3095118b10185a71c1ddebd77714e"
+      ]
+    },
+    {
+      "path": "Jorros Frontend/browser-tests/inventoryOptimization.spec.mjs",
+      "sha256": "2970af2ac56e78ddaba5be0d6de3712eeb2e9c1e9b31f5cab7168c978bae8d57",
+      "accepted_before_sha256": [
+        null
+      ]
+    },
+    {
+      "path": "Jorros Frontend/src/components/InventoryModals/InventoryModals.css",
+      "sha256": "9cee6a46e8edff6f94eb6606a81513c2c026451dd0d273366409c6173a4c94d5",
+      "accepted_before_sha256": [
+        "bec4edbf751f33f9fde8ee35dacc68bfaaea461531c79f92306d6241db0503e4"
+      ]
+    },
+    {
+      "path": "Jorros Frontend/src/components/InventoryModals/InventoryModals.jsx",
+      "sha256": "499db0c75b4687da9d9342dcf9e9733ff18053ca5def4b685bd93e9d6019f08b",
+      "accepted_before_sha256": [
+        "8feb403f507ed100a2c7f3abf0702efb91e39aa7615c3ca0ad406e4f8eb22746"
+      ]
+    },
+    {
+      "path": "Jorros Frontend/src/components/LivestockModals/LivestockModals.jsx",
+      "sha256": "cc3dd93fd06674a94b1a1f3e38e29a85a997c6685ffc0570536d3fedd832019d",
+      "accepted_before_sha256": [
+        "45be0c502ebc1d222a0ac165a22d36288d4faa5928995af195d17f7c66760d52"
+      ]
+    },
+    {
+      "path": "Jorros Frontend/src/components/RecordConflictNotice/RecordConflictNotice.jsx",
+      "sha256": "c58e215a2fd2507b35b653a1e1dc27070fd5a2fadb5a3d99aa71e9b5a118e6cb",
+      "accepted_before_sha256": [
+        "d0df8cf6935eaaed2a043cb27b665adf0b2104fe4ef0f82bb7febd5010226fc9"
+      ]
+    },
+    {
+      "path": "Jorros Frontend/src/hooks/useInventoryStockHistory.js",
+      "sha256": "cf848744bd9a98f56f9ca5f968cd019b8d1b60250cbbb9a5eb9a611f961c0bf8",
+      "accepted_before_sha256": [
+        null
+      ]
+    },
+    {
+      "path": "Jorros Frontend/src/hooks/useResourceChoices.js",
+      "sha256": "871cc4207cfe62f766361691a04bd63b773331cd9e3273c37bc91468a2d6832c",
+      "accepted_before_sha256": [
+        "9985b2cbae705c272d2ea48676c0d4d6e61e1793a36ae96328ff620f70a0dae3"
+      ]
+    },
+    {
+      "path": "Jorros Frontend/src/services/inventoryService.js",
+      "sha256": "7e77fba3fc885725fc38060bfda2af80b760a6fd4a53ab086c42524caafdb90c",
+      "accepted_before_sha256": [
+        "ba02cb8c2f7d815bb524e8549a065526c93764b0ac58a7095ce04da5b8be1780"
+      ]
+    },
+    {
+      "path": "Jorros Frontend/src/views/Inventory/hooks/useInventoryPage.js",
+      "sha256": "56302a36cdca3f611aaa1ef9760c73e5fe761ee7c4b1cb5e0c7503806d6b4005",
+      "accepted_before_sha256": [
+        "3786b19ab84f09bcf729240f3225624afea36d7f2dcfc7d1ff9042fac6f85a95"
+      ]
+    },
+    {
+      "path": "Jorros Frontend/tests/inventoryOptimization.test.mjs",
+      "sha256": "6d830a186c79a9a4b6d9a1de374ac42e5a7157f030cefb929fe3d3ce9e8ce6e3",
+      "accepted_before_sha256": [
+        null
+      ]
+    },
+    {
+      "path": "Jorros Frontend/tests/inventoryStockAdjustmentSafety.test.mjs",
+      "sha256": "e16846df6fe403a60cc968c027fa21340e4fd4ef93dc111a964169abd70e340f",
+      "accepted_before_sha256": [
+        "e49afed377da0b9f17a85d55fd5d6970c26d1b12ac29d4c7b3123b8d64299f13"
+      ]
+    }
+  ]
+}

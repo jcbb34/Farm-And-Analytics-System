@@ -1,0 +1,4 @@
+.record-conflict-notice { padding: 14px 16px; margin: 0 0 16px; border: 1px solid #eac087; border-radius: 10px; background: #fff8ed; color: #72410e; grid-column: 1 / -1; }
+.record-conflict-notice p { margin: 6px 0; font-size: .9rem; }
+.record-conflict-notice button { min-height: 40px; padding: 8px 12px; margin-top: 6px; border: 1px solid #be873d; border-radius: 8px; background: #fff; color: #72410e; font: inherit; font-weight: 600; cursor: pointer; }
+.record-conflict-notice button:focus-visible { outline: 2px solid #176b3b; outline-offset: 2px; }

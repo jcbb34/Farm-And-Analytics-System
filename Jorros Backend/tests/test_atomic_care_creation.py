@@ -314,7 +314,7 @@ class AtomicCareCreationIntegrationTests(unittest.TestCase):
 
         updated = update_crop(
             crop.id,
-            CropUpdate(planting_date=crop.planting_date + timedelta(days=3)),
+            CropUpdate(expected_version=self.db.get(Crop, crop.id).edit_version, planting_date=crop.planting_date + timedelta(days=3)),
             self.db,
             self.admin,
         )

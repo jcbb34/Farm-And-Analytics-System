@@ -218,15 +218,49 @@ def _production_period(record: LivestockProductionRecord):
     return start, end, days
 
 
+def build_serialization_context(db: Session, records: list) -> dict:
+    """Load page relationships once, in SQL Server-safe batches.
+
+    Contexts belong to one read operation. They never survive a mutation or
+    authorization boundary, and individual write responses keep their live reads.
+    """
+    identifiers = {Crop: set(), Livestock: set(), User: set()}
+    sales = []
+    for record in records:
+        for model, fields in ((Crop, ("crop_id",)), (Livestock, ("livestock_id", "offspring_livestock_id")), (User, ("recorded_by_user_id",))):
+            identifiers[model].update(value for field in fields if (value := getattr(record, field, None)))
+        if isinstance(record, LivestockSale):
+            sales.append(record.id)
+    context = {model: {} for model in identifiers}
+    for model, ids in identifiers.items():
+        ordered = sorted(ids)
+        for offset in range(0, len(ordered), 500):
+            context[model].update((row.id, row) for row in db.scalars(select(model).where(model.id.in_(ordered[offset:offset + 500]))))
+    context[LivestockSaleItem] = {identifier: [] for identifier in sales}
+    for offset in range(0, len(sales), 500):
+        for row in db.scalars(select(LivestockSaleItem).where(LivestockSaleItem.sale_id.in_(sales[offset:offset + 500]))
+                              .order_by(LivestockSaleItem.sale_id, LivestockSaleItem.line_number, LivestockSaleItem.id)):
+            context[LivestockSaleItem][row.sale_id].append(row)
+    return context
+
+
+def _read_source(db, model, identifier, context):
+    if not identifier:
+        return None
+    return db.get(model, identifier) if context is None else context[model].get(identifier)
+
+
 def serialize_production(
     db: Session,
     record: LivestockProductionRecord,
     livestock: Livestock | None = None,
     sold_quantity: Decimal | None = None,
+    *,
+    context: dict | None = None,
 ) -> dict:
     source_type = str(record.source_type or ("Crop" if record.crop_id else "Livestock")).title()
-    crop = db.get(Crop, record.crop_id) if record.crop_id else None
-    animal = livestock or (db.get(Livestock, record.livestock_id) if record.livestock_id else None)
+    crop = _read_source(db, Crop, record.crop_id, context)
+    animal = livestock or _read_source(db, Livestock, record.livestock_id, context)
     if source_type == "Crop":
         source_name = crop.name if crop else "Unknown crop"
         source_code = crop.crop_code if crop else ""
@@ -284,10 +318,12 @@ def serialize_reproduction(
     db: Session,
     record: LivestockReproductionRecord,
     livestock: Livestock | None = None,
+    *,
+    context: dict | None = None,
 ) -> dict:
-    animal = livestock or db.get(Livestock, record.livestock_id)
+    animal = livestock or _read_source(db, Livestock, record.livestock_id, context)
     offspring = (
-        db.get(Livestock, record.offspring_livestock_id)
+        _read_source(db, Livestock, record.offspring_livestock_id, context)
         if record.offspring_livestock_id
         else None
     )
@@ -346,11 +382,11 @@ def serialize_sale_item(record: LivestockSaleItem) -> dict:
     }
 
 
-def serialize_sale(db: Session, sale: LivestockSale, livestock: Livestock | None = None) -> dict:
+def serialize_sale(db: Session, sale: LivestockSale, livestock: Livestock | None = None, *, context: dict | None = None) -> dict:
     source_type = str(sale.source_type or ("Crop" if sale.crop_id else "Livestock")).title()
-    crop = db.get(Crop, sale.crop_id) if sale.crop_id else None
-    animal = livestock or (db.get(Livestock, sale.livestock_id) if sale.livestock_id else None)
-    item_records = list(
+    crop = _read_source(db, Crop, sale.crop_id, context)
+    animal = livestock or _read_source(db, Livestock, sale.livestock_id, context)
+    item_records = context[LivestockSaleItem].get(sale.id, []) if context is not None else list(
         db.scalars(
             select(LivestockSaleItem)
             .where(LivestockSaleItem.sale_id == sale.id)
@@ -389,7 +425,7 @@ def serialize_sale(db: Session, sale: LivestockSale, livestock: Livestock | None
     else:
         source_name = items[0]["source_name"]
         source_code = items[0]["source_code"] or ""
-    user = db.get(User, sale.recorded_by_user_id) if sale.recorded_by_user_id else None
+    user = _read_source(db, User, sale.recorded_by_user_id, context)
     return {
         "id": sale.id,
         "sale_code": sale.sale_code,
@@ -433,8 +469,10 @@ def serialize_processing(
     db: Session,
     record: LivestockProcessingRecord,
     livestock: Livestock | None = None,
+    *,
+    context: dict | None = None,
 ) -> dict:
-    animal = livestock or db.get(Livestock, record.livestock_id)
+    animal = livestock or _read_source(db, Livestock, record.livestock_id, context)
     live_weight = float(record.live_weight_kg) if record.live_weight_kg is not None else None
     meat_output = float(record.meat_output_kg or 0)
     yield_percent = (

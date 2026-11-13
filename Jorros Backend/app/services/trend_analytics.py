@@ -9,6 +9,8 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.services.trend_queries import load_trend_aggregates
+
 from app.models import (
     Crop,
     CropYieldRecord,
@@ -95,119 +97,9 @@ def _correlation_payload(name: str, value: float | None, caution: str) -> dict[s
 
 
 def build_trend_analysis(db: Session, start_date: date, end_date: date) -> dict[str, Any]:
-    crops = list(db.scalars(select(Crop)).all())
-    crop_by_id = {item.id: item for item in crops}
-
-    crop_yields = list(
-        db.scalars(
-            select(CropYieldRecord)
-            .where(
-                CropYieldRecord.harvest_date >= start_date,
-                CropYieldRecord.harvest_date <= end_date,
-            )
-            .order_by(CropYieldRecord.harvest_date.asc())
-        ).all()
-    )
-
-    weather = list(
-        db.scalars(
-            select(WeatherHistory)
-            .where(
-                WeatherHistory.recorded_date >= start_date,
-                WeatherHistory.recorded_date <= end_date,
-            )
-            .order_by(WeatherHistory.recorded_date.asc())
-        ).all()
-    )
-
-    livestock = list(db.scalars(select(Livestock)).all())
-    livestock_by_id = {item.id: item for item in livestock}
-
-    growth_records = list(
-        db.scalars(
-            select(LivestockGrowthRecord)
-            .where(
-                LivestockGrowthRecord.measurement_date >= start_date,
-                LivestockGrowthRecord.measurement_date <= end_date,
-            )
-            .order_by(LivestockGrowthRecord.measurement_date.asc())
-        ).all()
-    )
-
-    feeding_records = list(
-        db.scalars(
-            select(LivestockFeedingRecord)
-            .where(
-                LivestockFeedingRecord.feeding_date >= start_date,
-                LivestockFeedingRecord.feeding_date <= end_date,
-            )
-            .order_by(LivestockFeedingRecord.feeding_date.asc())
-        ).all()
-    )
-
-    reproduction_records = list(
-        db.scalars(
-            select(LivestockReproductionRecord)
-            .where(
-                LivestockReproductionRecord.event_date >= start_date,
-                LivestockReproductionRecord.event_date <= end_date,
-            )
-            .order_by(LivestockReproductionRecord.event_date.asc())
-        ).all()
-    )
-
-    production_records = list(
-        db.scalars(
-            select(LivestockProductionRecord)
-            .where(
-                LivestockProductionRecord.record_date >= start_date,
-                LivestockProductionRecord.record_date <= end_date,
-                func.lower(LivestockProductionRecord.source_type) == "livestock",
-            )
-            .order_by(LivestockProductionRecord.record_date.asc())
-        ).all()
-    )
-
-    production_records_before_void_filter = len(production_records)
-
-    voided_processing_production_ids = set(
-        db.scalars(
-            select(LivestockProcessingRecord.production_record_id).where(
-                LivestockProcessingRecord.is_voided == True
-            )
-        ).all()
-    )
-    if voided_processing_production_ids:
-        production_records = [
-            record
-            for record in production_records
-            if record.id not in voided_processing_production_ids
-        ]
-
-    sales_records = list(
-        db.scalars(
-            select(LivestockSale)
-            .where(
-                LivestockSale.sale_date >= start_date,
-                LivestockSale.sale_date <= end_date,
-                LivestockSale.is_voided == False,
-            )
-            .order_by(LivestockSale.sale_date.asc())
-        ).all()
-    )
-
-    payment_records = list(
-        db.scalars(
-            select(LivestockSalePayment)
-            .join(LivestockSale, LivestockSale.id == LivestockSalePayment.sale_id)
-            .where(
-                LivestockSalePayment.payment_date >= start_date,
-                LivestockSalePayment.payment_date <= end_date,
-                LivestockSale.is_voided == False,
-            )
-            .order_by(LivestockSalePayment.payment_date.asc())
-        ).all()
-    )
+    aggregates = load_trend_aggregates(db, start_date, end_date)
+    counts = aggregates["counts"]
+    growth_records, livestock_by_id = aggregates["growth_records"], aggregates["animals"]
 
     month_keys: list[str] = []
     cursor = date(start_date.year, start_date.month, 1)
@@ -219,75 +111,20 @@ def build_trend_analysis(db: Session, start_date: date, end_date: date) -> dict[
         else:
             cursor = date(cursor.year, cursor.month + 1, 1)
 
-    monthly_crop_yield = defaultdict(float)
-    crop_yield_by_name = defaultdict(float)
-    monthly_weather: dict[str, dict[str, list[float]]] = defaultdict(
-        lambda: {"rainfall": [], "temperature": [], "humidity": []}
-    )
-    monthly_feed = defaultdict(float)
-    monthly_growth_gain: dict[str, list[float]] = defaultdict(list)
-    monthly_production: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
-    monthly_sales_value = defaultdict(float)
-    monthly_crop_sales_value = defaultdict(float)
-    monthly_livestock_sales_value = defaultdict(float)
-    monthly_cash_collected = defaultdict(float)
-    monthly_reproduction_events = defaultdict(int)
-    monthly_offspring = defaultdict(int)
-    monthly_alive_offspring = defaultdict(int)
-    output_units: dict[str, str] = {}
-
-    for record in crop_yields:
-        key = _month_key(record.harvest_date)
-        quantity = float(record.quantity_kg or 0)
-        monthly_crop_yield[key] += quantity
-        crop = crop_by_id.get(record.crop_id)
-        crop_yield_by_name[crop.name if crop else "Unknown Crop"] += quantity
-
-    for record in weather:
-        key = _month_key(record.recorded_date)
-        monthly_weather[key]["rainfall"].append(float(record.rainfall_mm or 0))
-        monthly_weather[key]["temperature"].append(float(record.temperature_c or 0))
-        monthly_weather[key]["humidity"].append(float(record.humidity_percent or 0))
-
-    for record in feeding_records:
-        monthly_feed[_month_key(record.feeding_date)] += float(record.actual_quantity_kg or 0)
-
-    for record in growth_records:
-        if record.average_daily_gain_kg is not None:
-            monthly_growth_gain[_month_key(record.measurement_date)].append(
-                float(record.average_daily_gain_kg)
-            )
-
-    for record in production_records:
-        key = _month_key(record.record_date)
-        output = str(record.output_type or "Other").strip() or "Other"
-        unit = str(record.unit or "").strip()
-        series_name = f"{output} ({unit})" if unit else output
-        monthly_production[key][series_name] += float(record.quantity or 0)
-        output_units[series_name] = unit
-
-    for record in reproduction_records:
-        key = _month_key(record.event_date)
-        monthly_reproduction_events[key] += 1
-        monthly_offspring[key] += int(record.offspring_count or 0)
-        monthly_alive_offspring[key] += int(record.alive_offspring or 0)
-
-    for record in sales_records:
-        key = _month_key(record.sale_date)
-        gross = float(record.total_amount or 0)
-        monthly_sales_value[key] += gross
-        if str(record.source_type or "").strip().lower() == "crop":
-            monthly_crop_sales_value[key] += gross
-        else:
-            monthly_livestock_sales_value[key] += gross
-
-    for payment in payment_records:
-        monthly_cash_collected[_month_key(payment.payment_date)] += float(payment.amount or 0)
+    monthly_crop_yield = aggregates["crop_yield"]
+    crop_yield_by_name = aggregates["crop_names"]
+    monthly_weather = aggregates["weather"]
+    monthly_feed = aggregates["feed"]
+    monthly_growth_gain = aggregates["growth"]
+    monthly_production = aggregates["production"]
+    monthly_sales_value, monthly_crop_sales_value, monthly_livestock_sales_value = aggregates["sales"], aggregates["crop_sales"], aggregates["animal_sales"]
+    monthly_cash_collected = aggregates["cash"]
+    monthly_reproduction_events, monthly_offspring, monthly_alive_offspring = aggregates["reproduction"], aggregates["offspring"], aggregates["alive"]
 
     monthly = []
     for key in month_keys:
-        weather_bucket = monthly_weather[key]
-        growth_values = monthly_growth_gain[key]
+        weather_bucket = monthly_weather.get(key, {})
+        growth_value = monthly_growth_gain.get(key)
         year, month = (int(part) for part in key.split("-"))
         monthly.append(
             {
@@ -297,21 +134,21 @@ def build_trend_analysis(db: Session, start_date: date, end_date: date) -> dict[
                 "crop_yield_kg": round(monthly_crop_yield[key], 2),
                 "feed_consumption_kg": round(monthly_feed[key], 3),
                 "average_daily_gain_kg": (
-                    round(mean(growth_values), 4) if growth_values else None
+                    round(float(growth_value), 4) if growth_value is not None else None
                 ),
                 "average_rainfall_mm": (
-                    round(mean(weather_bucket["rainfall"]), 2)
-                    if weather_bucket["rainfall"]
+                    round(float(weather_bucket["rainfall"]), 2)
+                    if weather_bucket.get("rainfall") is not None
                     else None
                 ),
                 "average_temperature_c": (
-                    round(mean(weather_bucket["temperature"]), 2)
-                    if weather_bucket["temperature"]
+                    round(float(weather_bucket["temperature"]), 2)
+                    if weather_bucket.get("temperature") is not None
                     else None
                 ),
                 "average_humidity_percent": (
-                    round(mean(weather_bucket["humidity"]), 1)
-                    if weather_bucket["humidity"]
+                    round(float(weather_bucket["humidity"]), 1)
+                    if weather_bucket.get("humidity") is not None
                     else None
                 ),
                 "production": dict(monthly_production[key]),
@@ -408,11 +245,7 @@ def build_trend_analysis(db: Session, start_date: date, end_date: date) -> dict[
         ),
     ]
 
-    health_distribution = defaultdict(int)
-    for record in livestock:
-        if record.is_archived:
-            continue
-        health_distribution[str(record.health_status or "Unknown")] += int(record.quantity or 0)
+    health_distribution = aggregates["health"]
 
     top_crops = sorted(
         (
@@ -431,20 +264,12 @@ def build_trend_analysis(db: Session, start_date: date, end_date: date) -> dict[
         }
     )
 
-    reproduction_events = len(reproduction_records)
-    breeder_females = sum(int(record.breeder_female_quantity or 0) for record in reproduction_records)
-    confirmed_pregnant = sum(int(record.confirmed_pregnant_quantity or 0) for record in reproduction_records)
-    eggs_set = sum(int(record.eggs_set or 0) for record in reproduction_records)
-    fertile_eggs = sum(int(record.fertile_eggs or 0) for record in reproduction_records)
-    offspring_recorded = sum(int(record.offspring_count or 0) for record in reproduction_records)
-    alive_offspring = sum(int(record.alive_offspring or 0) for record in reproduction_records)
-    reproduction_losses = sum(int(record.loss_count or 0) for record in reproduction_records)
-    birth_hatch_events = sum(
-        1
-        for record in reproduction_records
-        if str(record.record_type or "").strip().lower()
-        in {"birth", "hatch", "farrowing", "kidding", "calving"}
-    )
+    totals = aggregates["reproduction_totals"]
+    reproduction_events = counts["reproduction_records"]
+    breeder_females, confirmed_pregnant = totals["breeder_female_quantity"], totals["confirmed_pregnant_quantity"]
+    eggs_set, fertile_eggs = totals["eggs_set"], totals["fertile_eggs"]
+    offspring_recorded, alive_offspring = totals["offspring_count"], totals["alive_offspring"]
+    reproduction_losses, birth_hatch_events = totals["loss_count"], totals["birth_hatch_events"]
     reproduction_summary = {
         "events": reproduction_events,
         "birth_hatch_events": birth_hatch_events,
@@ -475,11 +300,11 @@ def build_trend_analysis(db: Session, start_date: date, end_date: date) -> dict[
             growth_start_date = date.fromordinal(
                 first.measurement_date.toordinal() - int(first.days_since_previous)
             )
-            measurement_count = len(ordered) + 1
+            measurement_count = int(first.measurement_count) + 1
         else:
             start_weight = float(first.weight_kg or 0)
             growth_start_date = first.measurement_date
-            measurement_count = len(ordered)
+            measurement_count = int(first.measurement_count)
 
         latest_weight = float(last_record.weight_kg or 0)
         total_change = latest_weight - start_weight
@@ -520,19 +345,17 @@ def build_trend_analysis(db: Session, start_date: date, end_date: date) -> dict[
         ],
         "data_coverage": {
             "months_in_period": len(monthly),
-            "crop_yield_records": len(crop_yields),
-            "weather_records": len(weather),
-            "livestock_growth_records": len(growth_records),
-            "feeding_records": len(feeding_records),
-            "livestock_production_records": len(production_records),
-            "reproduction_records": len(reproduction_records),
-            "sales_records": len(sales_records),
-            "payment_records": len(payment_records),
-            "crop_sales_records": sum(1 for record in sales_records if str(record.source_type or "").strip().lower() == "crop"),
-            "livestock_sales_records": sum(1 for record in sales_records if str(record.source_type or "").strip().lower() != "crop"),
-            "voided_production_records_excluded": max(
-                0, production_records_before_void_filter - len(production_records)
-            ),
+            "crop_yield_records": counts["crop_yield_records"],
+            "weather_records": counts["weather_records"],
+            "livestock_growth_records": counts["livestock_growth_records"],
+            "feeding_records": counts["feeding_records"],
+            "livestock_production_records": counts["livestock_production_records"],
+            "reproduction_records": counts["reproduction_records"],
+            "sales_records": counts["sales_records"],
+            "payment_records": counts["payment_records"],
+            "crop_sales_records": counts["crop_sales_records"],
+            "livestock_sales_records": counts["livestock_sales_records"],
+            "voided_production_records_excluded": counts["voided_production_records_excluded"],
             "rainfall_yield_pair_months": len(rainfall_pairs),
             "temperature_yield_pair_months": len(temperature_pairs),
             "feed_growth_pair_months": len(feed_growth_pairs),

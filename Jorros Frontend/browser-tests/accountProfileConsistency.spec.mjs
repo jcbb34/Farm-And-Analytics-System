@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from "@playwright/test";
 
@@ -13,7 +14,7 @@ async function setup(page) {
     await page.addInitScript(() => {
         if (!sessionStorage.getItem("joross-auth-session-v1")) sessionStorage.setItem("joross-auth-session-v1", JSON.stringify({ accessToken: "synthetic-account-profile", expiresAt: Date.now() + 86400000, user: { id: 77, username: "casey.admin", fullName: "Stale profile", role: "System Administrator", permissions: ["*"], status: "Active" } }));
     });
-    await page.route("**/api/v1/**", async route => {
+    await page.route("**/api/v1/**", withDisplayData(async route => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (path.endsWith("/events/stream")) return route.fulfill({ status: 503, json: {} });
@@ -29,7 +30,7 @@ async function setup(page) {
         }
         if (path.includes("/archives")) return route.fulfill({ json: { items: [], counts: {}, total: 0 } });
         return route.fulfill({ json: [] });
-    });
+    }));
     return { errors, current: () => record };
 }
 

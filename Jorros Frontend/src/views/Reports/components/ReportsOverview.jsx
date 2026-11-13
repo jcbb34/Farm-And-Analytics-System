@@ -1,5 +1,5 @@
 // Summary cards shown at the top of Reports
-function ReportsOverview({ summary }) {
+function ReportsOverview({ summary, loading }) {
     const summaryCards = [
         { title: "Approved Reports", value: summary?.approved, description: "Official locked reports", icon: "verified", className: "completed" },
         { title: "For Review", value: summary?.forReview, description: "Waiting for approval", icon: "rate_review", className: "crop" },
@@ -21,7 +21,7 @@ function ReportsOverview({ summary }) {
 
                     <div>
                         <p>{card.title}</p>
-                        <h2>{card.value ?? "—"}</h2>
+                        <h2>{card.value ?? (loading ? "…" : "—")}</h2>
                         <small>{card.description}</small>
                     </div>
                 </article>

@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { test, expect } from '@playwright/test';
 
@@ -16,7 +17,7 @@ async function prepare(page, { configured = false, status = 'Needs reconnection'
     // Google navigation is fulfilled locally: these tests never contact Google
     // or request real credentials, and every farm API request is intercepted.
     await page.route('https://accounts.google.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Synthetic Google sign-in</title><p>Test authorization page</p>' }));
-    await page.route('**/api/v1/**', async (route) => {
+    await page.route('**/api/v1/**', withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request(), path = new URL(request.url()).pathname;
         if (path === '/api/v1/auth/me') return route.fulfill({ json: profile });
@@ -30,7 +31,7 @@ async function prepare(page, { configured = false, status = 'Needs reconnection'
             return route.fulfill({ json: { authorization_url: state.authorizationUrl } });
         }
         return route.fulfill({ json: [] });
-    });
+    }));
     await page.goto('/settings?section=data');
     await expect(page.getByRole('button', { name: 'Back Up Now', exact: true })).toBeEnabled();
     return state;

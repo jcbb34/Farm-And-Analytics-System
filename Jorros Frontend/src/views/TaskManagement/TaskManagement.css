@@ -1703,6 +1703,20 @@ html[data-theme="dark"] .workforce-primary-tabs .workforce-primary-tab.active {
     font-size: 0.82rem;
 }
 
+/* The wrapper highlights the complete search control, including its icon. */
+.workforce-layout .reassign-search input:focus,
+.workforce-layout .reassign-search input:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
+@media (forced-colors: active) {
+    .workforce-layout .reassign-search:focus-within {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+}
+
 .reassign-candidate-groups {
     display: grid;
     gap: 20px;

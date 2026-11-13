@@ -3405,3 +3405,6 @@ html[data-theme="dark"] .reports-page-business-kpi strong {
     outline: 2px solid #2e7d32;
     outline-offset: 2px;
 }
+
+.report-pdf-status { display: block; color: #52666a; font-size: 0.8rem; }
+.report-pdf-status.failed { color: #b42318; }

@@ -85,6 +85,8 @@ function StaffCalendar() {
         exception_reason: "",
     });
     const requestSequenceRef = useRef(0);
+    const calendarRequestRef = useRef(null);
+    const metadataRef = useRef({ configAt: 0, employeesAt: 0, employeeRevision: 0, loadedEmployeeRevision: 0 });
     const detailsModalRef = useRef(null);
     const calendarSectionRef = useRef(null);
     const previousFocusRef = useRef(null);
@@ -113,56 +115,93 @@ function StaffCalendar() {
                 initialDateProvidedRef.current = true;
             }
             setConfigReady(true);
+            metadataRef.current.configAt = Date.now();
         } catch (err) {
             setConfigError(err?.message || "Unable to confirm the farm date.");
         }
     }, []);
     const loadEmployees = useCallback(async () => {
         if (!canManage) return;
+        const revision = metadataRef.current.employeeRevision;
         try {
             const rows = await workforceService.getEmployees();
             setEmployees(rows || []);
             setEmployeesReady(true);
             setEmployeesError("");
+            metadataRef.current.employeesAt = Date.now();
+            metadataRef.current.loadedEmployeeRevision = revision;
         } catch (err) {
             setEmployeesError(err?.message || "Unable to load employees.");
         }
     }, [canManage]);
     useEffect(() => { loadConfig(); }, [loadConfig]);
     useEffect(() => { loadEmployees(); }, [loadEmployees]);
-    const rangeKey = range.join(":");
+    useEffect(() => {
+        const markEmployeesChanged = (event) => {
+            if ((event.detail?.modules || []).includes("employees")) metadataRef.current.employeeRevision++;
+        };
+        window.addEventListener("joross:modules-updated", markEmployeesChanged);
+        return () => window.removeEventListener("joross:modules-updated", markEmployeesChanged);
+    }, []);
+    const rangeKey = `${range.join(":")}:${employeeId || "all"}`;
     const loadCalendar = useCallback(async ({ background = false } = {}) => {
         if (!configReady || !canManage) return;
+        const key = `${rangeKey}:${todayKey}`;
+        if (calendarRequestRef.current?.key === key) return calendarRequestRef.current.promise;
         const requestId = ++requestSequenceRef.current;
+        calendarRequestRef.current?.controller.abort();
+        const controller = new AbortController();
+        const request = { key, controller, promise: null };
+        calendarRequestRef.current = request;
         if (background) setRefreshing(true);
         else setLoading(true);
         const todayInRange = range[0] <= todayKey && range[1] >= todayKey;
         // One bounded request for the calendar, plus today only when outside that range.
         const ranges = [range, ...(!todayInRange ? [[todayKey, todayKey]] : [])];
-        const results = await Promise.allSettled(ranges.map(([from, to]) => workforceService.getCalendar(from, to, null).then(validateStaffCalendarPayload)));
-        if (requestId !== requestSequenceRef.current) return;
-        if (results[0].status === "fulfilled") {
-            setData(results[0].value);
-            setLoadedRange(rangeKey);
-            setUpdatedAt(new Date().toISOString());
-            setError("");
-        } else setError(results[0].reason?.message || "Unable to load staff calendar.");
-        const todayResult = results[todayInRange ? 0 : 1];
-        if (todayResult.status === "fulfilled") {
-            setTodayData({ date: todayKey, data: todayResult.value, updatedAt: new Date().toISOString() });
-            setTodayError("");
-        } else setTodayError(todayResult.reason?.message || "Unable to load today’s attendance.");
-        setLoading(false);
-        setRefreshing(false);
-    }, [range, rangeKey, todayKey, configReady, canManage]);
+        request.promise = (async () => {
+            try {
+                const results = await Promise.allSettled(ranges.map(async ([from, to]) => validateStaffCalendarPayload(
+                    await workforceService.getCalendar(from, to, employeeId || null, { signal: controller.signal })
+                )));
+                if (requestId !== requestSequenceRef.current || controller.signal.aborted) return;
+                if (results[0].status === "fulfilled") {
+                    setData(results[0].value);
+                    setLoadedRange(rangeKey);
+                    setUpdatedAt(new Date().toISOString());
+                    setError("");
+                } else setError(results[0].reason?.message || "Unable to load staff calendar.");
+                const todayResult = results[todayInRange ? 0 : 1];
+                if (todayResult.status === "fulfilled") {
+                    setTodayData({ date: todayKey, employeeId, data: todayResult.value, updatedAt: new Date().toISOString() });
+                    setTodayError("");
+                } else setTodayError(todayResult.reason?.message || "Unable to load today’s attendance.");
+            } finally {
+                if (requestId === requestSequenceRef.current) {
+                    setLoading(false); setRefreshing(false);
+                    if (calendarRequestRef.current === request) calendarRequestRef.current = null;
+                }
+            }
+        })();
+        return request.promise;
+    }, [range, rangeKey, todayKey, employeeId, configReady, canManage]);
     useEffect(() => {
         loadCalendar();
-        return () => { requestSequenceRef.current += 1; };
+        return () => {
+            requestSequenceRef.current += 1;
+            calendarRequestRef.current?.controller.abort(); calendarRequestRef.current = null;
+        };
     }, [loadCalendar]);
     const refreshCalendar = useCallback(async () => {
         if (actionBusyRef.current) return;
-        await Promise.all([loadConfig(), loadEmployees(), loadCalendar({ background: true })]);
-    }, [loadConfig, loadEmployees, loadCalendar]);
+        const metadata = metadataRef.current, now = Date.now();
+        const configDue = !configReady || configError || now - metadata.configAt >= 300000 || farmDateKey(new Date(), farmTimezone) !== todayKey;
+        const employeesDue = !employeesReady || employeesError || now - metadata.employeesAt >= 300000 || metadata.loadedEmployeeRevision !== metadata.employeeRevision;
+        await Promise.all([
+            configDue ? loadConfig() : null,
+            employeesDue ? loadEmployees() : null,
+            loadCalendar({ background: true }),
+        ]);
+    }, [loadConfig, loadEmployees, loadCalendar, configReady, configError, employeesReady, employeesError, farmTimezone, todayKey]);
     useFarmModuleUpdates(["calendar", "tasks", "employees"], refreshCalendar, { editing: Boolean(editor || eventPanel) });
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -192,7 +231,7 @@ function StaffCalendar() {
     const todayRows = useMemo(() => selectedEmployees.map((employee) => staffDayRow(todayIndex, employee, todayKey, todayKey)), [selectedEmployees, todayIndex, todayKey]);
     const todaySummary = useMemo(() => summarizeStaffAttendance(todayRows,
         (todayIndex.tasks.get(todayKey) || []).filter((task) => !employeeId || [task.assigned_employee_id, task.original_employee_id, task.covering_employee_id].some((id) => String(id) === String(employeeId))), todayKey), [todayRows, todayIndex, todayKey, employeeId]);
-    const todayReady = employeesReady && !employeesError && configReady && !configError && todayData?.date === todayKey && !todayError;
+    const todayReady = employeesReady && !employeesError && configReady && !configError && todayData?.date === todayKey && todayData?.employeeId === employeeId && !todayError;
     const editorIndex = editor?.dateKey === todayKey && todayData?.date === todayKey ? todayIndex : dataIndex;
 
     const rowsForDate = useCallback((dateKey) => selectedEmployees

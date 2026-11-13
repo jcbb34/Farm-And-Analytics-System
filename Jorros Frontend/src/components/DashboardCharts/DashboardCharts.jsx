@@ -27,6 +27,9 @@ import {
 } from "react-chartjs-2";
 
 import "./DashboardCharts.css";
+import { cropService } from "../../services/cropService.js";
+import { livestockService } from "../../services/livestockService.js";
+import { chartRange } from "./chartRange.js";
 
 ChartJS.register(
     CategoryScale,
@@ -521,6 +524,8 @@ function DashboardCharts({
     period = "month",
     crops = [],
     livestock = [],
+    cropStatusCounts,
+    healthCounts,
 }) {
     const [cropFilter, setCropFilter] = useState("This Month");
     const [livestockFilter, setLivestockFilter] =
@@ -528,6 +533,30 @@ function DashboardCharts({
 
     const dashboardFilter =
         getDashboardChartFilter(period);
+    const [chartCrops, setChartCrops] = useState(crops), [chartLivestock, setChartLivestock] = useState(livestock);
+    const [cropChartError, setCropChartError] = useState(""), [livestockChartError, setLivestockChartError] = useState("");
+    const [cropChartLoading, setCropChartLoading] = useState(false), [livestockChartLoading, setLivestockChartLoading] = useState(false);
+    const [chartRetry, setChartRetry] = useState(0);
+    useEffect(() => {
+        let active = true;
+        setCropChartError("");
+        if (cropFilter === dashboardFilter) { setChartCrops(crops); setCropChartLoading(false); return; }
+        setCropChartLoading(true);
+        cropService.getChart(chartRange(cropFilter)).then(rows => { if (active) setChartCrops(rows); })
+            .catch(error => { if (active) setCropChartError(error?.message || "Crop chart unavailable."); })
+            .finally(() => { if (active) setCropChartLoading(false); });
+        return () => { active = false; };
+    }, [cropFilter, dashboardFilter, crops, chartRetry]);
+    useEffect(() => {
+        let active = true;
+        setLivestockChartError("");
+        if (livestockFilter === dashboardFilter) { setChartLivestock(livestock); setLivestockChartLoading(false); return; }
+        setLivestockChartLoading(true);
+        livestockService.getChart(chartRange(livestockFilter)).then(rows => { if (active) setChartLivestock(rows); })
+            .catch(error => { if (active) setLivestockChartError(error?.message || "Weight chart unavailable."); })
+            .finally(() => { if (active) setLivestockChartLoading(false); });
+        return () => { active = false; };
+    }, [livestockFilter, dashboardFilter, livestock, chartRetry]);
 
     // Global period changes update both chart filters together.
     useEffect(() => {
@@ -539,7 +568,7 @@ function DashboardCharts({
     const cropChart = useMemo(() => {
         const records = [];
 
-        crops.forEach((crop) => {
+        chartCrops.forEach((crop) => {
             const history = crop.growthRecords || [];
 
             if (history.length > 0) {
@@ -598,10 +627,10 @@ function DashboardCharts({
             },
             empty: limited.length === 0,
         };
-    }, [cropFilter, crops]);
+    }, [cropFilter, chartCrops]);
 
     const livestockChart = useMemo(() => {
-        const records = livestock
+        const records = chartLivestock
             .filter((record) =>
                 inSelectedRange(
                     record.updatedAt ||
@@ -645,13 +674,14 @@ function DashboardCharts({
             ),
             empty: records.length === 0,
         };
-    }, [livestock, livestockFilter]);
+    }, [chartLivestock, livestockFilter]);
 
     const cropStatus = useMemo(() => {
         const order = [
             "Planted",
             "Growing",
             "Ready for Harvest",
+            "Harvesting",
             "Harvested",
             "Failed",
         ];
@@ -660,7 +690,7 @@ function DashboardCharts({
         const values = order
             .map((status, index) => ({
                 label: status,
-                value: crops.filter(
+                value: cropStatusCounts ? (cropStatusCounts[status] || 0) : crops.filter(
                     (crop) => crop.status === status
                 ).length,
                 color: chartColors[index % chartColors.length],
@@ -676,7 +706,7 @@ function DashboardCharts({
                       color: "#e0e0e0",
                   },
               ];
-    }, [crops]);
+    }, [crops, cropStatusCounts]);
 
     const livestockHealth = useMemo(() => {
         const order = [
@@ -712,10 +742,10 @@ function DashboardCharts({
         // Keep every health category visible, even when its count is zero.
         return order.map((status, index) => ({
             label: status,
-            value: totals[status] || 0,
+            value: healthCounts ? (healthCounts[status] || 0) : totals[status] || 0,
             color: colors[index],
         }));
-    }, [livestock]);
+    }, [livestock, healthCounts]);
 
     const cropStatusData = {
         labels: cropStatus.map((item) => item.label),
@@ -760,7 +790,7 @@ function DashboardCharts({
                 </div>
 
                 <div className="chart-area">
-                    {cropChart.empty ? (
+                    {cropChartLoading ? <p role="status">Loading crop growth…</p> : cropChartError ? <p role="alert">{cropChartError} <button type="button" onClick={() => setChartRetry(value => value + 1)}>Retry crop chart</button></p> : cropChart.empty ? (
                         <div className="empty-state">
                             No crop growth records for this period.
                         </div>
@@ -841,7 +871,7 @@ function DashboardCharts({
 
             <article className="dashboard-card livestock-growth">
                 <div className="card-title">
-                    <h3>Livestock Growth Overview</h3>
+                    <h3>Current Batch Weights</h3>
 
                     <ChartFilter
                         idPrefix="livestock-filter"
@@ -851,7 +881,7 @@ function DashboardCharts({
                 </div>
 
                 <div className="chart-area">
-                    {livestockChart.empty ? (
+                    {livestockChartLoading ? <p role="status">Loading batch weights…</p> : livestockChartError ? <p role="alert">{livestockChartError} <button type="button" onClick={() => setChartRetry(value => value + 1)}>Retry weights</button></p> : livestockChart.empty ? (
                         <div className="empty-state">
                             No livestock records for this period.
                         </div>

@@ -1,3 +1,4 @@
+import { recordEditVersion } from "./recordEditing.js";
 import { httpClient } from "./httpClient.js";
 
 function notifyInventoryChanged() {
@@ -24,6 +25,8 @@ function notifyInventoryChanged() {
 
 function normalizeStockRecord(record = {}) {
     return {
+        inventoryEditVersion: record.inventoryEditVersion ?? record.inventory_edit_version ?? null,
+        inventoryPreviousEditVersion: record.inventoryPreviousEditVersion ?? record.inventory_previous_edit_version ?? null,
         id: record.id,
 
         inventoryItemId:
@@ -88,6 +91,7 @@ function normalizeInventoryItem(record = {}) {
         [];
 
     return {
+        editVersion: record.editVersion ?? record.edit_version,
         id: record.id,
 
         itemCode:
@@ -182,6 +186,7 @@ function createInventoryPayload(data = {}) {
 
 function createInventoryUpdatePayload(data = {}) {
     const payload = {};
+    if (data.editVersion !== undefined || data.edit_version !== undefined) payload.expected_version = recordEditVersion(data);
 
     if (data.name !== undefined) {
         payload.name = data.name.trim();
@@ -287,14 +292,25 @@ export const inventoryService = Object.freeze({
         );
     },
 
-    async getInventoryItem(inventoryId) {
+    async getInventoryItem(inventoryId, { signal } = {}) {
         const response = await httpClient.get(
-            `/inventory/${inventoryId}`
+            `/inventory/${inventoryId}`, { query: { include_history: false }, signal, cache: "no-store" }
         );
 
         return normalizeInventoryItem(
             response?.data ?? response
         );
+    },
+
+    async getStockHistoryPage(inventoryId, { signal, ...query } = {}) {
+        const page = await httpClient.get(`/inventory/${inventoryId}/stock-history`, {
+            query: { limit: 25, ...query }, signal, cache: "no-store",
+        });
+        if (!Array.isArray(page?.items) || !Number.isInteger(page.total) || page.total < 0 ||
+            !Number.isInteger(page.snapshot_id) || page.snapshot_id < 0) {
+            throw new Error("Invalid stock history response.");
+        }
+        return { ...page, items: page.items.map(normalizeStockRecord) };
     },
 
     async createInventory(data, { idempotencyKey = null } = {}) {
@@ -312,6 +328,7 @@ export const inventoryService = Object.freeze({
     },
 
     async updateInventory(inventoryId, data) {
+        recordEditVersion(data);
         const response = await httpClient.put(
             `/inventory/${inventoryId}`,
             createInventoryUpdatePayload(data)
@@ -363,6 +380,7 @@ export const inventoryService = Object.freeze({
         const response = await httpClient.post(
             `/inventory/${inventoryId}/stock-adjustments`,
             {
+                ...(adjustment.type === "Set Exact Quantity" ? { expected_version: recordEditVersion(adjustment) } : {}),
                 adjustment_type:
                     adjustment.type,
                 quantity: Number(

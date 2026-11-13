@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { workforceService } from "../../services/workforceService.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
+import { evidencePaths } from "./evidencePaths.js";
+import { useEvidenceImage, useNearViewport } from "./useEvidenceImage.js";
 import "./EvidencePhoto.css";
 
 const isManagedEvidence = (value) => {
@@ -11,174 +13,79 @@ const isManagedEvidence = (value) => {
     return text.startsWith("/workforce/evidence-assets/") || text.startsWith("/workforce/evidence/");
 };
 
-export function EvidenceViewButton({ evidenceUrl, label = "View Image", compact = false, disabled = false }) {
-    const notification = useNotification();
-    const [previewUrl, setPreviewUrl] = useState("");
-    const [loading, setLoading] = useState(false);
-    const objectUrlRef = useRef("");
+function EvidenceImageDialog({ image, alt, onClose, validPath = true }) {
     const closeButtonRef = useRef(null);
-
-    useEffect(() => () => {
-        if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    }, []);
-
+    const [badImage, setBadImage] = useState("");
     useEffect(() => {
-        if (!previewUrl) return undefined;
+        const previousFocus = document.activeElement;
         const previousOverflow = document.body.style.overflow;
-        const onKeyDown = (event) => {
-            if (event.key === "Escape") {
-                setPreviewUrl("");
-                if (objectUrlRef.current) {
-                    URL.revokeObjectURL(objectUrlRef.current);
-                    objectUrlRef.current = "";
-                }
-            }
-        };
         document.body.style.overflow = "hidden";
-        document.addEventListener("keydown", onKeyDown);
         closeButtonRef.current?.focus();
         return () => {
             document.body.style.overflow = previousOverflow;
-            document.removeEventListener("keydown", onKeyDown);
+            if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
         };
-    }, [previewUrl]);
-
-    if (!evidenceUrl) return null;
-
-    const closePreview = () => {
-        setPreviewUrl("");
-        if (objectUrlRef.current) {
-            URL.revokeObjectURL(objectUrlRef.current);
-            objectUrlRef.current = "";
+    }, []);
+    const onKeyDown = event => {
+        if (event.key === "Escape") { event.stopPropagation(); onClose(); }
+        if (event.key === "Tab") {
+            event.stopPropagation();
+            const buttons = [...event.currentTarget.querySelectorAll('button:not([disabled])')];
+            const first = buttons[0], last = buttons[buttons.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
         }
     };
-
-    const openPreview = async () => {
-        if (disabled || loading) return;
-        setLoading(true);
-        try {
-            if (!isManagedEvidence(evidenceUrl)) {
-                throw new Error("External evidence links are disabled for security. Upload the photo to the task instead.");
-            }
-            const blob = await workforceService.downloadEvidencePhoto(evidenceUrl);
-            if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-            objectUrlRef.current = URL.createObjectURL(blob);
-            setPreviewUrl(objectUrlRef.current);
-        } catch (error) {
-            notification.error(error?.message || "Unable to open the evidence photo.", "Evidence");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return <>
-        <button
-            type="button"
-            className={`evidence-action-button evidence-action-button--view evidence-view-button ${compact ? "compact" : ""}`}
-            onClick={openPreview}
-            disabled={disabled || loading}
-            aria-busy={loading}
-        >
-            <span className="material-symbols-outlined" aria-hidden="true">visibility</span>
-            <span>{loading ? "Opening…" : label}</span>
-        </button>
-        {previewUrl && <div className="evidence-preview-overlay" onMouseDown={(event)=>{ if (event.target === event.currentTarget) closePreview(); }}>
-            <div className="evidence-preview-modal" role="dialog" aria-modal="true" aria-label="Evidence photo preview" onMouseDown={(event)=>event.stopPropagation()}>
-                <header>
-                    <div>
-                        <strong>Evidence Photo</strong>
-                        <span>Review the image submitted with this work record.</span>
-                    </div>
-                    <button ref={closeButtonRef} type="button" className="evidence-preview-close" onClick={closePreview} aria-label="Close image preview">
-                        <span className="material-symbols-outlined" aria-hidden="true">close</span>
-                    </button>
-                </header>
-                <div className="evidence-preview-body">
-                    <img src={previewUrl} alt="Submitted work evidence" onError={() => notification.error("This evidence could not be displayed as an image.", "Evidence")}/>
-                </div>
+    return <div className="evidence-preview-overlay" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+        <div className="evidence-preview-modal" role="dialog" aria-modal="true" aria-label="Evidence photo preview" onKeyDown={onKeyDown} onMouseDown={event => event.stopPropagation()}>
+            <header><div><strong>Evidence Photo</strong><span>Secure image attached to this work submission.</span></div>
+                <button ref={closeButtonRef} type="button" className="evidence-preview-close" onClick={onClose} aria-label="Close image preview"><span className="material-symbols-outlined" aria-hidden="true">close</span></button>
+            </header>
+            <div className="evidence-preview-body">
+                {!validPath ? <p role="alert">External evidence links are disabled.</p> : image.loading ? <p role="status">Loading full-size evidence…</p>
+                    : image.error || (image.url && badImage === image.url) ? <div role="alert"><p>{image.error || "This evidence could not be displayed as an image."}</p><button type="button" className="evidence-action-button evidence-action-button--view" onClick={() => { setBadImage(""); image.retry(); }}>Retry photo</button></div>
+                    : image.url ? <img src={image.url} alt={alt} decoding="async" onError={() => setBadImage(image.url)} /> : <p role="status">Loading evidence…</p>}
             </div>
-        </div>}
+        </div>
+    </div>;
+}
+
+export function EvidenceViewButton({ evidenceUrl, label = "View Image", compact = false, disabled = false }) {
+    const [openEvidence, setOpenEvidence] = useState("");
+    const previewOpen = Boolean(evidenceUrl) && openEvidence === evidenceUrl;
+    const paths = evidencePaths(evidenceUrl);
+    const image = useEvidenceImage(paths?.original, previewOpen);
+    const loading = image.loading;
+    if (!evidenceUrl) return null;
+    return <>
+        <button type="button" className={`evidence-action-button evidence-action-button--view evidence-view-button ${compact ? "compact" : ""}`}
+            onClick={() => setOpenEvidence(evidenceUrl)} disabled={disabled || loading} aria-busy={loading}>
+            <span className="material-symbols-outlined" aria-hidden="true">visibility</span><span>{loading ? "Opening…" : label}</span>
+        </button>
+        {previewOpen && <EvidenceImageDialog image={image} validPath={Boolean(paths)} alt="Submitted work evidence" onClose={() => setOpenEvidence("")} />}
     </>;
 }
 
 export function EvidenceInlinePreview({ evidenceUrl, alt = "Submitted work evidence" }) {
-    const notification = useNotification();
-    const [imageUrl, setImageUrl] = useState("");
-    const [previewOpen, setPreviewOpen] = useState(false);
-    const [loading, setLoading] = useState(Boolean(evidenceUrl));
-    const [failed, setFailed] = useState(false);
-    const objectUrlRef = useRef("");
-    const closeButtonRef = useRef(null);
-
-    useEffect(() => {
-        let cancelled = false;
-        const loadImage = async () => {
-            if (!evidenceUrl) {
-                setLoading(false);
-                return;
-            }
-            setLoading(true);
-            setFailed(false);
-            try {
-                if (!isManagedEvidence(evidenceUrl)) throw new Error("External evidence links are disabled.");
-                const blob = await workforceService.downloadEvidencePhoto(evidenceUrl);
-                if (cancelled) return;
-                if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-                objectUrlRef.current = URL.createObjectURL(blob);
-                setImageUrl(objectUrlRef.current);
-            } catch (error) {
-                if (!cancelled) {
-                    setFailed(true);
-                    notification.error(error?.message || "Unable to load the evidence photo.", "Evidence");
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-        loadImage();
-        return () => { cancelled = true; };
-    }, [evidenceUrl]);
-
-    useEffect(() => () => {
-        if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    }, []);
-
-    useEffect(() => {
-        if (!previewOpen) return undefined;
-        const previousOverflow = document.body.style.overflow;
-        const onKeyDown = (event) => {
-            if (event.key === "Escape") setPreviewOpen(false);
-        };
-        document.body.style.overflow = "hidden";
-        document.addEventListener("keydown", onKeyDown);
-        closeButtonRef.current?.focus();
-        return () => {
-            document.body.style.overflow = previousOverflow;
-            document.removeEventListener("keydown", onKeyDown);
-        };
-    }, [previewOpen]);
-
-    if (!evidenceUrl) return <div className="evidence-inline-empty">No evidence photo submitted.</div>;
-    if (loading) return <div className="evidence-inline-loading"><span className="material-symbols-outlined evidence-spin" aria-hidden="true">progress_activity</span>Loading secure evidence…</div>;
-    if (failed || !imageUrl) return <div className="evidence-inline-error" role="status">Evidence photo could not be displayed.</div>;
-
-    return <>
-        <button type="button" className="evidence-inline-preview" onClick={() => setPreviewOpen(true)} aria-label="Open larger evidence photo preview">
-            <img src={imageUrl} alt={alt} onError={() => setFailed(true)} />
-            <span className="evidence-inline-zoom"><span className="material-symbols-outlined" aria-hidden="true">zoom_in</span>View larger</span>
-        </button>
-        {previewOpen && <div className="evidence-preview-overlay" onMouseDown={(event)=>{ if (event.target === event.currentTarget) setPreviewOpen(false); }}>
-            <div className="evidence-preview-modal" role="dialog" aria-modal="true" aria-label="Evidence photo preview" onMouseDown={(event)=>event.stopPropagation()}>
-                <header>
-                    <div><strong>Evidence Photo</strong><span>Secure image attached to this work submission.</span></div>
-                    <button ref={closeButtonRef} type="button" className="evidence-preview-close" onClick={() => setPreviewOpen(false)} aria-label="Close image preview">
-                        <span className="material-symbols-outlined" aria-hidden="true">close</span>
-                    </button>
-                </header>
-                <div className="evidence-preview-body"><img src={imageUrl} alt={alt} onError={() => setFailed(true)} /></div>
-            </div>
-        </div>}
-    </>;
+    const target = useRef(null);
+    const paths = evidencePaths(evidenceUrl);
+    const nearViewport = useNearViewport(target, evidenceUrl);
+    const thumbnail = useEvidenceImage(paths?.thumbnail, nearViewport);
+    const [openEvidence, setOpenEvidence] = useState("");
+    const [brokenThumbnail, setBrokenThumbnail] = useState("");
+    const previewOpen = Boolean(evidenceUrl) && openEvidence === evidenceUrl;
+    const original = useEvidenceImage(paths?.original, previewOpen);
+    const previewFailed = Boolean(thumbnail.error || (thumbnail.url && brokenThumbnail === thumbnail.url));
+    return <div ref={target} className="evidence-inline-shell">
+        {!evidenceUrl ? <div className="evidence-inline-empty">No evidence photo submitted.</div>
+            : !paths ? <div className="evidence-inline-error" role="status">External evidence links are disabled.</div>
+                : <button type="button" className="evidence-inline-preview" onClick={() => setOpenEvidence(evidenceUrl)} aria-label="Open larger evidence photo preview">
+                    {thumbnail.url && !previewFailed ? <img src={thumbnail.url} alt={alt} decoding="async" onError={() => setBrokenThumbnail(thumbnail.url)} />
+                        : <span className="evidence-inline-placeholder">{!nearViewport ? "Evidence photo" : thumbnail.loading ? "Loading secure preview…" : previewFailed ? "Preview unavailable. Open the full photo." : "Open evidence photo"}</span>}
+                    <span className="evidence-inline-zoom"><span className="material-symbols-outlined" aria-hidden="true">zoom_in</span>View larger</span>
+                </button>}
+        {previewOpen && <EvidenceImageDialog image={original} validPath={Boolean(paths)} alt={alt} onClose={() => setOpenEvidence("")} />}
+    </div>;
 }
 
 export default function EvidencePhotoField({

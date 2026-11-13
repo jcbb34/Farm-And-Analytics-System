@@ -8,20 +8,23 @@ const CARD_DEFINITIONS = [
 ];
 
 
-export default function TaskSummaryCards({ stats }) {
+export default function TaskSummaryCards({ stats, loading, error, onRetry }) {
     return (
-        <section className="workforce-stats task-management-compact-stats" aria-label="Task Management summary">
+        <>
+        {error && <p className="workforce-error" role="status">{error} <button type="button" className="workforce-button secondary compact" onClick={onRetry}>Retry totals</button></p>}
+        <section className="workforce-stats task-management-compact-stats" aria-label="Task Management summary" aria-busy={loading}>
             {CARD_DEFINITIONS.map(({ key, label, icon }) => (
                 <div key={key} className={`workforce-stat ${key}`}>
                     <div className="workforce-stat-icon">
-                        <span className="material-symbols-outlined">{icon}</span>
+                        <span className="material-symbols-outlined" aria-hidden="true">{icon}</span>
                     </div>
                     <div className="workforce-stat-copy">
                         <span className="workforce-stat-label">{label}</span>
-                        <strong>{stats[key] || 0}</strong>
+                        <strong>{loading && !stats ? "…" : stats ? (stats[key] ?? 0) : "—"}</strong>
                     </div>
                 </div>
             ))}
         </section>
+        </>
     );
 }

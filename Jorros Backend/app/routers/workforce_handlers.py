@@ -4502,6 +4502,7 @@ def _calendar_payload(
     date_to: date,
     employee_id: int | None,
     current_user: User,
+    include_coverage_links: bool = False,
 ) -> dict:
     task_stmt = select(FarmActivity).where(
         FarmActivity.activity_date >= date_from,
@@ -4521,7 +4522,17 @@ def _calendar_payload(
         StaffShift.work_date <= date_to,
     )
     if employee_id:
-        task_stmt = task_stmt.where(FarmActivity.assigned_employee_id == employee_id)
+        matching_task = FarmActivity.assigned_employee_id == employee_id
+        if include_coverage_links:
+            # Match the latest coverage row exposed by the task serializer.
+            # Self-service schedules retain current-assignee-only visibility.
+            latest = select(func.max(TaskLeaveCoverage.id).label("id")).group_by(TaskLeaveCoverage.activity_id).subquery()
+            related = select(TaskLeaveCoverage.activity_id).join(latest, latest.c.id == TaskLeaveCoverage.id).where(or_(
+                TaskLeaveCoverage.original_employee_id == employee_id,
+                TaskLeaveCoverage.covering_employee_id == employee_id,
+            ))
+            matching_task = or_(matching_task, FarmActivity.id.in_(related))
+        task_stmt = task_stmt.where(matching_task)
         att_stmt = att_stmt.where(StaffAttendance.employee_id == employee_id)
         leave_stmt = leave_stmt.where(StaffLeave.employee_id == employee_id)
         shift_stmt = shift_stmt.where(StaffShift.employee_id == employee_id)
@@ -5420,6 +5431,7 @@ def staff_calendar(
         date_to=date_to,
         employee_id=employee_id,
         current_user=current_user,
+        include_coverage_links=True,
     )
 
 

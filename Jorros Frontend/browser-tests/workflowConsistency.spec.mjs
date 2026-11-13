@@ -1,3 +1,4 @@
+import { withDisplayData } from "./helpers/displayApiFixtures.mjs";
 import { serveSessionPolicy } from './helpers/serveSessionPolicy.mjs';
 import { WORK_TYPES } from '../src/services/eventPlanning.js';
 import { test, expect } from '@playwright/test';
@@ -15,7 +16,7 @@ async function prepare(page, { resourceError = false, retryTask = false, linkedU
     const gate = new Promise((resolve) => { release = resolve; });
     await page.clock.install({ time: new Date(`${today}T02:00:00Z`) });
     await page.addInitScript((user) => sessionStorage.setItem('joross-auth-session-v1', JSON.stringify({ accessToken: 'synthetic-workflow-token', user, expiresAt: Date.now() + 86400000 })), admin);
-    await page.route('**/api/v1/**', async (route) => {
+    await page.route('**/api/v1/**', withDisplayData(async (route) => {
         if (await serveSessionPolicy(route, page)) return;
         const request = route.request();
         const url = new URL(request.url());
@@ -47,7 +48,7 @@ async function prepare(page, { resourceError = false, retryTask = false, linkedU
         if (path === '/api/v1/weather') return route.fulfill({ status: 503, json: { detail: 'Synthetic weather unavailable' } });
         if (path === '/api/v1/farm-locations') return route.fulfill({ json: { items: ['Field A', 'Warehouse A', 'Jorros Farm'] } });
         return route.fulfill({ json: [] });
-    });
+    }));
     return { writes, release };
 }
 

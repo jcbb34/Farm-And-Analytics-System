@@ -1,4 +1,8 @@
 "use client";
+import useRecordEditConflict from "../../hooks/useRecordEditConflict.js";
+import RecordConflictNotice from "../RecordConflictNotice/RecordConflictNotice.jsx";
+import { cropService } from "../../services/cropService.js";
+
 
 import { MonitoringScheduleFields, scheduleForm, HistoryDateRange, useHistoryRange } from "../Monitoring/Monitoring.jsx";
 
@@ -97,6 +101,7 @@ function cropToForm(crop) {
     const watering = parseWateringSchedule(crop.wateringSchedule);
 
     return {
+        editVersion: crop.editVersion,
         ...scheduleForm(crop, true),
         name: crop.name ?? "",
         variety: crop.variety ?? "",
@@ -157,6 +162,11 @@ function CropRecordFormModal({
     );
     const [employees, setEmployees] = useState([]);
     const [careTemplates, setCareTemplates] = useState([]);
+
+    const conflict = useRecordEditConflict({
+        open, id: crop?.id, loadRecord: cropService.getCrop,
+        replaceForm: latest => setForm(cropToForm(latest)),
+    });
 
     useEffect(() => {
         if (open) {
@@ -260,6 +270,7 @@ function CropRecordFormModal({
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        if (conflict.reloading) return;
         if (submittingRef.current) return;
 
         if (
@@ -354,6 +365,7 @@ function CropRecordFormModal({
         }
 
         const payload = {
+            editVersion: form.editVersion,
             name: form.name.trim(),
             variety:
                 form.variety.trim(),
@@ -384,6 +396,7 @@ function CropRecordFormModal({
         try {
             await onSave(payload);
         } catch (error) {
+            if (conflict.handleError(error)) return;
             notify(error?.message || "Unable to save crop. Your entries are kept for retry.");
         } finally {
             submittingRef.current = false;
@@ -442,6 +455,7 @@ function CropRecordFormModal({
                     aria-busy={saving}
                     onSubmit={handleSubmit}
                 >
+                    <RecordConflictNotice conflict={conflict} disabled={saving} />
                     <fieldset className="crop-form-fields" disabled={saving}>
                     <section className="crop-form-section">
                         <div className="crop-form-section-title">
