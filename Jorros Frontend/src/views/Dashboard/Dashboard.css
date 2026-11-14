@@ -1043,3 +1043,6 @@ html[data-theme="dark"]
 .dashboard-resource-error button { margin-left: 8px; border: 1px solid #b42318; border-radius: 6px; background: #fff; color: #9f291d; padding: 5px 10px; cursor: pointer; }
 .dashboard-resource-skeleton { display: block; min-width: 85px; height: 18px; border-radius: 5px; background: #e4ece5; }
 .resource-task-link { color: #166534; font-size: .85rem; }
+
+/* Proposed area plan never masquerades as actual occupied land. */
+.dashboard-farm-plan-strip{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 18px;margin:15px 0;background:#edf6ee;border:1px solid #d2e7d4;border-radius:12px;color:#245939}.dashboard-farm-plan-strip>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.dashboard-farm-plan-strip small{color:#637567;font-size:.83rem}.dashboard-farm-plan-strip a{color:#176c3b;font-weight:700;text-decoration:underline;white-space:nowrap}@media(max-width:700px){.dashboard-farm-plan-strip{align-items:flex-start;flex-direction:column}}

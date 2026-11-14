@@ -34,6 +34,163 @@
 }
 .crop-choice-list p { padding: 12px; }
 
+/* New-planting stock picker: an inset panel within Planting & Growth.
+   Scoped to Add Crop to keep Inventory and other forms unchanged. */
+.add-crop-modal .crop-form-section.crop-planting-materials {
+    margin: 22px 0 6px;
+    padding: 20px 21px;
+    border: 1px solid var(--ui-border, #dae6dc);
+    border-radius: 12px;
+    background: var(--ui-surface-soft, #f8fbf8);
+    box-shadow: none;
+}
+.add-crop-modal .crop-planting-materials .crop-material-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 20px;
+}
+.add-crop-modal .crop-planting-materials .crop-material-title-copy { min-width: 0; flex: 1; }
+.add-crop-modal .crop-planting-materials .crop-material-title h3 { margin-bottom: 3px; }
+.add-crop-modal .crop-material-context {
+    flex: 0 0 auto;
+    padding: 5px 9px;
+    border: 1px solid var(--ui-border, #d3e5d7);
+    border-radius: 999px;
+    background: var(--ui-primary-soft, #eaf7ed);
+    color: var(--ui-primary, #166534);
+    font-size: .71rem;
+    font-weight: 700;
+}
+.add-crop-modal .crop-material-inputs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 18px;
+}
+.add-crop-modal .crop-material-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 7px;
+}
+.add-crop-modal .crop-material-field > label {
+    color: var(--ui-text, #26322b);
+    font-size: .83rem;
+    font-weight: 700;
+}
+.add-crop-modal .crop-material-field > label span { color: #c53030; }
+.add-crop-modal .crop-material-field :is(select, input) {
+    width: 100%;
+    min-width: 0;
+    min-height: 45px;
+}
+.add-crop-modal .crop-material-field-hint {
+    margin: 0;
+    color: var(--ui-text-muted, #64746a);
+    font-size: .76rem;
+    font-weight: 400;
+    line-height: 1.5;
+}
+.add-crop-modal .crop-material-overview {
+    margin-top: 19px;
+    padding: 16px;
+    border: 1px solid var(--ui-border, #dce7dd);
+    border-radius: 10px;
+    background: var(--ui-surface, #fff);
+}
+.add-crop-modal .crop-material-overview-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 13px;
+}
+.add-crop-modal .crop-material-overview-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ui-text, #26322b);
+    font-size: .85rem;
+}
+.add-crop-modal .crop-material-overview-label .material-symbols-outlined {
+    color: var(--ui-primary, #176b3d);
+    font-size: 19px;
+}
+.add-crop-modal .crop-material-stock-state {
+    padding: 5px 9px;
+    border-radius: 7px;
+    background: var(--ui-surface-soft, #f4f7f4);
+    color: var(--ui-text-muted, #68786b);
+    font-size: .73rem;
+    font-weight: 700;
+}
+.add-crop-modal .crop-material-stock-state.is-sufficient {
+    background: var(--ui-primary-soft, #eaf7ed);
+    color: var(--ui-primary, #166534);
+}
+.add-crop-modal .crop-material-stock-state.is-insufficient { background: #fff1e9; color: #a53c2c; }
+.add-crop-modal .crop-material-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+.add-crop-modal .crop-material-summary > div {
+    min-width: 0;
+    padding: 12px 13px;
+    border: 1px solid var(--ui-border, #e0e9e1);
+    border-radius: 8px;
+    background: var(--ui-surface-soft, #f7faf7);
+}
+.add-crop-modal .crop-material-summary small {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--ui-text-muted, #687a6e);
+    font-size: .73rem;
+    line-height: 1.3;
+}
+.add-crop-modal .crop-material-summary strong {
+    display: block;
+    overflow-wrap: anywhere;
+    color: var(--ui-text, #283a2d);
+    font-size: .87rem;
+    font-weight: 750;
+    line-height: 1.35;
+}
+.add-crop-modal .crop-material-warning,
+.add-crop-modal .crop-material-guidance,
+.add-crop-modal .crop-material-success {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin: 13px 0 0;
+    padding: 11px 13px;
+    border: 1px solid var(--ui-border, #d4e4d8);
+    border-radius: 9px;
+    font-size: .79rem;
+    line-height: 1.5;
+}
+.add-crop-modal .crop-material-warning { color: #a42e25; background: #fff0ed; border-color: #f2c3ba; }
+.add-crop-modal .crop-material-guidance { color: var(--ui-text-muted, #4d6756); background: var(--ui-primary-soft, #eff9f1); }
+.add-crop-modal .crop-material-success { color: var(--ui-primary, #17683c); background: var(--ui-primary-soft, #eff9f1); }
+.add-crop-modal :is(.crop-material-guidance,.crop-material-success) .material-symbols-outlined { flex: 0 0 auto; font-size: 19px; }
+html[data-theme="dark"] .add-crop-modal .crop-material-stock-state.is-insufficient { background: #402421; color: #ffc0b2; }
+html[data-theme="dark"] .add-crop-modal .crop-material-warning { background: #402421; color: #ffc0b2; border-color: #93574f; }
+@media (max-width: 880px) {
+    .add-crop-modal .crop-material-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+    .add-crop-modal .crop-material-inputs { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+    .add-crop-modal .crop-form-section.crop-planting-materials { padding: 16px; }
+    .add-crop-modal .crop-material-title { flex-wrap: wrap; }
+    .add-crop-modal .crop-material-context { margin-left: 54px; }
+}
+@media (max-width: 420px) {
+    .add-crop-modal .crop-material-summary { grid-template-columns: minmax(0, 1fr); }
+    .add-crop-modal .crop-material-overview { padding: 12px; }
+}
+
 .crop-planning-note {
     padding: 13px 15px;
     margin: 14px 0;
@@ -373,3 +530,119 @@ html[data-theme="dark"] .add-crop-modal .crop-land-form .crop-land-save { backgr
     .add-crop-modal .crop-care-row { padding: 14px; }
     .add-crop-modal .crop-weekdays { padding: 12px; }
 }
+
+/* Field/section conflict prevention: clear edit-existing path and guidance. */
+.crop-land-toolbar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    border: 1px solid var(--ui-border, #dbe8df);
+    border-radius: 11px;
+    background: var(--ui-primary-soft, #f0f8f1);
+    margin: 12px 0 18px;
+}
+.crop-land-toolbar label { flex: 1 1 250px; max-width: 450px; color: var(--ui-text, #263c2f); font-size: .83rem; font-weight: 650; }
+.crop-land-toolbar select { min-height: 42px; width: 100%; background: var(--ui-surface, #fff); color: var(--ui-text, #263c2f); }
+.crop-land-toolbar p { flex: 1 1 220px; color: var(--ui-text-muted, #68796f); font-size: .78rem; line-height: 1.5; margin: 0; }
+.crop-land-editor-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.crop-land-editor-heading h4 { margin: 0 !important; }
+.crop-land-guidance { display: flex; align-items: flex-start; gap: 10px; margin: 12px 0; padding: 13px 15px; border: 1px solid #c8dfcb; border-radius: 9px; background: #f1f9f1; color: #245539; font-size: .83rem; line-height: 1.5; }
+.crop-land-guidance > .material-symbols-outlined { font-size: 20px; flex-shrink: 0; color: #21643c; }
+.crop-land-guidance p { margin: 0; }
+.crop-land-guidance-action { display: inline-flex; min-height: 34px; margin: 10px 0 0; padding: 7px 12px; align-items: center; border: 1px solid #16713f; border-radius: 8px; background: #176b3d; color: white; cursor: pointer; font-size: .8rem; font-weight: 700; }
+.crop-land-guidance-action:hover { background: #11532e; }
+.crop-land-secondary-note { margin: 10px 0; padding: 8px 12px; border-left: 3px solid #78ad89; background: var(--ui-surface-soft, #f8faf8); font-size: .8rem; line-height: 1.45; color: var(--ui-text-muted, #66736b); }
+.crop-land-alert { margin: 13px 0; padding: 11px 14px; border: 1px solid #e9b3a9; border-radius: 8px; background: #fff0ed; color: #942e23 !important; font-size: .84rem; }
+.crop-land-panel .crop-land-form .crop-land-save:disabled { cursor: not-allowed; opacity: .57; }
+html[data-theme="dark"] .crop-land-toolbar { background: #1c3524; border-color: #42654a; }
+html[data-theme="dark"] .crop-land-guidance { background: #1b3224; border-color: #45624a; color: #def4e3; }
+html[data-theme="dark"] .crop-land-guidance > .material-symbols-outlined { color: #a2dab3; }
+html[data-theme="dark"] .crop-land-alert { color: #ffc2ba !important; background: #3d211e; border-color: #82554d; }
+@media(max-width:680px) { .crop-land-toolbar { padding: 12px; } .crop-land-toolbar label { max-width: 100%; } }
+
+/* Land setup: concise table + accessible create/edit dialogs (also used from Add Crop). */
+.crop-land-intro-row{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin:12px 0 16px}
+.crop-land-intro-row p{flex:1 1 300px;max-width:790px;margin:0;color:var(--ui-text-muted,#64776a);font-size:.84rem;line-height:1.6}
+.crop-land-panel .crop-land-create{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:43px;padding:9px 14px;border:1px solid #176b3d;border-radius:9px;background:#176b3d;color:#fff;font-size:.82rem;font-weight:750;cursor:pointer}
+.crop-land-panel .crop-land-create:hover{background:#11552f}
+.crop-land-create .material-symbols-outlined,.crop-land-edit .material-symbols-outlined,.crop-land-add-section .material-symbols-outlined{font-size:18px;vertical-align:middle}
+.crop-land-table-wrap{max-width:100%;overflow:auto;border:1px solid var(--ui-border,#dce9df);border-radius:10px;margin-top:14px}
+.crop-land-panel .crop-land-table-wrap table{min-width:670px;width:100%;border-collapse:collapse}
+.crop-land-panel .crop-land-table-wrap th{background:var(--ui-primary-soft,#f0f9f2);font-size:.77rem;font-weight:740;color:var(--ui-text,#234c33)}
+.crop-land-panel .crop-land-table-wrap :is(th,td){padding:12px 14px;border-bottom:1px solid var(--ui-border,#e5eee7);vertical-align:middle}
+.crop-land-panel .crop-land-table-wrap tr:last-child td{border-bottom:none}
+.crop-land-panel .crop-land-field-row{background:var(--ui-surface-soft,#f9fbf9)}
+.crop-land-panel .crop-land-row-actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.crop-land-panel .crop-land-edit,.crop-land-panel .crop-land-add-section{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:35px;border:1px solid var(--ui-border,#cdddce);border-radius:8px;background:var(--ui-surface,#fff);color:var(--ui-primary,#176b3d);font-size:.78rem;font-weight:700;padding:7px 10px;cursor:pointer}
+.crop-land-panel .crop-land-add-section{background:var(--ui-primary-soft,#eef9f0)}
+.crop-land-section-name small{font-size:.73rem;color:var(--ui-text-muted,#718176)}
+.crop-land-success{padding:10px 13px;border-radius:8px;background:#eaf7ed;color:#176b3d;font-size:.84rem}
+.crop-land-dialog-backdrop{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;overflow:hidden;overscroll-behavior:contain;padding:22px;background:rgba(13,31,20,.48)}
+.crop-land-dialog{width:min(600px,100%);max-height:min(90dvh,850px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--ui-border,#d9e6dc);border-radius:17px;background:var(--ui-surface,#fff);color:var(--ui-text,#27382e);box-shadow:0 24px 90px rgba(0,0,0,.24)}
+.crop-land-dialog-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:21px 24px 19px;border-bottom:1px solid var(--ui-border,#e3ebe5)}
+.crop-land-dialog-heading{display:flex;align-items:flex-start;gap:12px}
+.crop-land-dialog-heading>.material-symbols-outlined{display:grid;place-items:center;width:43px;height:43px;border-radius:12px;background:var(--ui-primary-soft,#e9f7ee);color:var(--ui-primary,#176b3d);font-size:24px;flex:none}
+.crop-land-dialog-heading h3{font-size:1.3rem;font-weight:780;color:var(--ui-primary,#176b3d);margin:0 0 5px}
+.crop-land-dialog-heading p{font-size:.79rem;line-height:1.5;color:var(--ui-text-muted,#708076);margin:0}
+.crop-land-dialog-close{display:grid;place-items:center;width:36px;height:36px;border:0;border-radius:8px;background:transparent;color:var(--ui-text-muted,#647468);cursor:pointer;flex:none}
+.crop-land-dialog-close:hover{background:var(--ui-surface-soft,#eef4ef)}
+.crop-land-dialog-form{display:flex;flex-direction:column;min-height:0}
+.crop-land-dialog-content{overflow-y:auto;overscroll-behavior:contain;padding:23px 24px}
+.crop-land-dialog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 18px}
+.crop-land-dialog-grid label{display:flex;flex-direction:column;gap:7px;font-size:.81rem;font-weight:710;color:var(--ui-text,#2d4537)}
+.crop-land-dialog-grid .crop-land-dialog-wide{grid-column:1/-1}
+.crop-land-dialog-grid :is(input,select){width:100%;height:45px;min-width:0;padding:9px 12px;font:inherit;font-size:.85rem;font-weight:450;border:1px solid var(--ui-border,#cbdad0);border-radius:9px;background:var(--ui-surface,#fff);color:var(--ui-text,#283a2e);outline-offset:2px}
+.crop-land-dialog-grid :is(input,select):focus{outline:2px solid #86b99a;border-color:#176b3d}
+.crop-land-dialog-grid select:disabled{opacity:.7;background:var(--ui-surface-soft,#f4f7f4)}
+.crop-land-unit{display:inline;color:var(--ui-text-muted,#7c897e);font-weight:500}
+.crop-land-dialog-note{display:flex;align-items:flex-start;gap:7px;margin:18px 0 0;padding:12px 13px;background:var(--ui-primary-soft,#f1faf2);border-radius:9px;font-size:.78rem;line-height:1.5;color:var(--ui-text-muted,#58745f)}
+.crop-land-dialog-note>.material-symbols-outlined{font-size:18px;flex:none;color:var(--ui-primary,#176b3d)}
+.crop-land-dialog-error{display:flex;align-items:center;gap:8px;margin:0 0 16px;padding:12px;border:1px solid #edb8a8;border-radius:9px;color:#a2392c;background:#fff2ec;font-size:.82rem;line-height:1.45}
+.crop-land-dialog-error .material-symbols-outlined{font-size:19px;flex:none}
+.crop-land-dialog-footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--ui-border,#e3ebe5);background:var(--ui-surface-soft,#f8faf8)}
+.crop-land-dialog-footer button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:43px;padding:9px 17px;border-radius:9px;font-size:.83rem;font-weight:750;cursor:pointer}
+.crop-land-dialog-cancel{border:1px solid var(--ui-border,#ccdacc);background:var(--ui-surface,#fff);color:var(--ui-text,#344c39)}
+.crop-land-dialog-submit{border:1px solid #176b3d;background:#176b3d;color:#fff}
+.crop-land-dialog-submit:hover{background:#11552f}
+.crop-land-dialog-footer button:disabled,.crop-land-panel .crop-land-create:disabled{opacity:.55;cursor:not-allowed}
+.crop-land-dialog-submit .material-symbols-outlined{font-size:19px}
+html[data-theme="dark"] .crop-land-dialog :is(input,select){color-scheme:dark}
+html[data-theme="dark"] .crop-land-dialog-error{background:#402421;color:#ffc0b2;border-color:#93574f}
+@media(max-width:650px){.crop-land-dialog-backdrop{padding:12px}.crop-land-dialog-header{padding:18px}.crop-land-dialog-content{padding:18px}.crop-land-dialog-footer{padding:12px 18px}.crop-land-dialog-grid{grid-template-columns:1fr}.crop-land-dialog-grid .crop-land-dialog-wide{grid-column:auto}.crop-land-panel .crop-land-create{width:100%}}
+.crop-land-panel :is(.crop-land-edit,.crop-land-add-section):disabled{opacity:.5;cursor:not-allowed}
+
+/* Make the measured-vs-unavailable calculation explicit on parent fields. */
+.crop-land-no-space{color:#a2392c;font-weight:700}
+.crop-land-no-space small{display:block;color:#a2392c;font-size:.72rem;font-weight:500;margin-top:3px}
+.crop-land-field-help{font-size:.73rem;line-height:1.5;font-weight:450;color:var(--ui-text-muted,#6b776e)}
+.crop-land-usable-preview{display:flex;gap:10px;align-items:flex-start;background:var(--ui-primary-soft,#f1faf2);color:var(--ui-text,#305641);border:1px solid var(--ui-border,#d9eadf);border-radius:9px;padding:12px 14px;margin-top:17px;font-size:.8rem;line-height:1.5}
+.crop-land-usable-preview>.material-symbols-outlined{font-size:19px;color:var(--ui-primary,#176b3d)}
+.crop-land-usable-preview-warning{background:#fff3ed;color:#993e2d;border-color:#edb8a8}
+.crop-land-usable-preview-warning>.material-symbols-outlined{color:#ae4c32}
+.crop-land-preview-detail{display:block;margin-top:4px}
+.crop-land-parent-warning{display:flex;align-items:flex-start;gap:9px;background:#fff3ed;border:1px solid #edb8a8;border-radius:9px;color:#993e2d;padding:12px 14px;margin-top:17px;font-size:.8rem;line-height:1.5}
+.crop-land-parent-warning>.material-symbols-outlined{flex:none;font-size:20px}
+.crop-land-parent-warning p{margin:4px 0 10px}
+.crop-land-edit-parent{border:1px solid #c27b60;border-radius:8px;background:#fff;color:#8d3a29;padding:8px 12px;font-weight:700;cursor:pointer}
+.crop-land-edit-parent:disabled{opacity:.5;cursor:not-allowed}
+html[data-theme="dark"] :is(.crop-land-usable-preview-warning,.crop-land-parent-warning){background:#402421;color:#ffc0b2;border-color:#93574f}
+
+/* Expandable field rows — same disclosure treatment as the Farm Plan groups. */
+.crop-land-collapse-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 16px;margin:9px 0 10px;color:var(--ui-text-muted,#657769);font-size:.79rem}
+.crop-land-collapse-toolbar>span{display:inline-flex;align-items:center;gap:7px}
+.crop-land-collapse-toolbar .material-symbols-outlined{font-size:18px}
+.crop-land-collapse-toolbar button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ui-border,#cfdfd3);background:var(--ui-surface,#fff);color:var(--ui-primary,#176b3d);border-radius:8px;padding:8px 12px;font:inherit;font-weight:750;font-size:.78rem;cursor:pointer}
+.crop-land-collapse-toolbar button:hover{background:var(--ui-primary-soft,#eef8f0)}
+.crop-land-collapse-toolbar button:focus-visible{outline:2px solid #278451;outline-offset:2px}
+.crop-land-child-group[hidden]{display:none!important}
+.crop-land-panel .crop-land-table-wrap .crop-land-parent-group>tr{border-top:1px solid var(--ui-border,#e1ebe3)}
+.crop-land-panel .crop-land-table-wrap .crop-land-parent-group:first-of-type>tr{border-top:0}
+.crop-land-panel .crop-land-table-wrap .crop-land-field-row>td{font-weight:640}
+.crop-land-panel .crop-land-table-wrap .crop-land-section-row{background:var(--ui-surface,#fff)}
+.crop-land-panel .crop-land-table-wrap .crop-land-section-row:hover{background:var(--ui-surface-soft,#f5faf6)}
+.crop-land-panel .crop-land-section-name{display:flex;align-items:center;gap:7px;padding-left:24px!important;font-weight:550}
+.crop-land-section-name>.material-symbols-outlined{font-size:17px;color:var(--ui-text-muted,#84968a);flex:none}
+@media(max-width:650px){.crop-land-collapse-toolbar{align-items:stretch}.crop-land-collapse-toolbar button{justify-content:center}}

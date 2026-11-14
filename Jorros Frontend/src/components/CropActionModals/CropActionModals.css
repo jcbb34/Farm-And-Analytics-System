@@ -554,3 +554,184 @@
         flex-direction: column;
     }
 }
+
+/* Add Yield — use the same compact field and summary hierarchy as Crop Management. */
+.yield-record-modal {
+    width: min(900px, calc(100vw - 32px));
+    max-height: min(92dvh, 940px);
+    background: var(--theme-surface, #fff);
+    color: var(--theme-text, #26322b);
+}
+.yield-record-modal .crop-action-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--theme-border, #e3e9e5);
+}
+.yield-record-modal .crop-action-header h2 {
+    font-size: clamp(1.5rem, 2.2vw, 1.85rem);
+    line-height: 1.2;
+    color: #176a3a;
+}
+.yield-record-modal .crop-action-form {
+    min-height: 0;
+    padding: 20px 28px 0;
+    overscroll-behavior: contain;
+}
+.yield-record-modal .crop-action-section {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+.yield-record-modal .crop-action-section-title {
+    margin-bottom: 18px;
+}
+.yield-record-modal .crop-action-form-grid {
+    gap: 16px 20px;
+}
+.yield-record-modal .crop-action-form-group {
+    min-width: 0;
+    margin-bottom: 0;
+}
+.yield-record-modal .crop-action-form-group label {
+    font-weight: 650;
+    margin-bottom: 7px;
+}
+.yield-record-modal .crop-action-form-group :is(input, select, textarea) {
+    min-height: 46px;
+    font-size: 0.91rem;
+    border-color: var(--theme-border, #d1d5db);
+    background: var(--theme-input-bg, #fff);
+    color: var(--theme-text, #26322b);
+}
+.yield-record-modal .crop-action-form-group textarea {
+    min-height: 100px;
+}
+.yield-record-modal .yield-crop-picker {
+    margin-bottom: 14px;
+}
+.yield-record-modal .yield-crop-picker select {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.yield-selected-planting {
+    padding: 15px 17px;
+    margin-bottom: 22px;
+    border: 1px solid #cce8d6;
+    border-radius: 12px;
+    background: #f2faf5;
+}
+.yield-selected-planting-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: #176a3a;
+}
+.yield-selected-planting-heading > .material-symbols-outlined {
+    font-size: 20px;
+}
+.yield-selected-planting-heading > strong {
+    font-size: 0.95rem;
+}
+.yield-selected-planting-code {
+    margin-left: auto;
+    padding: 4px 9px;
+    border: 1px solid #bfe3cc;
+    border-radius: 999px;
+    background: #e1f4e8;
+    color: #176a3a;
+    font-size: 0.78rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+.yield-selected-planting-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+.yield-selected-planting-grid > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.yield-selected-planting-grid small {
+    color: #68766f;
+    font-size: 0.75rem;
+}
+.yield-selected-planting-grid strong {
+    overflow-wrap: anywhere;
+    color: #24382c;
+    font-size: 0.88rem;
+    line-height: 1.35;
+}
+.yield-selected-planting-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    padding-top: 12px;
+    margin-top: 13px;
+    border-top: 1px solid #dcece2;
+    color: #56675d;
+    font-size: 0.78rem;
+}
+.yield-selected-planting-meta strong {
+    color: #176a3a;
+}
+.yield-record-modal .yield-calculation-grid {
+    gap: 10px;
+    margin: 20px 0;
+}
+.yield-record-modal .yield-calculation-grid > div {
+    padding: 12px 14px;
+    border-color: var(--theme-border, #e3e9e5);
+    background: var(--theme-surface-soft, #f8faf8);
+}
+.yield-record-modal .crop-action-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 20px -28px 0;
+    padding: 15px 28px;
+    border-top: 1px solid var(--theme-border, #e3e9e5);
+    background: var(--theme-surface, #fff);
+}
+.yield-record-modal .crop-action-cancel,
+.yield-record-modal .crop-action-save {
+    min-height: 45px;
+}
+.yield-record-modal .crop-action-save { background: #176a3a; }
+.yield-record-modal :is(.crop-action-save, .crop-action-cancel):focus-visible,
+.yield-record-modal .crop-action-header > button:focus-visible {
+    outline: 2px solid #176a3a;
+    outline-offset: 2px;
+}
+html[data-theme="dark"] .yield-selected-planting {
+    background: var(--theme-surface-raised, #18281e);
+    border-color: var(--theme-border, #2d4335);
+}
+html[data-theme="dark"] :is(.yield-selected-planting-heading, .yield-selected-planting-grid strong,
+    .yield-selected-planting-meta strong) { color: var(--theme-text, #f2f7f4); }
+html[data-theme="dark"] :is(.yield-selected-planting-grid small, .yield-selected-planting-meta) {
+    color: var(--theme-text-muted, #b7c5bc);
+}
+html[data-theme="dark"] .yield-selected-planting-code {
+    background: #213c2a;
+    border-color: #36533f;
+    color: #b5efd0;
+}
+html[data-theme="dark"] .yield-selected-planting-meta { border-color: var(--theme-border, #2d4335); }
+@media (max-width: 700px) {
+    .yield-record-modal .crop-action-header { padding: 18px 20px; }
+    .yield-record-modal .crop-action-form { padding: 18px 20px 0; }
+    .yield-record-modal .crop-action-footer { margin: 20px -20px 0; padding: 14px 20px; }
+    .yield-selected-planting-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+    .yield-selected-planting-grid { grid-template-columns: 1fr; }
+    .yield-record-modal .crop-action-form-grid { grid-template-columns: 1fr; }
+    .yield-record-modal .yield-calculation-grid { grid-template-columns: 1fr 1fr; }
+}

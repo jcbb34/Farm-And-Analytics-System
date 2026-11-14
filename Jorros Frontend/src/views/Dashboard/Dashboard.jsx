@@ -31,6 +31,8 @@ import PhoneAccessButton from "../../components/PhoneAccess/PhoneAccessButton.js
 import DashboardPeriodControl from "../../components/DashboardPeriodControl/DashboardPeriodControl.jsx";
 
 import { cropService } from "../../services/cropService.js";
+import { farmPlanService } from "../../services/farmPlanService.js";
+import Link from "next/link";
 import { livestockService } from "../../services/livestockService.js";
 import { inventoryService } from "../../services/inventoryService.js";
 import { activityService } from "../../services/activityService.js";
@@ -107,6 +109,7 @@ function Dashboard() {
     const [taskCount, setTaskCount] = useState(null);
     const [activitiesError, setActivitiesError] = useState("");
     const [cropOverview, setCropOverview] = useState(null);
+    const [farmLandPlan, setFarmLandPlan] = useState(null);
     const [livestockOverview, setLivestockOverview] = useState(null);
     const [inventoryOverview, setInventoryOverview] = useState(null);
     const [alertCount, setAlertCount] = useState(null);
@@ -215,6 +218,14 @@ function Dashboard() {
         loadDashboardActivities,
         loadDashboardWeather,
     ]);
+
+    useEffect(() => {
+        if (!resourceAccess.crop) return;
+        let alive = true;
+        farmPlanService.overview().then(result => { if (alive) setFarmLandPlan(result); })
+            .catch(() => { if (alive) setFarmLandPlan(null); });
+        return () => { alive = false; };
+    }, [resourceAccess.crop]);
 
     useEffect(() => {
         const refreshWeather = () => { if (!document.hidden) void loadDashboardWeather(); };
@@ -339,6 +350,14 @@ function Dashboard() {
                         </article>
                     ))}
                 </section>
+
+                {resourceAccess.crop && farmLandPlan && <section className="dashboard-farm-plan-strip" aria-label="Farm land allocation plan">
+                    <div><span className="material-symbols-outlined" aria-hidden="true">landscape</span>
+                        <strong>Farm Land &amp; Facilities</strong>
+                        <small>Crop fields: {Number(farmLandPlan.proposed_crop_m2).toLocaleString()} m² · Facilities: {Number(farmLandPlan.proposed_facility_m2).toLocaleString()} m²</small>
+                    </div>
+                    <Link href="/farm-plan">View area plan</Link>
+                </section>}
 
                 {(resourceAccess.crop || resourceAccess.livestock) && <DashboardResourceOverview {...resourceOverview} stockError={resourceAccess.inventory ? inventoryError : ""} onRetry={() => { resourceOverview.retry(); void loadCoreDashboardData(); }} />}
 

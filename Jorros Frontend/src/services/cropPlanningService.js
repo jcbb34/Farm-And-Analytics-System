@@ -12,6 +12,10 @@ export const cropPlanningService = {
     preview: data => request(httpClient.post('/crop-planning/schedule-preview', data)),
     slots: query => request(httpClient.get('/crop-planning/available-slots', { query })),
     plantings: section_id => request(httpClient.get('/crop-planning/plantings', { query: { section_id } })),
+    plantingMaterials: (crop_reference, variety_reference, planting_date, planned_count) =>
+        request(httpClient.get('/crops/planting-material-options', { query: {
+            crop_reference, variety_reference, planting_date, planned_count
+        } })),
     positions: id => request(httpClient.get(`/crop-planning/plantings/${id}/positions`)),
     recordPosition: (id, data, key) => request(httpClient.post(`/crop-planning/plantings/${id}/positions`, data, { headers: { 'Idempotency-Key': key } })),
     end: (id, data) => request(httpClient.post(`/crop-planning/plantings/${id}/end`, data)),
@@ -53,7 +57,7 @@ export function estimatedCapacity(areaHa, rowSpacing, plantSpacing, layout) {
 }
 
 export const planningKeys = ['registration_kind', 'crop_reference', 'variety_reference', 'section_id', 'spacing_profile_id',
-    'spacing_override', 'shared_footprint_crop_id', 'shared_footprint_reason', 'duplicate_acknowledged',
+    'spacing_override', 'planting_inventory_item_id', 'planting_start_time', 'shared_footprint_crop_id', 'shared_footprint_reason', 'duplicate_acknowledged',
     'planting_date_precision', 'initial_status', 'confirm_ready', 'care_schedules', 'schedule_effective_date'];
 
 export function planningPayload(value) {
@@ -75,6 +79,7 @@ export function recommendedSpacingProfile(profiles, cropKey, varietyKey) {
 
 export function changeCrop(form, choice) {
     return { ...form, name: choice.label, crop_reference: choice.value, variety: '', variety_reference: null,
+        planting_inventory_item_id: null,
         spacing_profile_id: null, spacing_override: null, shared_footprint_crop_id: null };
 }
 

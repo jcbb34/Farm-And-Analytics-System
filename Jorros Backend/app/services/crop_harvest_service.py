@@ -435,6 +435,14 @@ def record_harvest(
     else:
         crop.status = "Harvesting"
         crop.growth_stage = "Harvesting / Production"
+        # Readiness confirmation belongs to the just-harvested cycle, not the
+        # next fruit bunch or basil cutting. Historical inspections remain saved.
+        crop.confirmed_ready_at = None
+        crop.confirmed_ready_by_user_id = None
+        # The completed harvest must not leave a stale expected date behind:
+        # the maturity engine suggests a NEW date, which an admin accepts.
+        if crop.estimated_harvest and crop.estimated_harvest <= harvest_date:
+            crop.estimated_harvest = None
         crop.current_growth = calculate_crop_progress(crop.planting_date, crop.estimated_harvest) if crop.registration_kind != "legacy" else 100.0
         _audit(
             db,

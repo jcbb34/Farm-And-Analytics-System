@@ -37,7 +37,14 @@ class InventoryTextFields(BaseModel):
         return (value.strip() or None) if isinstance(value, str) else value
 
 
-class InventoryCreate(InventoryTextFields):
+class PlantingMaterialTag(BaseModel):
+    planting_crop_reference: str | None = Field(default=None, max_length=60)
+    planting_variety_reference: str | None = Field(default=None, max_length=80)
+    planting_material_kind: str | None = Field(default=None, max_length=40)
+    planting_units_per_position: int | None = Field(default=None, ge=1, le=100)
+
+
+class InventoryCreate(InventoryTextFields, PlantingMaterialTag):
     name: str = Field(min_length=1, max_length=150)
     category: str = Field(min_length=1, max_length=80)
     batch_number: str | None = Field(default=None, max_length=80)
@@ -67,7 +74,7 @@ class InventoryCreate(InventoryTextFields):
         return self
 
 
-class InventoryUpdate(InventoryTextFields):
+class InventoryUpdate(InventoryTextFields, PlantingMaterialTag):
     expected_version: int | None = Field(default=None, ge=1)
 
     model_config = ConfigDict(extra="forbid")
@@ -146,7 +153,7 @@ class InventoryStockRecordResponse(BaseModel):
     created_at: datetime
 
 
-class InventoryResponse(BaseModel):
+class InventoryResponse(PlantingMaterialTag):
     edit_version: int = Field(default=1, ge=1)
 
     model_config = ConfigDict(from_attributes=True)

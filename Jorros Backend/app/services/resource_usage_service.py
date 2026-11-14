@@ -23,7 +23,8 @@ from app.schemas.resource_usage import CROP_USAGE_TYPES, LIVESTOCK_USAGE_TYPES
 
 
 CATEGORY_ALIASES = {
-    "Seed": {"seed", "seeds", "planting material", "planting materials"},
+    "Seed": {"seed", "seeds"},
+    "Planting Material": {"seedling", "seedlings", "planting material", "planting materials", "cuttings", "suckers", "corms"},
     "Feed": {"livestock feed", "animal feed", "feed", "feeds"},
     "Vaccine": {"vaccine", "vaccines", "medicine", "animal medicine"},
     "Fertilizer": {"fertilizer", "fertilizers"},

@@ -5,7 +5,9 @@ import { cropPlanningService, changeCrop, changeField, estimatedCapacity, parseS
 import { calculateAutomaticCropProgress } from '../../services/cropService.js';
 import SearchChoice from './SearchChoice.jsx';
 import LandSetup from './LandSetup.jsx';
+import { suggestedCropSection } from '../../services/farmPlanService.js';
 import CareScheduleFields from './CareScheduleFields.jsx';
+import PlantingMaterialFields from './PlantingMaterialFields.jsx';
 import './CropPlanning.css';
 
 const unknown = { value: 'unknown', label: 'Unknown / Not recorded' };
@@ -20,6 +22,7 @@ export default function CropPlanningFields({ form, setForm, crop, employees, pre
     const [references, setReferences] = useState(null), [land, setLand] = useState(null), [plantings, setPlantings] = useState([]);
     const [error, setError] = useState(''), [setup, setSetup] = useState(false), [loadingPreview, setLoadingPreview] = useState(false);
     const [spacingManuallyChosen, setSpacingManuallyChosen] = useState(false);
+    const [locationManuallyChosen, setLocationManuallyChosen] = useState(false);
     useEffect(() => {
         let alive = true;
         Promise.all([cropPlanningService.references(), cropPlanningService.land()]).then(([ref, areas]) => {
@@ -34,6 +37,17 @@ export default function CropPlanningFields({ form, setForm, crop, employees, pre
         cropPlanningService.plantings(form.section_id).then(rows => { if (alive) setPlantings(rows); }).catch(e => { if (alive) setError(e.message); });
         return () => { alive = false; };
     }, [form.section_id]);
+    const proposedSection = suggestedCropSection(land, form.crop_reference, form.variety_reference);
+    useEffect(() => {
+        if (editing || locationManuallyChosen || !proposedSection) return;
+        setForm(old => {
+            if (old.crop_reference !== form.crop_reference || old.variety_reference !== form.variety_reference ||
+                Number(old.section_id) === Number(proposedSection.sectionId)) return old;
+            const parent = (land?.fields || []).find(x => x.id === proposedSection.fieldId);
+            return { ...old, field_id: proposedSection.fieldId, section_id: proposedSection.sectionId,
+                field: parent?.name || '', area: '', shared_footprint_crop_id: null };
+        });
+    }, [editing, locationManuallyChosen, proposedSection?.sectionId, proposedSection?.fieldId, form.crop_reference, form.variety_reference, land, setForm]);
     const patch = change => { setPreview(null); setForm(old => ({ ...old, ...change })); };
     const profiles = references?.profiles || [];
     const crops = unique([...profiles.map(x => ({ value: x.crop_key, label: x.crop_name })),
@@ -83,17 +97,18 @@ export default function CropPlanningFields({ form, setForm, crop, employees, pre
             <div className="crop-form-section-title"><span className="material-symbols-outlined">eco</span><div><h3>Crop Information</h3><p>Select the crop and its saved location.</p></div></div>
             <div className="crop-form-grid">
                 <SearchChoice label="Crop Name" required value={form.crop_reference || (form.name ? `custom:${form.name.toLowerCase()}` : '')} options={crops}
-                    allowCustom={hasPermission('crops:full-edit')} onChange={choice => { setSpacingManuallyChosen(false); setPreview(null); setForm(old => changeCrop(old, choice)); }} />
+                    allowCustom={hasPermission('crops:full-edit')} onChange={choice => { setSpacingManuallyChosen(false); setLocationManuallyChosen(false); setPreview(null); setForm(old => changeCrop(old, choice)); }} />
                 <SearchChoice label="Variety / Type" required disabled={!form.name} value={form.variety_reference || (form.variety ? `custom:${form.variety.toLowerCase()}` : '')} options={varieties}
                     allowCustom={hasPermission('crops:full-edit')} onChange={choice => {
-                        setSpacingManuallyChosen(false);
+                        setSpacingManuallyChosen(false); setLocationManuallyChosen(false);
                         const selected = recommendedSpacingProfile(profiles, form.crop_reference, choice.value);
-                        patch({ variety: choice.label, variety_reference: choice.value, spacing_profile_id: selected?.id ?? null, spacing_override: null });
+                        patch({ variety: choice.label, variety_reference: choice.value, spacing_profile_id: selected?.id ?? null, spacing_override: null, planting_inventory_item_id: null });
                     }} />
                 <SearchChoice label="Field" required={form.registration_kind !== 'legacy'} value={field?.id || ''} options={(land?.fields || []).map(x => ({ value: x.id, label: x.name }))}
-                    onChange={choice => { setPreview(null); setForm(old => changeField(old, choice)); }} />
+                    onChange={choice => { setLocationManuallyChosen(true); setPreview(null); setForm(old => changeField(old, choice)); }} />
                 <SearchChoice label="Section" required={form.registration_kind !== 'legacy'} disabled={!field} value={form.section_id || ''}
-                    options={(field?.sections || []).map(x => ({ value: x.id, label: `${x.name} · ${x.status}` }))} onChange={choice => patch({ section_id: choice.value, area: '', shared_footprint_crop_id: null })} />
+                    options={(field?.sections || []).map(x => ({ value: x.id, label: `${x.name} · ${x.status}` }))} onChange={choice => { setLocationManuallyChosen(true); patch({ section_id: choice.value, area: '', shared_footprint_crop_id: null }); }} />
+                {proposedSection && !editing && <p className="crop-planning-note" style={{gridColumn:'1 / -1',margin:0}}>Suggested location: Section {proposedSection.code}. Confirm the section’s measured area before planting.</p>}
                 <label className="crop-form-group">Field size<input readOnly value={field?.area_m2 == null ? 'Unconfigured' : `${field.area_m2} m² (${Number(field.area_m2) / 10000} ha)`} /></label>
                 <label className="crop-form-group">Section size<input readOnly value={section?.area_m2 == null ? 'Unconfigured' : `${section.area_m2} m² (${Number(section.area_m2) / 10000} ha)`} /></label>
                 <label className="crop-form-group">Available usable area<input readOnly value={section?.available_area_m2 == null ? 'Unconfigured' : `${section.available_area_m2} m² (${Number(section.available_area_m2) / 10000} ha)`} /></label>
@@ -130,8 +145,8 @@ export default function CropPlanningFields({ form, setForm, crop, employees, pre
                     {references && !profiles.length && <small role="alert">No saved spacing references were returned. Ask the administrator to verify the crop-planning database migration and seed data.</small>}
                 </label>
                 <label className="crop-form-group">Estimated Capacity<input readOnly value={estimated == null ? 'Not estimated' : `${estimated.toLocaleString()} ${profile?.count_unit || recordedSnapshot?.count_unit || 'plant'} positions`} /></label>
-                <label className="crop-form-group">Actual Quantity Planted<input required={!existing && form.registration_kind !== 'legacy'} type="number" min="0" step="1" value={form.quantityPlanted} placeholder="Unknown / Not recorded" onChange={event => patch({ quantityPlanted: event.target.value })} /></label>
-                <label className="crop-form-group">Current Surviving Plants<input type="number" min="0" step="1" value={form.currentSurviving} placeholder="Unknown / Not recorded" onChange={event => patch({ currentSurviving: event.target.value })} /></label>
+                <label className="crop-form-group">{existing ? 'Actual Quantity Planted' : 'Planned Planting Positions'}<input required={!existing && form.registration_kind !== 'legacy'} type="number" min="0" step="1" value={form.quantityPlanted} placeholder="Unknown / Not recorded" onChange={event => patch({ quantityPlanted: event.target.value })} /></label>
+                <label className="crop-form-group">{existing ? 'Current Surviving Plants' : 'Current Surviving Plants (recorded after planting task approval)'}<input disabled={!existing && !editing} type="number" min="0" step="1" value={form.currentSurviving} placeholder="Unknown / Not recorded" onChange={event => patch({ currentSurviving: event.target.value })} /></label>
                 <label className="crop-form-group">Planting date precision<select value={form.planting_date_precision || 'known'} onChange={event => patch({ planting_date_precision: event.target.value, ...(event.target.value === 'unknown' ? { plantingDate: '' } : {}) })}>
                     <option value="known">Known</option><option value="estimated">Explicitly estimated</option>{existing && <option value="unknown">Unknown</option>}
                 </select></label>
@@ -149,7 +164,8 @@ export default function CropPlanningFields({ form, setForm, crop, employees, pre
                 </select></label>}
                 {['Harvested', 'Failed'].includes(crop?.status) && <label className="crop-form-group">Recorded status<input readOnly value={crop.status} /></label>}
             </div>
-            {!existing && estimated != null && <button className="crop-planning-action" type="button" onClick={() => patch({ quantityPlanted: String(estimated), currentSurviving: String(estimated) })}><span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>Use capacity as a suggested count</button>}
+            {!existing && !editing && <PlantingMaterialFields form={form} setForm={setForm} capacity={estimated} />}
+            {!existing && estimated != null && <button className="crop-planning-action" type="button" onClick={() => patch({ quantityPlanted: String(estimated), currentSurviving: existing ? String(estimated) : "" })}><span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>Use capacity as a suggested count</button>}
             {existing && ['Ready for Harvest', 'Harvesting'].includes(form.initial_status) && <label className="crop-planning-check"><input required type="checkbox" checked={form.confirm_ready || false} onChange={event => patch({ confirm_ready: event.target.checked })} />I physically confirmed this planting is producing or ready for harvest. This creates no historical yield or stock.</label>}
             {spacing && <div className="crop-planning-note"><strong>{spacing.row_spacing_m} m between rows × {spacing.plant_spacing_m} m between plants · {spacing.layout}</strong><p>{profile?.evidence_scope || recordedSnapshot?.evidence_scope}</p><p>{profile?.guidance || recordedSnapshot?.guidance}</p>
                 {(profile?.source_url || recordedSnapshot?.source_url) && <a href={profile?.source_url || recordedSnapshot?.source_url} target="_blank" rel="noreferrer">Spacing source</a>}

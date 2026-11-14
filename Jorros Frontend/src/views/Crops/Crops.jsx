@@ -9,6 +9,7 @@ import AppHeaderActions from "../../components/AppHeaderActions/AppHeaderActions
 import CropsSummaryCards from "./components/CropsSummaryCards.jsx";
 import CropsToolbar from "./components/CropsToolbar.jsx";
 import CropsRecordsTable from "./components/CropsRecordsTable.jsx";
+import CropAnalyticsErrorBoundary from "./components/CropAnalyticsErrorBoundary.jsx";
 import useCropsPage from "./hooks/useCropsPage.js";
 import DeferredSection from "../../components/DeferredSection/DeferredSection.jsx";
 const CropAnalytics = dynamic(() => import("../../components/CropAnalytics/CropAnalytics.jsx"), {
@@ -43,6 +44,9 @@ const AddYieldModal = dynamic(
             (module) => module.AddYieldModal
         ),
     { ssr: false }
+);
+const CropReadinessInspectionModal = dynamic(
+    () => import("./components/CropReadinessInspectionModal.jsx"), { ssr: false }
 );
 const ReopenCropModal = dynamic(
     () => import("./components/ReopenCropModal.jsx"),
@@ -121,11 +125,11 @@ function Crops() {
                     onArchiveCrop={page.handleArchiveCrop}
                     onHarvestCrop={page.openHarvestForCrop}
                     onOpenHarvestTask={page.openPendingHarvestTask}
-                    onConfirmReady={page.handleConfirmReady}
+                    onInspectReadiness={page.openReadinessInspection}
                     onReopenCrop={page.setReopenCropTarget}
                 />
 
-                {!page.cropsLoading && !page.cropsError && page.analytics && <DeferredSection label="crop analytics" onReveal={page.enableAnalytics}><CropAnalytics
+                {!page.cropsLoading && !page.cropsError && page.analytics && <DeferredSection label="crop analytics" onReveal={page.enableAnalytics}><CropAnalyticsErrorBoundary><CropAnalytics
                     crops={page.crops}
                     yieldRecords={page.yieldRecords}
                     analytics={page.analytics}
@@ -134,7 +138,7 @@ function Crops() {
                     yieldError={page.yieldError}
                     onRetry={() => page.loadYields()}
                     onLoadMore={() => page.loadYields(page.yieldRecords.length)}
-                /></DeferredSection>}
+                /></CropAnalyticsErrorBoundary></DeferredSection>}
                 </>}
                 </ArchiveWorkspace>
             </main>
@@ -166,7 +170,9 @@ function Crops() {
                     onUpdatePestDisease={page.handleUpdatePestDisease}
                     onSaveGrowthCheck={page.handleSaveGrowthCheck}
                     onPlantingChanged={page.refreshSelectedCrop}
+                    onInspectReadiness={page.openReadinessInspection}
                     canEditResources={page.canUpdateCrops}
+                    canScheduleHarvest={page.canFullEditCrops}
                 />
             )}
 
@@ -178,6 +184,15 @@ function Crops() {
                     initialCropId={page.harvestCropId}
                     onClose={() => { page.setAddYieldOpen(false); page.setHarvestCropId(null); }}
                     onSave={page.handleAddYield}
+                />
+            )}
+
+            {page.readinessCrop && (
+                <CropReadinessInspectionModal
+                    key={page.readinessCrop.id}
+                    crop={page.readinessCrop}
+                    onClose={() => page.setReadinessCrop(null)}
+                    onSaved={page.handleSaveReadinessInspection}
                 />
             )}
 

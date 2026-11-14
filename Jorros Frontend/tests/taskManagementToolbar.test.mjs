@@ -82,14 +82,14 @@ test("derived and non-employee filters do not send invalid API parameters", () =
     );
 });
 
-test("Clear Filters restores the existing intended defaults and is disabled at defaults", () => {
+test("Clear Filters shows all scheduled tasks by default and is disabled at defaults", () => {
     assert.match(taskManagement, /setTaskSearch\(""\)/);
     assert.match(taskManagement, /setTaskStatusFilter\("All"\)/);
-    assert.match(taskManagement, /setTaskScheduleFilter\("Actionable Now"\)/);
+    assert.match(taskManagement, /setTaskScheduleFilter\("All Scheduled"\)/);
     assert.match(taskManagement, /setTaskPriorityFilter\("All"\)/);
     assert.match(taskManagement, /setTaskEmployeeFilter\("All"\)/);
     assert.match(taskManagement, /setTaskReassignmentFilter\("All"\)/);
-    assert.match(taskManagement, /taskSearch === ""[\s\S]*taskScheduleFilter === "Actionable Now"[\s\S]*taskReassignmentFilter === "All"/);
+    assert.match(taskManagement, /taskSearch === ""[\s\S]*taskScheduleFilter === "All Scheduled"[\s\S]*taskReassignmentFilter === "All"/);
 });
 
 test("responsive filter matrix keeps five balanced desktop columns and stacks safely on phones", () => {

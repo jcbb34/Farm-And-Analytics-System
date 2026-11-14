@@ -3,6 +3,7 @@ import useInventoryStockHistory from "../../hooks/useInventoryStockHistory.js";
 import useRecordEditConflict from "../../hooks/useRecordEditConflict.js";
 import RecordConflictNotice from "../RecordConflictNotice/RecordConflictNotice.jsx";
 import { inventoryService } from "../../services/inventoryService.js";
+import { catalogCrops, catalogVarieties, plantingMethod, plantingMethods } from "../../services/plantingMaterialCatalog.js";
 
 
 import FarmLocationInput from "../FarmLocationInput/FarmLocationInput.jsx";
@@ -23,6 +24,8 @@ import "./InventoryModals.css";
 
 const inventoryCategories = [
     "Seeds",
+    "Seedlings",
+    "Planting Material",
     "Fertilizer",
     "Pesticide",
     "Herbicide",
@@ -53,6 +56,11 @@ const inventoryUnits = [
     "vials",
     "boxes",
     "pieces",
+    "seeds",
+    "seedlings",
+    "cuttings",
+    "suckers",
+    "corms",
     "sets",
     "pairs",
 ];
@@ -148,6 +156,10 @@ function createEmptyInventoryForm() {
     return {
         name: "",
         category: "Fertilizer",
+        plantingCropReference: "",
+        plantingVarietyReference: "",
+        plantingMaterialKind: "",
+        plantingUnitsPerPosition: "1",
         batchNumber: "",
         quantity: "",
         unit: "bags",
@@ -179,6 +191,10 @@ function createInventoryFormFromItem(
             item.category ||
             "Fertilizer",
 
+        plantingCropReference: item.plantingCropReference || "",
+        plantingVarietyReference: item.plantingVarietyReference || "",
+        plantingMaterialKind: item.plantingMaterialKind || "",
+        plantingUnitsPerPosition: String(item.plantingUnitsPerPosition || 1),
         batchNumber:
             item.batchNumber || "",
 
@@ -246,6 +262,14 @@ export function InventoryFormModal({
 
     const isEditing =
         Boolean(item);
+    const [plantingCatalog, setPlantingCatalog] = useState([]);
+    const [catalogLoading, setCatalogLoading] = useState(false);
+    const [catalogError, setCatalogError] = useState("");
+    const plantingCategory = ["Seeds", "Seedlings", "Planting Material"].includes(form.category);
+    const cropsForInventory = catalogCrops(plantingCatalog);
+    const varietiesForInventory = catalogVarieties(plantingCatalog, form.plantingCropReference);
+    const materialTypesForInventory = plantingMethods(plantingCatalog, form.plantingCropReference, form.plantingVarietyReference, form.category);
+    const currentMaterial = plantingMethod(plantingCatalog, form.plantingCropReference, form.plantingVarietyReference, form.plantingMaterialKind);
 
     const conflict = useRecordEditConflict({
         open, id: item?.id, loadRecord: inventoryService.getInventoryItem,
@@ -260,18 +284,25 @@ export function InventoryFormModal({
         inventorySubmittingRef.current = false;
         clearStableIdempotencyKey(inventoryCreateRequestRef);
         setInventorySaving(false);
-        setForm(
-            createInventoryFormFromItem(
-                item
-            )
-        );
+        setForm(createInventoryFormFromItem(item));
+        let alive = true;
+        setCatalogLoading(true);
+        setCatalogError("");
+        inventoryService.getPlantingCatalog().then(data => {
+            if (alive) setPlantingCatalog((data?.data ?? data)?.items || []);
+        }).catch(err => {
+            if (alive) {
+                setPlantingCatalog([]);
+                setCatalogError(err?.message || "Could not load the crop-variety planting catalog.");
+            }
+        }).finally(() => { if (alive) setCatalogLoading(false); });
 
         document.body.style.overflow =
             "hidden";
 
         return () => {
-            document.body.style.overflow =
-                "";
+            alive = false;
+            document.body.style.overflow = "";
         };
     }, [open, item]);
 
@@ -283,10 +314,21 @@ export function InventoryFormModal({
         const { name, value, type, checked } =
             event.target;
 
-        setForm((currentForm) => ({
-            ...currentForm,
-            [name]: type === "checkbox" ? checked : value,
-        }));
+        setForm((currentForm) => {
+            if (name === "category") {
+                const nextCategoryIsPlanting = ["Seeds", "Seedlings", "Planting Material"].includes(value);
+                if (!nextCategoryIsPlanting) {
+                    return { ...currentForm, category: value, plantingCropReference: "",
+                        plantingVarietyReference: "", plantingMaterialKind: "", plantingUnitsPerPosition: "" };
+                }
+                const currentMethod = plantingMethod(plantingCatalog, currentForm.plantingCropReference,
+                    currentForm.plantingVarietyReference, currentForm.plantingMaterialKind);
+                return { ...currentForm, category: value,
+                    plantingMaterialKind: currentMethod?.category === value ? currentForm.plantingMaterialKind : "",
+                    plantingUnitsPerPosition: currentMethod?.category === value ? currentForm.plantingUnitsPerPosition : "" };
+            }
+            return { ...currentForm, [name]: type === "checkbox" ? checked : value };
+        });
     };
 
     const closeForm = () => { if (!inventorySubmittingRef.current) onClose(); };
@@ -403,8 +445,17 @@ export function InventoryFormModal({
             return;
         }
 
+        if (plantingCategory && (catalogLoading || catalogError || !form.plantingCropReference || !form.plantingVarietyReference ||
+            !currentMaterial || currentMaterial.category !== form.category || !Number.isInteger(Number(form.plantingUnitsPerPosition)) || Number(form.plantingUnitsPerPosition) < 1)) {
+            notify("Tag planting material with its exact crop, variety, type and units needed per planting position.");
+            return;
+        }
         const payload = {
             editVersion: form.editVersion,
+            plantingCropReference: plantingCategory ? form.plantingCropReference : "",
+            plantingVarietyReference: plantingCategory ? form.plantingVarietyReference : "",
+            plantingMaterialKind: plantingCategory ? form.plantingMaterialKind : "",
+            plantingUnitsPerPosition: plantingCategory ? Number(form.plantingUnitsPerPosition) : null,
             name: form.name.trim(),
 
             category:
@@ -674,6 +725,54 @@ export function InventoryFormModal({
                             />
                         </div>
                     </section>
+
+                    {plantingCategory && <section className="inventory-form-section">
+                        <div className="inventory-form-section-title"><span className="material-symbols-outlined">eco</span><div>
+                            <h3>Crop & Variety Compatibility</h3>
+                            <p>Choose a supported crop and variety. The recommended planting material, stock category and counted unit are filled automatically.</p>
+                        </div></div>
+                        <div className="inventory-form-grid">
+                            <div className="inventory-form-group"><label htmlFor="inventoryPlantingCrop">Crop *</label>
+                                <select id="inventoryPlantingCrop" required disabled={catalogLoading || Boolean(catalogError)} value={form.plantingCropReference}
+                                    onChange={e => setForm(old => ({...old, plantingCropReference: e.target.value,
+                                        plantingVarietyReference: "", plantingMaterialKind: "", plantingUnitsPerPosition: ""}))}>
+                                    <option value="">{catalogLoading ? "Loading system crops…" : "Select system crop"}</option>
+                                    {cropsForInventory.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+                                </select></div>
+                            <div className="inventory-form-group"><label htmlFor="inventoryPlantingVariety">Variety *</label>
+                                <select id="inventoryPlantingVariety" required disabled={!form.plantingCropReference || catalogLoading} value={form.plantingVarietyReference}
+                                    onChange={e => setForm(old => {
+                                        const option = plantingCatalog.find(x => x.crop_key === old.plantingCropReference && x.variety_key === e.target.value);
+                                        const method = option?.material_types.find(x => x.kind === option.default_material_kind);
+                                        return {...old, plantingVarietyReference: e.target.value,
+                                            plantingMaterialKind: method?.kind || "", category: method?.category || old.category,
+                                            unit: method?.unit || old.unit,
+                                            plantingUnitsPerPosition: method?.default_units_per_position == null ? "" : String(method.default_units_per_position)};
+                                    })}>
+                                    <option value="">Select known variety</option>
+                                    {varietiesForInventory.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+                                </select></div>
+                            <div className="inventory-form-group"><label htmlFor="inventoryPlantingKind">Planting material type *</label>
+                                <select id="inventoryPlantingKind" required disabled={!form.plantingVarietyReference} value={form.plantingMaterialKind}
+                                    onChange={e => setForm(old => {
+                                        const method = plantingMethod(plantingCatalog, old.plantingCropReference, old.plantingVarietyReference, e.target.value);
+                                        return {...old, plantingMaterialKind: e.target.value,
+                                            category: method?.category || old.category,
+                                            unit: method?.unit || old.unit,
+                                            plantingUnitsPerPosition: method?.default_units_per_position == null ? "" : String(method.default_units_per_position)};
+                                    })}>
+                                    <option value="">Select supported material</option>
+                                    {materialTypesForInventory.map(type => <option value={type.kind} key={type.kind}>{type.kind.charAt(0).toUpperCase() + type.kind.slice(1)}</option>)}
+                                </select>
+                                {form.plantingVarietyReference && materialTypesForInventory.length === 0 && <small role="alert">No matching method for this category. Select another stock category or reselect the variety to apply its recommended material.</small>}
+                            </div>
+                            <div className="inventory-form-group"><label htmlFor="inventoryUnitsPerPosition">Units per planting position *</label>
+                                <input id="inventoryUnitsPerPosition" required type="number" min="1" max="100" step="1" value={form.plantingUnitsPerPosition} onChange={e => setForm(old => ({...old, plantingUnitsPerPosition: e.target.value}))}/>
+                            </div>
+                        </div>
+                        {catalogError && <p className="inventory-planting-hint" role="alert">{catalogError} Reload Inventory to retry; material stock cannot be tagged without the built-in catalog.</p>}
+                        <p className="inventory-planting-hint">The crop, variety, and allowed propagation types come from Joross Farm's built-in crop references. One cutting, corm, sucker or seedling per position is the planning default. For individual seeds, enter and confirm the actual seeds per position—do not assume a universal sowing rate. Record counted units, not kilograms or bags without a validated conversion.</p>
+                    </section>}
 
                     <section className="inventory-form-section">
                         <div className="inventory-form-section-title">

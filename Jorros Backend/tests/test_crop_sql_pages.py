@@ -8,7 +8,7 @@ from sqlalchemy.dialects import mssql
 from sqlalchemy.orm import Session
 
 import test_data_display_pages as display_fixture
-from app.models import Crop
+from app.models import Crop, CropField, CropSection
 from app.services import resource_lists
 from app.services.crop_projection import crop_projection, filtered_crop_query
 
@@ -46,6 +46,28 @@ class CropSqlPageTests(TestCase):
             self.assertEqual(len(normalized), 25)
             self.assertIsNone(page["overview"])
             self.assertEqual(page["items"][0]["name"], "Crop 100")
+
+    def test_same_variety_in_two_sections_has_distinct_section_labels(self):
+        with Session(self.fixture.engine) as db:
+            field = CropField(name="Field A — Coconut Plantation", area_m2=9500, unavailable_area_m2=0)
+            db.add(field); db.flush()
+            a1 = CropSection(field_id=field.id, name="Section A1", area_m2=1900, unavailable_area_m2=0)
+            a2 = CropSection(field_id=field.id, name="Section A2", area_m2=1900, unavailable_area_m2=0)
+            db.add_all([a1, a2]); db.flush()
+            first = self.fixture.crop(1)
+            second = self.fixture.crop(2)
+            for crop, section in ((first, a1), (second, a2)):
+                crop.name = "Coconut"
+                crop.variety = "Tall"
+                crop.field = field.name
+                crop.section_id = section.id
+                crop.area_hectares = 0.19
+            db.add_all([first, second]); db.commit()
+            page = resource_lists.crop_listing(db, limit=50, include_overview=False)
+            self.assertEqual(page["total"], 2)
+            self.assertEqual({row["section_name"] for row in page["items"]}, {"Section A1", "Section A2"})
+            self.assertEqual({row["field"] for row in page["items"]}, {field.name})
+            self.assertEqual(len({row["crop_code"] for row in page["items"]}), 2)
 
     def test_sql_status_matches_displayed_progress_at_rounding_boundaries(self):
         crops = []

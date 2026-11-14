@@ -113,6 +113,13 @@ def initialize_registration(db, crop, payload, actor):
     snapshot = spacing_snapshot(db, payload, actor)
     crop.spacing_snapshot_json = json.dumps(snapshot, default=str) if snapshot else None
     crop.estimated_capacity = capacity(crop.area_hectares, snapshot)
+    if payload.registration_kind == "new":
+        if crop.estimated_capacity is None:
+            raise HTTPException(422, "Select a verified spacing profile to calculate planting capacity and material requirements.")
+        if not crop.quantity_planted or crop.quantity_planted < 1:
+            raise HTTPException(422, "New planting needs at least one planned plant position.")
+        if crop.quantity_planted > crop.estimated_capacity:
+            raise HTTPException(409, f"The planned {crop.quantity_planted} plants exceed {crop.estimated_capacity} positions for this area and spacing. Reduce the count or adjust the measured area.")
     allocate(db, crop, section_id=payload.section_id, shared_crop_id=payload.shared_footprint_crop_id, shared_reason=payload.shared_footprint_reason)
     duplicate_query = select(Crop).where(Crop.section_id == crop.section_id,
         Crop.crop_reference == crop.crop_reference, Crop.variety_reference == crop.variety_reference,

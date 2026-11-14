@@ -3,6 +3,7 @@ from app.services.record_editing import check_edit_version
 from app.routers.archives import ArchiveRequest
 from app.services.archive_service import change_archive_state, permanent_delete
 from datetime import date, datetime
+import json
 import re
 
 from fastapi import (
@@ -28,7 +29,10 @@ from app.core.dependencies import has_permission, require_permission
 from app.models import (
     AuditLog,
     Crop,
+    CropSection,
     CropGrowthRecord,
+    CropReadinessInspection,
+    CropMaturityEvent,
     CropPestDisease,
     CropYieldRecord,
     FarmActivity,
@@ -47,6 +51,8 @@ from app.services.crop_growth import (
 )
 from app.services.db_concurrency import acquire_transaction_lock
 from app.services.crop_audit import crop_snapshot, record_crop_change
+from app.services.crop_readiness_profiles import readiness_profile
+from app.services.crop_maturity import planning_snapshot, profile_for
 from app.services.crop_harvest_service import (
     confirm_crop_ready,
     record_harvest,
@@ -78,6 +84,9 @@ from app.schemas.crops import (
     CropYieldResponse,
     CropReopenRequest,
     CropReadyConfirmationRequest,
+    CropReadinessInspectionCreate,
+    CropMaturityEventCreate,
+    CropMaturityScheduleRequest,
 )
 
 
@@ -167,14 +176,146 @@ def require_system_admin(
 
 
 
+@router.get("/planting-material-options")
+def planting_material_options(
+    crop_reference: str,
+    variety_reference: str,
+    planting_date: date | None = None,
+    planned_count: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    from app.services.crop_planting_material import stock_options
+    return {"items": stock_options(db, crop_reference, variety_reference,
+                                   planting_date=planting_date, planned_count=planned_count)}
+
+
+@router.get("/maturity-reference")
+def get_maturity_reference(name: str = Query(min_length=1), variety: str = Query(min_length=1)):
+    return profile_for(name, variety)
+
+
+@router.get("/{crop_id}/maturity-plan")
+def get_maturity_plan(crop_id: int, db: Session = Depends(get_db)):
+    return planning_snapshot(db, get_crop_or_404(crop_id, db))
+
+
+@router.post("/{crop_id}/maturity-events", status_code=201)
+def add_maturity_event(
+    crop_id: int, payload: CropMaturityEventCreate, db: Session = Depends(get_db),
+    current_user: User = Depends(require_crop_editor),
+):
+    crop = get_crop_or_404(crop_id, db)
+    ensure_crop_not_archived(crop)
+    if crop.status in TERMINAL_CROP_STATUSES:
+        raise HTTPException(409, "Completed crop plantings cannot receive new growth events.")
+    reference = profile_for(crop.name, crop.variety)
+    if reference['anchor_kind'] != payload.event_kind:
+        raise HTTPException(400, "This variety requires a different maturity anchor event.")
+    if payload.observed_date > farm_today():
+        raise HTTPException(400, "A physical development observation cannot be dated in the future.")
+    if crop.planting_date and payload.observed_date < crop.planting_date:
+        raise HTTPException(400, "Growth event cannot predate the recorded planting date.")
+    try:
+        acquire_transaction_lock(db, f"crop-harvest:{crop.id}")
+        row = CropMaturityEvent(crop_id=crop.id, event_kind=payload.event_kind,
+            observed_date=payload.observed_date, notes=payload.notes,
+            recorded_by_user_id=current_user.id)
+        db.add(row)
+        db.flush()
+        # A recorded shooting/flowering observation is biological evidence,
+        # but must not overwrite a more recent approved growth observation.
+        if crop.last_observation_date is None or crop.last_observation_date <= payload.observed_date:
+            crop.observed_growth_stage = "Flowering"
+            crop.last_observation_date = payload.observed_date
+        if crop.status == "Planted":
+            crop.status = "Growing"
+        record_crop_change(db,crop,current_user,action=f"Recorded {payload.event_kind} date")
+        db.commit()
+        return {"id": row.id, "crop_id": crop.id, "event_kind": row.event_kind,
+            "observed_date": row.observed_date, "plan": planning_snapshot(db,crop)}
+    except Exception:
+        db.rollback()
+        raise
+
+
+@router.post("/{crop_id}/schedule-maturity", response_model=CropResponse)
+def schedule_maturity_harvest(
+    crop_id: int, payload: CropMaturityScheduleRequest, db: Session = Depends(get_db),
+    current_user: User = Depends(require_crop_admin),
+):
+    acquire_transaction_lock(db,"automation:tasks")
+    acquire_transaction_lock(db,f"crop-harvest:{crop_id}")
+    crop = get_crop_or_404(crop_id,db)
+    ensure_crop_not_archived(crop)
+    if crop.status in TERMINAL_CROP_STATUSES:
+        raise HTTPException(409, "A completed planting cannot be scheduled for a new harvest.")
+    plan=planning_snapshot(db,crop)
+    early=plan['next_cycle_earliest'] or plan['earliest_harvest']
+    late=plan['next_cycle_latest'] or plan['latest_harvest']
+    if early is None or late is None:
+        raise HTTPException(400, "A verified maturity anchor or known harvest cycle is required to suggest a date. Enter an expected date manually in Edit Crop if appropriate.")
+    if not (early <= payload.expected_harvest <= late) and not str(payload.reason or '').strip():
+        raise HTTPException(400, "Date is outside the reference window. Enter a reason to override the recommendation.")
+    if payload.expected_harvest < farm_today():
+        raise HTTPException(400, "A newly scheduled harvest must be today or later.")
+    if crop.planting_date and payload.expected_harvest < crop.planting_date:
+        raise HTTPException(400, "Expected harvest cannot predate planting.")
+    from app.services.farm_event_service import task_schedule_locked
+    active_harvest_tasks = list(db.scalars(select(FarmActivity).where(
+        FarmActivity.source_module == "Crop",
+        FarmActivity.source_type == "crop_harvest",
+        FarmActivity.source_record_id == crop.id,
+        FarmActivity.is_archived == False,
+        FarmActivity.status.in_(["Pending", "In Progress", "Submitted for Review", "Returned"]),
+    )).all())
+    for task in active_harvest_tasks:
+        if task.activity_date != payload.expected_harvest and (
+            task.status != "Pending" or task_schedule_locked(db, task.id)
+            or db.scalar(select(TaskSubmission.id).where(TaskSubmission.activity_id == task.id).limit(1)) is not None
+        ):
+            raise HTTPException(409, "This harvest task has active work or a locked schedule. Review it in Task Management before changing the expected harvest date.")
+    try:
+        crop.estimated_harvest=payload.expected_harvest
+        record_crop_change(db,crop,current_user,action="Scheduled variety-specific estimated harvest")
+        evaluate_automatic_tasks(db,commit=False)
+        db.commit()
+        db.refresh(crop)
+        return apply_automatic_progress(crop)
+    except Exception:
+        db.rollback()
+        raise
+
+
 
 def _annotate_pending_harvest_workflows(db: Session, crops: list[Crop]) -> list[Crop]:
     from app.services.monitoring_scheduler import annotate_monitoring
     annotate_monitoring(db, crops, "Crop")
     if not crops:
         return crops
+    # Harvest choices use /crops (not the paginated display projection).
+    # Include the saved physical section identity in every crop response.
+    # Resolve names in a single query to avoid one query per crop.
+    section_ids = {int(crop.section_id) for crop in crops if crop.section_id is not None}
+    section_names = dict(db.execute(
+        select(CropSection.id, CropSection.name).where(CropSection.id.in_(section_ids))
+    ).all()) if section_ids else {}
+    for crop in crops:
+        setattr(crop, "section_name", section_names.get(int(crop.section_id)) if crop.section_id is not None else None)
     attach_care_protocol_summaries(db, crops)
     crop_ids = [int(crop.id) for crop in crops]
+    # One bounded query for the most recent recorded physical inspection of
+    # every crop. These are not the date-based estimated readiness states.
+    recent = db.scalars(select(CropReadinessInspection).where(
+        CropReadinessInspection.crop_id.in_(crop_ids)
+    ).order_by(CropReadinessInspection.inspection_date.desc(), CropReadinessInspection.id.desc())).all()
+    latest = {}
+    for inspection in recent:
+        latest.setdefault(int(inspection.crop_id), inspection)
+    for crop in crops:
+        item = latest.get(int(crop.id))
+        setattr(crop, "last_readiness_verdict", item.verdict if item else None)
+        setattr(crop, "last_readiness_inspection_date", item.inspection_date if item else None)
     tasks = list(db.scalars(
         select(FarmActivity).where(
             FarmActivity.is_archived == False,  # noqa: E712
@@ -247,8 +388,25 @@ def apply_automatic_progress(
         return crop
 
     if crop.registration_kind and crop.registration_kind != "legacy":
+        if crop.status == "Planting Scheduled":
+            return crop
+        if crop.status in {"Harvested", "Failed"}:
+            return crop
+        if crop.status in {"Harvesting", "Ready for Harvest"}:
+            return finish(growth_stage=("Harvesting / Production" if crop.status == "Harvesting" else "Harvest Ready"))
         progress = calculate_crop_progress(crop.planting_date, crop.estimated_harvest)
-        return finish(current_growth=progress, growth_stage=crop.observed_growth_stage or stage_for_progress(progress))
+        # Elapsed time is a *planning* percentage. It does not prove blooming,
+        # shooting, fruit development, or harvest readiness.
+        if crop.observed_growth_stage:
+            phase = crop.observed_growth_stage
+        elif crop.planting_date is None:
+            phase = "Not estimated"
+        elif crop.planting_date >= farm_today():
+            phase = "Seeded"
+        else:
+            phase = "Vegetative"
+        next_status = "Growing" if crop.status == "Planted" and crop.planting_date and crop.planting_date < farm_today() else crop.status
+        return finish(current_growth=progress, growth_stage=phase, status=next_status)
 
     # Growth % is automatic until the first real harvest is recorded.
     # A partial harvest means the crop has reached production and remains
@@ -303,6 +461,10 @@ def apply_automatic_progress(
 
     if crop.confirmed_ready_at is not None:
         return finish(status="Ready for Harvest", growth_stage="Harvest Ready", current_growth=100.0)
+    # Preserve a previously recorded legacy Ready status, but never infer a
+    # NEW readiness confirmation solely from elapsed schedule time.
+    if crop.status == "Ready for Harvest":
+        return finish(growth_stage="Harvest Ready")
 
     progress = calculate_crop_progress(
         crop.planting_date,
@@ -311,7 +473,7 @@ def apply_automatic_progress(
     return finish(
         current_growth=progress,
         growth_stage=crop.observed_growth_stage or stage_for_progress(progress),
-        status=("Planted" if crop.observed_growth_stage == "Seeded" else "Growing") if crop.observed_growth_stage else status_for_progress(progress),
+        status=("Planted" if crop.observed_growth_stage == "Seeded" else "Growing") if crop.observed_growth_stage else ("Planted" if progress == 0 else "Growing"),
     )
 
 
@@ -597,6 +759,13 @@ def create_crop(
 
         db.add(crop)
         db.flush()
+        if payload.registration_kind == "new":
+            crop.current_surviving = None
+            crop.initial_surviving = None
+            crop.survival_count_date = None
+            from app.services.crop_planting_material import lock_validate_planting_material, create_planting_task
+            item, needed = lock_validate_planting_material(db, payload, crop)
+            create_planting_task(db, crop, payload, item, needed)
 
         if crop.care_schedules_json is not None:
             from app.services.crop_direct_care import sync_direct_care
@@ -1047,6 +1216,87 @@ def create_yield_record(
         db.commit()
         db.refresh(harvest)
         return harvest
+    except Exception:
+        db.rollback()
+        raise
+
+
+@router.get("/{crop_id}/readiness-inspections")
+def get_crop_readiness_inspections(
+    crop_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    crop = get_crop_or_404(crop_id, db)
+    records = db.scalars(select(CropReadinessInspection).where(
+        CropReadinessInspection.crop_id == crop.id
+    ).order_by(CropReadinessInspection.inspection_date.desc(), CropReadinessInspection.id.desc()).limit(15)).all()
+    inspector_ids = {row.inspected_by_user_id for row in records}
+    inspector_names = dict(db.execute(select(User.id, User.full_name).where(
+        User.id.in_(inspector_ids)
+    )).all()) if inspector_ids else {}
+    return {
+        "profile": readiness_profile(crop.name, crop.variety),
+        "inspections": [{
+            "id": row.id, "date": row.inspection_date,
+            "verdict": row.verdict, "findings": json.loads(row.criteria_json),
+            "notes": row.notes, "inspected_by_user_id": row.inspected_by_user_id,
+            "inspected_by": inspector_names.get(row.inspected_by_user_id) or f"User #{row.inspected_by_user_id}",
+        } for row in records],
+    }
+
+
+@router.post("/{crop_id}/readiness-inspections", status_code=201)
+def create_crop_readiness_inspection(
+    crop_id: int,
+    payload: CropReadinessInspectionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_crop_editor),
+):
+    crop = get_crop_or_404(crop_id, db)
+    if crop.is_archived or crop.status in {"Harvested", "Failed"}:
+        raise HTTPException(400, "An archived, finished, or failed crop cannot receive a readiness inspection.")
+    if payload.inspection_date > farm_today():
+        raise HTTPException(400, "Inspection date cannot be in the future.")
+    if crop.planting_date and payload.inspection_date < crop.planting_date:
+        raise HTTPException(400, "Inspection date cannot be earlier than the recorded planting date.")
+    profile = readiness_profile(crop.name, crop.variety)
+    expected_keys = {item["id"] for item in profile["checks"]}
+    if set(payload.findings) != expected_keys:
+        raise HTTPException(400, "Answer every variety inspection check before saving.")
+    if payload.verdict == "ready" and not all(payload.findings.values()):
+        raise HTTPException(400, "All required observations must be confirmed before marking the crop Ready for Harvest.")
+    if payload.verdict == "not_ready" and not str(payload.notes or "").strip():
+        raise HTTPException(400, "Explain why the crop is not yet ready for harvest.")
+    if payload.verdict == "not_ready" and crop.confirmed_ready_at:
+        raise HTTPException(409, "This crop is already confirmed ready. Review the existing confirmation before recording a conflicting inspection.")
+    try:
+        # Lock the crop so concurrent inspections and harvest work stay consistent.
+        acquire_transaction_lock(db, f"crop-harvest:{crop.id}")
+        db.refresh(crop)
+        if crop.is_archived or crop.status in {"Harvested", "Failed"}:
+            raise HTTPException(409, "This crop was archived or completed while the inspection was open.")
+        if payload.verdict == "not_ready" and crop.confirmed_ready_at:
+            raise HTTPException(409, "This crop was already confirmed ready. Reload the inspection first.")
+        if payload.verdict == "ready":
+            confirm_crop_ready(db, crop=crop, actor=current_user)
+        record = CropReadinessInspection(
+            crop_id=crop.id,
+            inspected_by_user_id=current_user.id,
+            inspection_date=payload.inspection_date,
+            verdict=payload.verdict,
+            profile_key=profile["key"],
+            profile_version=profile["version"],
+            criteria_json=json.dumps(payload.findings, sort_keys=True),
+            notes=(payload.notes or "").strip() or None,
+        )
+        db.add(record)
+        if payload.verdict == "ready":
+            evaluate_automatic_tasks(db, commit=False)
+        db.commit()
+        db.refresh(record)
+        return {"id": record.id, "verdict": record.verdict, "inspection_date": record.inspection_date,
+                "crop_id": crop.id, "status": crop.status}
     except Exception:
         db.rollback()
         raise

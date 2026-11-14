@@ -1,0 +1,184 @@
+/* Farm Land & Facilities — page-scoped controls match the system's green UI. */
+.farm-plan-layout{min-height:100vh;background:var(--ui-page-bg,#f6f8f6)}
+.farm-plan-page{width:calc(100% - 80px);margin-left:80px;padding:26px clamp(18px,2.2vw,38px) 54px;color:var(--ui-text,#26392f);box-sizing:border-box}
+.farm-plan-page *{box-sizing:border-box}
+.farm-plan-page button,.farm-plan-page input,.farm-plan-page select{font:inherit}
+.farm-plan-page button:focus-visible,.farm-plan-page input:focus-visible,.farm-plan-page select:focus-visible,.farm-plan-page a:focus-visible{outline:3px solid #83ba97;outline-offset:2px}
+.farm-plan-header{display:flex;justify-content:space-between;align-items:center;gap:22px;border-bottom:2px solid var(--ui-primary,#176b3e);padding-bottom:18px;margin-bottom:22px;min-height:85px}
+.farm-plan-header h1{margin:0 0 5px;color:var(--ui-primary,#146b3b);font-weight:750;font-size:clamp(1.5rem,2.3vw,2.15rem);line-height:1.2}
+.farm-plan-header p{margin:0;color:var(--ui-text-muted,#68796f);font-size:.94rem;line-height:1.5}
+.farm-plan-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:18px 0}
+.farm-plan-stats>div{background:var(--ui-surface,#fff);border:1px solid var(--ui-border,#e0e9e2);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.farm-plan-stats small{font-size:.81rem;color:var(--ui-text-muted,#68796f);font-weight:650}
+.farm-plan-stats strong{font-size:clamp(1.14rem,2vw,1.75rem);font-weight:750;color:var(--ui-primary,#146b3b);font-variant-numeric:tabular-nums;line-height:1.35}
+.farm-plan-stats span{font-size:.73rem;color:var(--ui-text-muted,#75857a);line-height:1.4}
+.farm-plan-alert,.farm-plan-success{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-radius:11px;margin:14px 0;line-height:1.5;font-size:.87rem}
+.farm-plan-alert{color:#933128;background:#fff3f0;border:1px solid #f3c4ba}
+.farm-plan-success{background:#eaf8ed;color:#156438;border:1px solid #bde4c5}
+.farm-plan-alert>.material-symbols-outlined,.farm-plan-success>.material-symbols-outlined{flex-shrink:0;font-size:20px}
+.farm-plan-alert>span:nth-child(2){flex:1}
+.farm-plan-alert button{flex:none;border:1px solid #dd9a8c;color:#8d332d;background:white;padding:5px 10px;border-radius:7px;cursor:pointer;font-weight:650}
+.farm-plan-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:23px 0 18px}
+.farm-plan-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 15px;border:1px solid var(--ui-border,#d5e2d7);border-radius:10px;background:var(--ui-surface,#fff);color:var(--ui-primary,#255e40);font-size:.86rem;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s}
+.farm-plan-tabs .material-symbols-outlined{font-size:18px}
+.farm-plan-tabs button:hover{background:#edf6ef}
+.farm-plan-tabs button.selected{background:var(--ui-primary,#176b3e);color:#fff;border-color:var(--ui-primary,#176b3e)}
+.farm-plan-tabs button.selected:hover{background:#145c35}
+.farm-plan-card{background:var(--ui-surface,#fff);border:1px solid var(--ui-border,#dce8df);border-radius:16px;padding:20px 22px;margin:16px 0;box-shadow:0 3px 14px #15392308;min-width:0}
+.farm-plan-card>h2,.farm-plan-card-title h2{margin:0;color:var(--ui-primary,#176a3c);font-size:1.09rem;font-weight:760;line-height:1.35}
+.farm-plan-card>p,.farm-plan-card-title p{margin:4px 0 0;color:var(--ui-text-muted,#708079);line-height:1.5;font-size:.82rem}
+.farm-plan-card-title{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:17px}
+.farm-plan-card-title>strong{font-size:.86rem;color:var(--ui-primary,#1c6a42);white-space:nowrap}
+.farm-plan-card-title>strong.is-over{color:#b42318}
+.farm-plan-pill{display:inline-flex;align-items:center;border-radius:20px;background:#eaf5ec;padding:6px 10px;color:#257046;font-size:.74rem;font-weight:750;white-space:nowrap}
+.farm-plan-overview{padding:18px 22px}
+.farm-plan-bar{width:100%;height:22px;display:flex;gap:2px;overflow:hidden;border-radius:9px;background:#e9ecea}
+.farm-plan-bar>div{min-width:0;transition:flex .12s}
+.farm-plan-bar-crops{background:#237347}
+.farm-plan-bar-facilities{background:#b58a55}
+.farm-plan-bar-remaining{background:#dfe7df}
+.farm-plan-bar-key{display:flex;flex-wrap:wrap;justify-content:space-between;gap:7px 16px;margin-top:12px;font-size:.78rem;color:var(--ui-text-muted,#60736a)}
+.farm-plan-bar-key span{display:inline-flex;align-items:center;gap:6px}
+.farm-plan-dot{display:inline-block;border-radius:50%;width:9px;height:9px;flex:none}
+.farm-plan-dot.crops{background:#237347}.farm-plan-dot.facilities{background:#b58a55}.farm-plan-dot.remaining{background:#d4ddd5;border:1px solid #b2bfb4}
+.farm-plan-budget-error{display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:10px 12px;border:1px solid #efc2b2;border-radius:9px;background:#fff5ee;color:#974a2b;font-size:.82rem;line-height:1.55}
+.farm-plan-budget-error .material-symbols-outlined{font-size:19px;flex:none}
+.farm-plan-section-label{display:flex;align-items:center;gap:10px;margin:20px 0 10px;color:#315341;font-weight:700;font-size:.84rem}
+.farm-plan-section-label:after{content:'';height:1px;background:var(--ui-border,#e0e9e2);flex:1}
+.farm-plan-zone{border:1px solid var(--ui-border,#e0e8e1);border-radius:12px;background:#fdfefd;padding:15px;margin:0;min-width:0}
+.farm-plan-zone.farm-plan-field{background:#f3faf4}
+.farm-plan-zone.farm-plan-facility{background:#faf9f5}
+.farm-plan-zone:is(.farm-plan-livestock,.farm-plan-storage,.farm-plan-office,.farm-plan-infrastructure){background:#fffcf8}
+.farm-plan-zone.has-error{border-color:#e99a81;box-shadow:0 0 0 1px #f5d4c7}
+.farm-plan-zone-heading,.farm-plan-zone-identity{display:flex;align-items:center;gap:10px;min-width:0}
+.farm-plan-zone-heading{justify-content:space-between;gap:14px;margin-bottom:15px}
+.farm-plan-zone-identity>.material-symbols-outlined{font-size:22px;color:var(--ui-primary,#176a3c);flex:none}
+.farm-plan-zone-code{display:inline-flex;justify-content:center;align-items:center;min-width:36px;padding:5px 8px;border-radius:7px;background:#e3f4e7;color:#126038;font-weight:800;font-size:.78rem;flex:none}
+.farm-plan-zone-label{display:flex;flex-direction:column;gap:2px;min-width:0}
+.farm-plan-zone-label strong{color:var(--ui-text,#2a4133);font-size:.91rem;line-height:1.35;overflow-wrap:anywhere}
+.farm-plan-zone-label small{color:var(--ui-text-muted,#718078);font-size:.71rem}
+.farm-plan-status{font-size:.68rem;font-weight:700;color:#7b6b43;background:#f4f1e7;border-radius:20px;padding:6px 9px;white-space:nowrap;flex:none}
+.farm-plan-status.is-measured{color:#186b43;background:#e4f7eb}
+.farm-plan-children{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.farm-plan-edit-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.9fr) minmax(0,.95fr);gap:11px}
+.farm-plan-edit-grid label,.farm-plan-create label{display:flex;flex-direction:column;gap:7px;font-size:.78rem;font-weight:700;color:var(--ui-text,#394b40);min-width:0}
+.farm-plan-unit{font-weight:600;color:#7b877d}
+.farm-plan-edit-grid input,.farm-plan-readonly,.farm-plan-create :is(input,select){width:100%;min-width:0;min-height:45px;border:1px solid var(--ui-border,#cedbd3);border-radius:9px;padding:10px 12px;background:var(--ui-surface,#fff);color:var(--ui-text,#253a2f);font-size:.88rem;font-weight:450;line-height:1.35;outline-offset:1px}
+.farm-plan-edit-grid input:focus,.farm-plan-create :is(input,select):focus{border-color:#4c9b70;box-shadow:0 0 0 3px #d8eadd}
+.farm-plan-edit-grid input:read-only{background:#f4f7f4;color:#617067}
+.farm-plan-edit-grid input[aria-invalid="true"]{border-color:#dc8e77}
+.farm-plan-readonly{display:flex;align-items:center;background:#f5f7f5;color:#6d7b71;white-space:nowrap}
+.farm-plan-zone-foot{display:flex;flex-wrap:wrap;align-items:center;gap:4px 15px;border-top:1px solid #e9eee9;margin-top:14px;padding-top:12px;font-size:.76rem;color:#63746a;line-height:1.6}
+.farm-plan-zone-foot b{color:#285640}
+.farm-plan-hint{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;margin:11px 0 0;color:#6c7b71;font-size:.75rem;line-height:1.5}
+.farm-plan-hint .material-symbols-outlined{font-size:17px;color:#56816a}
+.farm-plan-hint button{padding:0;border:0;background:transparent;color:#176a3d;text-decoration:underline;font-weight:700;cursor:pointer}
+.farm-plan-zone-error{display:flex;align-items:flex-start;gap:6px;margin:10px 0 0;color:#a43d2f;font-size:.76rem;line-height:1.5}
+.farm-plan-zone-error .material-symbols-outlined{font-size:17px;flex:none}
+.farm-plan-create{display:grid;grid-template-columns:.75fr 1.8fr 1fr 1fr auto;gap:12px;align-items:end}
+.farm-plan-add-card>.farm-plan-card-title>.material-symbols-outlined{color:#3c8557}
+.farm-plan-save,.farm-plan-discard,.farm-plan-confirm-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border:1px solid #136c3b;border-radius:10px;padding:10px 17px;background:#176b3d;color:#fff;font-size:.84rem;font-weight:740;cursor:pointer;white-space:nowrap;transition:background .16s}
+.farm-plan-save:hover{background:#11582f}
+.farm-plan-save .material-symbols-outlined{font-size:19px}
+.farm-plan-discard{background:#fff;border-color:#d4e2d7;color:#31583e}
+.farm-plan-discard:hover{background:#f1f7f2}
+.farm-plan-save:disabled,.farm-plan-discard:disabled{cursor:not-allowed;opacity:.55}
+.farm-plan-actions{position:static;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;background:#f1f8f2;border:1px solid #d1e4d5;border-radius:13px;padding:14px 17px;margin:25px 0;box-shadow:none}
+.farm-plan-unsaved{display:flex;align-items:center;gap:10px}
+.farm-plan-unsaved>.material-symbols-outlined{color:#1d7545;font-size:25px}
+.farm-plan-unsaved strong{display:block;color:#22593a;font-size:.86rem}
+.farm-plan-unsaved small{color:#6a7a6e;font-size:.74rem}
+.farm-plan-action-buttons{display:flex;gap:9px}
+.farm-plan-navigation{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0}
+.farm-plan-navigation a{display:inline-flex;align-items:center;border:1px solid #d4e2d6;border-radius:9px;background:var(--ui-surface,#fff);color:#176b40;text-decoration:none;padding:10px 13px;font-size:.8rem;font-weight:700}
+.farm-plan-navigation a:hover{background:#edf6ee}
+/* The crop land panel is rendered outside Add Crop: apply full styles here too. */
+.farm-plan-measured-card .crop-land-panel{border:0;border-radius:0;background:transparent;margin:0;padding:0}
+.farm-plan-measured-card .crop-land-heading{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.farm-plan-measured-card .crop-land-heading .material-symbols-outlined{font-size:24px;color:#176d3f}
+.farm-plan-measured-card .crop-land-heading h3{font-size:1.2rem;color:#146a3a;margin:0}
+.farm-plan-measured-card .crop-land-panel>p{font-size:.83rem;color:#6c7c70;line-height:1.6;margin:0 0 13px}
+.farm-plan-measured-card .crop-land-table-wrap{max-width:100%;overflow-x:auto;border:1px solid #dfe9e1;border-radius:11px;margin:18px 0 22px}
+.farm-plan-measured-card .crop-land-table-wrap table{min-width:650px;width:100%;border-collapse:collapse;font-size:.83rem}
+.farm-plan-measured-card .crop-land-table-wrap th{background:#eff8f1;color:#315541;font-weight:750;white-space:nowrap;text-align:left;padding:13px 14px}
+.farm-plan-measured-card .crop-land-table-wrap td{padding:13px 14px;border-bottom:1px solid #e5eee8;color:#31463a;line-height:1.35}
+.farm-plan-measured-card .crop-land-table-wrap tr:last-child td{border-bottom:0}
+.farm-plan-measured-card .crop-land-table-wrap tbody tr:hover{background:#f8faf8}
+.farm-plan-measured-card .crop-land-panel h4{font-size:1rem;color:#205c3c;margin:20px 0 15px}
+.farm-plan-measured-card .crop-land-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 18px;align-items:end;background:#f8fbf9;border:1px solid #e1ebe3;border-radius:11px;padding:18px}
+.farm-plan-measured-card .crop-land-form label{display:flex;flex-direction:column;gap:7px;font-size:.8rem;font-weight:720;color:#3b5143;min-width:0}
+.farm-plan-measured-card .crop-land-form :is(input,select){height:45px;width:100%;min-width:0;background:#fff;border:1px solid #cbd9d0;border-radius:9px;padding:10px 12px;color:#263c2f;font:inherit;font-size:.86rem}
+.farm-plan-measured-card .crop-land-form :is(input,select):focus{border-color:#4c9b70;box-shadow:0 0 0 3px #d8eadd}
+.farm-plan-measured-card .crop-planning-action,.farm-plan-measured-card .crop-land-edit{border:1px solid #cadaca;border-radius:8px;padding:9px 12px;background:#fff;color:#226a42;cursor:pointer;font-weight:720;font-size:.78rem;min-height:36px}
+.farm-plan-measured-card .crop-land-form .crop-land-save{background:#176b3d;color:#fff;border-color:#176b3d;min-height:44px}
+.farm-plan-measured-card .crop-land-form .crop-land-save:hover{background:#11582f}
+.farm-plan-measured-card .crop-planning-error{color:#a43d2f;background:#fff2ef;border:1px solid #f0c3b5;padding:11px;border-radius:8px}
+@media(max-width:1200px){.farm-plan-edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.farm-plan-children .farm-plan-edit-grid{grid-template-columns:1fr}.farm-plan-create{grid-template-columns:repeat(2,minmax(0,1fr))}.farm-plan-create button{width:max-content}}
+@media(max-width:1000px){.farm-plan-children{grid-template-columns:1fr}.farm-plan-edit-grid,.farm-plan-children .farm-plan-edit-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.farm-plan-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.farm-plan-page{width:calc(100% - 64px);margin-left:64px;padding:15px 12px 36px}.farm-plan-header{align-items:flex-start;flex-wrap:wrap}.farm-plan-card{padding:15px}.farm-plan-stats>div{padding:13px}.farm-plan-edit-grid,.farm-plan-children .farm-plan-edit-grid,.farm-plan-measured-card .crop-land-form,.farm-plan-create{grid-template-columns:1fr}.farm-plan-zone{padding:13px}.farm-plan-zone-heading{align-items:flex-start}.farm-plan-zone-label strong{font-size:.84rem}.farm-plan-status{white-space:normal;text-align:center}.farm-plan-actions{align-items:stretch}.farm-plan-action-buttons{width:100%}.farm-plan-action-buttons button{flex:1}.farm-plan-bar-key{justify-content:flex-start}}
+@media(max-width:430px){.farm-plan-stats{grid-template-columns:1fr 1fr}.farm-plan-stats strong{font-size:1.06rem}.farm-plan-tabs{display:grid;grid-template-columns:1fr}.farm-plan-card-title{flex-wrap:wrap}.farm-plan-header h1{font-size:1.45rem}}
+/* Preserve contrast if the system's dark appearance is active. */
+html[data-theme="dark"] .farm-plan-layout{background:#101b15}
+html[data-theme="dark"] .farm-plan-page{color:#dce9df}
+html[data-theme="dark"] .farm-plan-stats>div,html[data-theme="dark"] .farm-plan-card,html[data-theme="dark"] .farm-plan-zone,html[data-theme="dark"] .farm-plan-tabs button:not(.selected),html[data-theme="dark"] .farm-plan-edit-grid :is(input,.farm-plan-readonly),html[data-theme="dark"] .farm-plan-create :is(input,select){background:#1b2920;color:#e2ece4;border-color:#344b39}
+html[data-theme="dark"] .farm-plan-card h2,html[data-theme="dark"] .farm-plan-zone-label strong,html[data-theme="dark"] .farm-plan-header h1{color:#a2deb3}
+html[data-theme="dark"] .farm-plan-actions,html[data-theme="dark"] .farm-plan-measured-card .crop-land-form{background:#1f3425;border-color:#39563f;color:#dce9df}
+html[data-theme="dark"] .farm-plan-measured-card .crop-land-table-wrap th{background:#243d2a;color:#dce9df}
+html[data-theme="dark"] .farm-plan-measured-card .crop-land-table-wrap td{color:#e0e9df;border-color:#334738}
+html[data-theme="dark"] .farm-plan-measured-card .crop-land-form :is(input,select){background:#15241a;color:#e3ebe5;border-color:#3b5441;color-scheme:dark}
+
+/* Compact read-only area cards; edit/create forms open in dialogs. */
+.farm-plan-zone-controls{display:flex;align-items:center;gap:9px;flex:none}
+.farm-plan-staged{background:#fff2d9;color:#865c21;padding:6px 8px;border-radius:16px;font-size:.69rem;font-weight:750}
+.farm-plan-edit-button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:36px;padding:8px 12px;border:1px solid var(--ui-border,#d0dfd3);border-radius:8px;background:var(--ui-surface,#fff);color:var(--ui-primary,#176b3d);cursor:pointer;font-size:.79rem;font-weight:750}
+.farm-plan-edit-button:hover{background:var(--ui-primary-soft,#eef8f1)}
+.farm-plan-edit-button .material-symbols-outlined{font-size:18px}
+.farm-plan-zone-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.farm-plan-zone-summary>div{padding:10px 13px;border:1px solid var(--ui-border,#e4eee5);background:var(--ui-surface,#fff);border-radius:9px;min-width:0}
+.farm-plan-zone-summary small{display:block;color:var(--ui-text-muted,#6b8072);font-size:.71rem;font-weight:650;margin-bottom:5px}
+.farm-plan-zone-summary strong{display:block;font-size:.91rem;font-weight:750;color:var(--ui-text,#24452e);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.farm-plan-create-prompt{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.farm-plan-create-prompt>div h2{margin:0 0 5px;color:var(--ui-primary,#176b3d);font-size:1rem}
+.farm-plan-create-prompt>div p{margin:0;color:var(--ui-text-muted,#6b8072);font-size:.81rem}
+.farm-plan-create-prompt>.farm-plan-hint{width:100%}
+.farm-plan-dialog-overlay{position:fixed;inset:0;z-index:21000;display:flex;justify-content:center;align-items:center;overflow:hidden;overscroll-behavior:contain;padding:22px;background:rgba(13,31,20,.48)}
+.farm-plan-dialog{width:min(590px,100%);max-height:min(90dvh,850px);display:flex;flex-direction:column;overflow:hidden;border-radius:17px;border:1px solid var(--ui-border,#dce7dd);background:var(--ui-surface,#fff);box-shadow:0 24px 85px rgba(0,0,0,.25);color:var(--ui-text,#263a2c)}
+.farm-plan-dialog *{box-sizing:border-box}
+.farm-plan-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding:22px 23px;border-bottom:1px solid var(--ui-border,#e3ebe5)}
+.farm-plan-dialog-head-copy{display:flex;align-items:flex-start;gap:12px}
+.farm-plan-dialog-head-copy>.material-symbols-outlined{width:44px;height:44px;display:grid;place-items:center;flex:none;color:var(--ui-primary,#176b3d);background:var(--ui-primary-soft,#edf8ef);border-radius:11px;font-size:25px}
+.farm-plan-dialog-head h2{color:var(--ui-primary,#176b3d);font-size:1.2rem;margin:0 0 5px;line-height:1.3}
+.farm-plan-dialog-head p{font-size:.8rem;color:var(--ui-text-muted,#778479);line-height:1.45;margin:0}
+.farm-plan-dialog-close{display:grid;place-items:center;width:36px;height:36px;flex:none;border:0;border-radius:9px;background:transparent;color:var(--ui-text-muted,#6a7e6e);cursor:pointer}
+.farm-plan-dialog-close:hover{background:var(--ui-surface-soft,#eff6f0)}
+.farm-plan-dialog form{display:flex;flex-direction:column;min-height:0}
+.farm-plan-dialog-body{overflow:auto;overscroll-behavior:contain;padding:23px}
+.farm-plan-dialog-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.farm-plan-dialog-fields label{display:flex;flex-direction:column;gap:7px;min-width:0;color:var(--ui-text,#304e36);font-size:.81rem;font-weight:710}
+.farm-plan-dialog-fields .farm-plan-dialog-wide{grid-column:1/-1}
+.farm-plan-dialog-fields :is(input,select){width:100%;min-width:0;min-height:45px;padding:10px 12px;background:var(--ui-surface,#fff);color:var(--ui-text,#294232);border:1px solid var(--ui-border,#ccdbd0);border-radius:9px;font:inherit;font-size:.85rem;font-weight:450;outline-offset:2px}
+.farm-plan-dialog-fields :is(input,select):focus-visible{outline:2px solid #6baa85;border-color:#237b4b}
+.farm-plan-dialog-hint{padding:11px 13px;border-radius:9px;background:var(--ui-primary-soft,#eff9f1);font-size:.78rem;line-height:1.6;color:var(--ui-text-muted,#62796a);margin:19px 0 0}
+.farm-plan-dialog-error{padding:12px 14px;background:#fff1ed;color:#9b3628;border:1px solid #ebbbae;border-radius:9px;margin-bottom:16px;font-size:.83rem;line-height:1.5}
+.farm-plan-dialog-footer{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:17px 23px;background:var(--ui-surface-soft,#f8faf8);border-top:1px solid var(--ui-border,#e2ece4)}
+.farm-plan-dialog-footer>.farm-plan-discard{border-color:var(--ui-border,#cbdacf);background:var(--ui-surface,#fff)}
+html[data-theme="dark"] .farm-plan-zone-summary>div{background:#1b2920}
+html[data-theme="dark"] .farm-plan-zone-summary strong{color:#e1efe6}
+html[data-theme="dark"] .farm-plan-dialog :is(input,select){color-scheme:dark}
+html[data-theme="dark"] .farm-plan-dialog-error{background:#412821;color:#ffc5b6;border-color:#92584e}
+@media(max-width:650px){.farm-plan-dialog-overlay{padding:12px}.farm-plan-dialog-head,.farm-plan-dialog-body{padding:17px}.farm-plan-dialog-footer{padding:13px 17px}.farm-plan-dialog-fields{grid-template-columns:1fr}.farm-plan-dialog-fields .farm-plan-dialog-wide{grid-column:auto}.farm-plan-zone-summary{grid-template-columns:1fr}.farm-plan-zone-controls{flex-wrap:wrap}.farm-plan-edit-button{min-width:69px}}
+.farm-plan-section-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin:14px 0 16px;padding:13px 16px;border:1px solid var(--ui-border,#dce9df);border-radius:12px;background:var(--ui-surface,#fff)}
+.farm-plan-section-toolbar p{margin:0;color:var(--ui-text-muted,#6c7d70);font-size:.82rem;line-height:1.5}
+
+/* Matching collapsible field and facility groups — child sections never obscure parent summaries. */
+.farm-plan-group-controls{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap;flex:none}
+.farm-plan-collapsible[hidden]{display:none!important}
+.farm-plan-collapsible:not([hidden]){padding-top:2px}
+.farm-plan-hidden-warning{background:#fff1e4;color:#9a4a24;border:1px solid #eec5a8;border-radius:8px;font-size:.74rem;font-weight:700;padding:7px 9px}
+.farm-plan-toolbar-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.farm-plan-collapse-all{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:41px;border:1px solid var(--ui-border,#d2e0d5);background:var(--ui-surface,#fff);border-radius:9px;color:var(--ui-primary,#176b3d);font-size:.8rem;font-weight:720;padding:9px 12px;cursor:pointer}
+.farm-plan-collapse-all:hover{background:var(--ui-primary-soft,#eff8f0)}
+.farm-plan-collapse-all>.material-symbols-outlined{font-size:19px}
+.farm-plan-collapse-all:focus-visible{outline:2px solid #278451;outline-offset:2px}
+html[data-theme="dark"] .farm-plan-collapse-all{background:#22372a;color:#b2edc7;border-color:#3b5944}
+@media(max-width:680px){.farm-plan-group-controls{flex:none}.farm-plan-toolbar-actions{width:100%}.farm-plan-toolbar-actions>.farm-plan-save{flex:1}.farm-plan-group-controls .farm-section-toggle{min-height:35px}}

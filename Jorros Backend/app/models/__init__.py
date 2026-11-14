@@ -8,6 +8,7 @@ from app.models.scheduler_status import SchedulerStatus
 from app.models.change_event import FarmChangeEvent
 from app.models.farm_event import FarmEvent, FarmEventTask, FarmEventAcknowledgement, FarmEventAudit, FarmEventReport
 
+from app.models.crop_maturity import CropMaturityEvent
 from app.models.crop import (
     Crop,
     CropGrowthRecord,
@@ -94,6 +95,7 @@ __all__ = [
     "FarmChangeEvent",
     "FarmEvent", "FarmEventTask", "FarmEventAcknowledgement", "FarmEventAudit", "FarmEventReport",
     "Crop",
+    "CropMaturityEvent",
     "CropGrowthRecord",
     "CropYieldRecord",
     "CropPestDisease",
@@ -149,3 +151,5 @@ install_change_events()
 
 from app.models.report_pdf_job import ReportPdfJob
 from .crop_planning import FarmLandConfiguration, CropField, CropSection, CropFootprint, CropSpacingProfile, CropPositionEvent
+from .farm_plan import FarmAreaZone
+from .crop_readiness import CropReadinessInspection

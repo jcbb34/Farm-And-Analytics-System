@@ -58,6 +58,13 @@ class InventoryItem(Base):
         index=True,
     )
 
+    # Exact crop/variety compatibility metadata. Untagged stock must never be
+    # guessed from a free-text name or silently used for planting.
+    planting_crop_reference: Mapped[str | None] = mapped_column(String(60), nullable=True, index=True)
+    planting_variety_reference: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    planting_material_kind: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    planting_units_per_position: Mapped[int | None] = mapped_column(nullable=True)
+
     # Added by the resource-usage integration. This keeps the Inventory
     # model aligned with reports, Smart Import, and usage snapshots.
     batch_number: Mapped[str | None] = mapped_column(

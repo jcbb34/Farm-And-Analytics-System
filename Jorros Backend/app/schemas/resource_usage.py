@@ -4,7 +4,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field, model_validator
 
 
-CROP_USAGE_TYPES = {"Seed", "Fertilizer", "Pesticide", "Herbicide", "Other"}
+CROP_USAGE_TYPES = {"Seed", "Planting Material", "Fertilizer", "Pesticide", "Herbicide", "Other"}
 LIVESTOCK_USAGE_TYPES = {"Feed", "Vaccine", "Medicine", "Vitamin / Supplement", "Disinfectant", "Treatment Supply", "Sanitation Supply", "Other"}
 RESOURCE_MODULES = {"Crop", "Livestock"}
 

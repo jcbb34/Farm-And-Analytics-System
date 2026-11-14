@@ -64,6 +64,7 @@ export default function useCropsPage() {
     const [editCrop, setEditCrop] = useState(null);
     const [reopenCropTarget, setReopenCropTarget] = useState(null);
     const [harvestCropId, setHarvestCropId] = useState(null);
+    const [readinessCrop, setReadinessCrop] = useState(null);
     const cropCreateRequestRef = useRef(null);
     const cropHarvestRequestRef = useRef(null);
     const cropHarvestInFlightRef = useRef(false);
@@ -129,7 +130,7 @@ export default function useCropsPage() {
     useEffect(() => { void loadCrops(); return () => { requestRef.current += 1; }; }, [loadCrops]);
     useEffect(() => { if (analyticsEnabled) void loadYields(); }, [loadYields, analyticsEnabled]);
     useFarmModuleUpdates(["crops", "production_sales"], () => Promise.all([refreshCrops(), ...(analyticsEnabled ? [loadYields()] : [])]), {
-        editing: addCropOpen || addYieldOpen || Boolean(editCrop || selectedCrop || reopenCropTarget),
+        editing: addCropOpen || addYieldOpen || Boolean(editCrop || selectedCrop || reopenCropTarget || readinessCrop),
     });
     const openCropDetails = useCallback(async (crop, setter = setSelectedCrop) => {
         const requestId = ++detailsRef.current;
@@ -203,12 +204,16 @@ export default function useCropsPage() {
                 { idempotencyKey }
             );
             clearStableIdempotencyKey(cropCreateRequestRef);
-            await refreshCrops();
+            // The create request has committed. Even if the list refresh fails,
+            // never report the successful creation as a failed submission.
             setAddCropOpen(false);
-
-
-
             notify("Crop record added successfully.");
+            try {
+                await refreshCrops();
+            } catch (refreshError) {
+                console.error("Crop saved, but the list refresh failed:", refreshError);
+                notify("Crop saved successfully, but the list could not refresh. Reload Crops to see the record.");
+            }
         } catch (error) {
             console.error("Failed to add crop:", error);
             notify(error?.message || "Unable to add crop record.");
@@ -244,18 +249,12 @@ export default function useCropsPage() {
     };
 
     const handleAddYield = async (yieldData) => {
-        if (cropHarvestInFlightRef.current) {
-            return;
-        }
-        const selectedCropRecord = harvestChoices.find(
-            (crop) => crop.id === yieldData.cropId
-        );
-
+        if (cropHarvestInFlightRef.current) return;
+        const selectedCropRecord = harvestChoices.find(crop => crop.id === yieldData.cropId);
         if (!selectedCropRecord) {
             notify("Selected crop record was not found.");
             return;
         }
-
         if (!["Ready for Harvest", "Harvesting"].includes(selectedCropRecord.status)) {
             notify("Only crops that are Ready for Harvest or Harvesting can receive a yield record.");
             return;
@@ -265,45 +264,47 @@ export default function useCropsPage() {
         cropHarvestInFlightRef.current = true;
         try {
             await cropService.addYieldRecord(yieldData.cropId, yieldData, { idempotencyKey });
-            clearStableIdempotencyKey(cropHarvestRequestRef);
-            const refreshedCrops = await refreshCrops();
-
-            if (selectedCrop?.id === yieldData.cropId) {
-                const refreshedCrop = refreshedCrops.find(
-                    (crop) => crop.id === yieldData.cropId
-                );
-
-                setSelectedCrop(await cropService.getCrop(yieldData.cropId));
-            }
-
-            logAudit({
-                action: "Added crop yield record",
-                module: "Crop",
-                recordName: selectedCropRecord.name,
-                entityId: selectedCropRecord.id,
-                details: `${yieldData.quantityKg} kg • ${yieldData.harvestType} • ${yieldData.quality}`,
-            });
-
-            addTimelineEntry({
-                module: "Crop",
-                recordName: selectedCropRecord.name,
-                entityId: selectedCropRecord.id,
-                title: "Yield recorded",
-                details: `${yieldData.quantityKg} kg • ${yieldData.harvestType}`,
-                icon: "agriculture",
-                timestamp: new Date(
-                    `${yieldData.harvestDate}T12:00:00`
-                ).toISOString(),
-            });
-
-            setAddYieldOpen(false);
-            setHarvestCropId(null);
-            notify(yieldData.harvestType === "Final Harvest" ? "Final harvest recorded. The crop cycle is now completed." : "Partial harvest recorded successfully.");
         } catch (error) {
             console.error("Failed to add crop yield:", error);
             notify(error?.message || "Unable to add yield record.");
+            return;
         } finally {
             cropHarvestInFlightRef.current = false;
+        }
+
+        // The server has committed the yield. Never turn a subsequent refresh
+        // failure into a misleading 'save failed' message (or a duplicate retry).
+        clearStableIdempotencyKey(cropHarvestRequestRef);
+        setAddYieldOpen(false);
+        setHarvestCropId(null);
+        notify(yieldData.harvestType === "Final Harvest"
+            ? "Final harvest recorded. The crop cycle is now completed."
+            : "Partial harvest recorded successfully.");
+
+        logAudit({
+            action: "Added crop yield record",
+            module: "Crop",
+            recordName: selectedCropRecord.name,
+            entityId: selectedCropRecord.id,
+            details: `${yieldData.quantityKg} kg • ${yieldData.harvestType} • ${yieldData.quality}`,
+        });
+        addTimelineEntry({
+            module: "Crop",
+            recordName: selectedCropRecord.name,
+            entityId: selectedCropRecord.id,
+            title: "Yield recorded",
+            details: `${yieldData.quantityKg} kg • ${yieldData.harvestType}`,
+            icon: "agriculture",
+        });
+
+        try {
+            await refreshCrops();
+            if (selectedCrop?.id === yieldData.cropId) {
+                setSelectedCrop(await cropService.getCrop(yieldData.cropId));
+            }
+        } catch (error) {
+            console.error("Yield saved but the crop records could not refresh:", error);
+            notify("Yield saved successfully, but the list could not refresh. Reload Crops to see the record.");
         }
     };
 
@@ -325,14 +326,20 @@ export default function useCropsPage() {
         window.location.assign(`/task-management?${params.toString()}`);
     }, []);
 
-    const handleConfirmReady = async (crop) => {
-        try {
-            await cropService.confirmReady(crop.id);
-            await refreshCrops();
-            notify(`${crop.name} is now confirmed Ready for Harvest.`);
-        } catch (error) {
-            notify(error?.message || "Unable to confirm crop readiness.");
-        }
+    const openReadinessInspection = (crop) => {
+        setSelectedCrop(null); // one modal at a time, keeping scroll locking stable
+        setReadinessCrop(crop);
+    };
+
+    const handleSaveReadinessInspection = async (crop, verdict) => {
+        // The backend has already committed the inspection. Do not imply the
+        // save failed if refreshing the table has a temporary network error.
+        setReadinessCrop(null);
+        notify(verdict === "ready" ?
+            `${crop.name} (${crop.cropCode || crop.id}) physically confirmed Ready for Harvest.` :
+            `Inspection recorded for ${crop.name}. Harvest readiness was not confirmed.`);
+        try { await refreshCrops(); }
+        catch (error) { console.error("Inspection saved but crop list could not refresh:", error); }
     };
 
     const handleReopenCrop = async ({ reason, newStatus }) => {
@@ -545,7 +552,10 @@ export default function useCropsPage() {
         handleAddYield,
         openHarvestForCrop,
         openPendingHarvestTask,
-        handleConfirmReady,
+        openReadinessInspection,
+        readinessCrop,
+        setReadinessCrop,
+        handleSaveReadinessInspection,
         handleReopenCrop,
         reopenCropTarget,
         setReopenCropTarget,

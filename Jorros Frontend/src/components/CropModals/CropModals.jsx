@@ -19,6 +19,8 @@ import {
 import ResourceUsagePanel from "../ResourceUsagePanel/ResourceUsagePanel.jsx";
 import { workforceService } from "../../services/workforceService.js";
 
+import CropMaturityPanel from "./CropMaturityPanel.jsx";
+import CropMaturityReference from "./CropMaturityReference.jsx";
 import "./CropModals.css";
 
 const emptyCropForm = {
@@ -35,6 +37,8 @@ const emptyCropForm = {
     currentSurviving: "",
     notes: "",
     assignedEmployeeId: "",
+    planting_inventory_item_id: null,
+    planting_start_time: "08:00",
 };
 
 const initialPestForm = {
@@ -207,6 +211,34 @@ function CropRecordFormModal({
         if ([quantityPlanted, currentSurviving].some(x => x !== null && (!Number.isInteger(x) || x < 0))) {
             notify("Actual plant counts must be whole, nonnegative numbers; leave unknown counts blank."); return;
         }
+        if (!editing && form.registration_kind === "new") {
+            const count = Number(form.quantityPlanted);
+            if (!Number.isInteger(count) || count < 1) {
+                notify("Enter the number of planting positions to plant."); return;
+            }
+            if (!form.assignedEmployeeId) {
+                notify("Choose the active employee who will perform planting."); return;
+            }
+            if (!form.planting_inventory_item_id) {
+                notify("Select exact crop-variety planting material from Inventory."); return;
+            }
+            if (!form.planting_start_time) {
+                notify("Select the time the planting task should start."); return;
+            }
+            try {
+                const stock = await cropPlanningService.plantingMaterials(form.crop_reference, form.variety_reference,
+                    form.plantingDate || null, count);
+                const match = stock.items?.find(x => Number(x.id) === Number(form.planting_inventory_item_id));
+                if (!match || !match.sufficient) {
+                    const required = match?.required ?? "unknown";
+                    const available = match?.available ?? 0;
+                    notify(`Insufficient matching planting material: need ${required}, available ${available}. Restock or reduce the plant count.`);
+                    return;
+                }
+            } catch (error) {
+                notify(error.message || "Unable to verify planting inventory. Save was cancelled."); return;
+            }
+        }
         const schedules = (form.care_schedules || []).filter(x => x.enabled);
         submittingRef.current = true; setSaving(true);
         try {
@@ -297,6 +329,7 @@ function CropRecordFormModal({
                         <fieldset className="crop-form-fields" disabled={saving}>
                             <CropPlanningFields form={form} setForm={setForm} crop={crop} employees={employees}
                                 preview={planningPreview} setPreview={setPlanningPreview} editing={editing} />
+                            <CropMaturityReference form={form} setForm={setForm} editing={editing} disabled={saving} />
                         </fieldset>
                     </div>
                     <footer className="crop-form-footer">
@@ -354,7 +387,9 @@ export function CropDetailsModal({
     onSavePestDisease,
     onUpdatePestDisease,
     onSaveGrowthCheck,
+    onInspectReadiness,
     canEditResources = true,
+    canScheduleHarvest = false,
 }) {
     const growthHistory = useHistoryRange(crop?.growthRecords, "updateDate");
     const [showPestForm, setShowPestForm] =
@@ -620,6 +655,14 @@ export function CropDetailsModal({
                     </section>
 
 
+                    <CropMaturityPanel
+                        key={crop.id}
+                        crop={crop}
+                        canRecord={canEditResources}
+                        canSchedule={canScheduleHarvest}
+                        onUpdated={onPlantingChanged}
+                    />
+
                     <section className="crop-details-section crop-yield-cycle-section">
                         <div className="crop-details-section-heading">
                             <div>
@@ -712,7 +755,7 @@ export function CropDetailsModal({
                         <div className="crop-details-progress">
                             <span
                                 style={{
-                                    width: `${crop.estimatedProgress == null ? "Not estimated" : `${crop.estimatedProgress}%`}`,
+                                    width: `${crop.estimatedProgress == null ? 0 : Math.max(0, Math.min(100, Number(crop.estimatedProgress) || 0))}%`,
                                 }}
                             />
                         </div>
@@ -739,6 +782,12 @@ export function CropDetailsModal({
                                 <h3>Growth Check</h3>
                                 <p>Review dated inspections and approved monitoring. Historical entries preserve newer current counts.</p>
                             </div>
+                            {canEditResources && ["Planted", "Growing", "Ready for Harvest", "Harvesting"].includes(crop.status) && (
+                                <button type="button" className="pest-edit-button" onClick={() => onInspectReadiness?.(crop)}>
+                                    <span className="material-symbols-outlined">fact_check</span>
+                                    Inspect Harvest Readiness
+                                </button>
+                            )}
                             {canEditResources && !["Harvested", "Failed"].includes(crop.status) && (
                                 <button
                                     type="button"

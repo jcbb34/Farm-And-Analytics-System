@@ -37,7 +37,7 @@ function TaskManagementModals({
     employeeAssignmentsLoaded,
     employeeAssignmentsLoading,
     employeeForm,
-    employees,
+    employees, employeesLoading, employeesError, loadEmployees,
     filteredPositionGroups,
     manualTaskResourceItems,
     taskRecordChoices, taskSupplyChoices, taskInventoryItems = [],
@@ -82,6 +82,19 @@ function TaskManagementModals({
     viewEmployeeLoading,
     viewEmployeeTasks,
 }) {
+    const currentlyAssignedEmployee = reassignTask?.assigned_employee_id
+        ? employees.find((employee) => Number(employee.id) === Number(reassignTask.assigned_employee_id))
+        : null;
+    const activeReassignmentEmployees = employees.filter(
+        (employee) => employee.employment_status === "Active" && !employee.is_archived,
+    );
+    const onlyCurrentEmployeeIsActive = Boolean(
+        reassignTask?.assigned_employee_id
+        && activeReassignmentEmployees.length === 1
+        && Number(activeReassignmentEmployees[0].id) === Number(reassignTask.assigned_employee_id),
+    );
+    const currentAssignmentName = currentlyAssignedEmployee?.full_name || reassignTask?.employee_name || "Unassigned";
+
     return (
         <>
             {showEmployeeForm && (
@@ -667,6 +680,22 @@ function TaskManagementModals({
                                     </div>
                                 </div>
 
+                                {reassignTask.assigned_employee_id ? (
+                                    <div className="reassign-current-assignee" role="status">
+                                        <span className="material-symbols-outlined" aria-hidden="true">person_check</span>
+                                        <div>
+                                            <strong>{currentAssignmentName}</strong>
+                                            <span>Currently assigned to this task. This employee is shown here for reference and is not a reassignment option.</span>
+                                        </div>
+                                        <span className="reassign-current-tag">Current employee</span>
+                                    </div>
+                                ) : (
+                                    <div className="reassign-current-assignee" role="status">
+                                        <span className="material-symbols-outlined" aria-hidden="true">person_add</span>
+                                        <div><strong>Unassigned task</strong><span>Select an active employee below to assign this task.</span></div>
+                                    </div>
+                                )}
+
                                 <div className="reassign-search">
                                     <span className="material-symbols-outlined">search</span>
                                     <input
@@ -678,12 +707,41 @@ function TaskManagementModals({
                                     />
                                 </div>
 
-                                {!reassignCandidates.length ? (
+                                {employeesLoading ? (
+                                    <div className="reassign-empty" role="status">
+                                        <span className="material-symbols-outlined">hourglass_top</span>
+                                        <div><strong>Loading employees…</strong><p>Checking active employees eligible for reassignment.</p></div>
+                                    </div>
+                                ) : employeesError ? (
+                                    <div className="reassign-empty" role="alert">
+                                        <span className="material-symbols-outlined">error_outline</span>
+                                        <div>
+                                            <strong>Employee list could not load</strong>
+                                            <p>{employeesError}</p>
+                                            <button type="button" className="workforce-button secondary compact" onClick={loadEmployees}>Retry employees</button>
+                                        </div>
+                                    </div>
+                                ) : !reassignCandidates.length ? (
                                     <div className="reassign-empty">
                                         <span className="material-symbols-outlined">person_off</span>
                                         <div>
-                                            <strong>No available employee found</strong>
-                                            <p>There are no active employees matching this search. Activate or add an employee first.</p>
+                                            <strong>{reassignSearch.trim()
+                                                ? "No matching alternative employees"
+                                                : onlyCurrentEmployeeIsActive
+                                                    ? "Your only active employee is already assigned"
+                                                    : activeReassignmentEmployees.length
+                                                        ? "No alternative employee available"
+                                                        : "No active employees available"}</strong>
+                                            <p>{reassignSearch.trim()
+                                                ? "The current assignee is not listed as an alternative. Clear the search to see other active employees."
+                                                : onlyCurrentEmployeeIsActive
+                                                    ? `${currentAssignmentName} is already assigned to this task. Nothing needs to be changed unless you want a different employee to do the work. To reassign it, add or activate another employee with an Employee task account.`
+                                                    : activeReassignmentEmployees.length
+                                                        ? "No other active employee is available for this assignment. Check the Employees tab and refresh this list."
+                                                        : "Your employee may be inactive or archived. Check the Employees tab, then activate an eligible employee to assign the task. The original task remains saved."}</p>
+                                            {reassignSearch.trim() && (
+                                                <button type="button" className="workforce-button secondary compact" onClick={() => setReassignSearch("")}>Clear search</button>
+                                            )}
                                         </div>
                                     </div>
                                 ) : (
@@ -727,8 +785,10 @@ function TaskManagementModals({
                                                                         })}
                                                                     </span>
                                                                     <span className="reassign-match-note">
-                                                                        <span className="material-symbols-outlined">verified</span>
-                                                                        {candidate.hasPrimaryMatch && candidate.hasSecondaryMatch
+                                                                        <span className="material-symbols-outlined">{candidate.employee.portal_assignment_ready ? "verified" : "warning"}</span>
+                                                                        {!candidate.employee.portal_assignment_ready
+                                                                            ? `Cannot assign: ${candidate.employee.account_issue || candidate.employee.account_status || "Employee task login is required"}`
+                                                                            : candidate.hasPrimaryMatch && candidate.hasSecondaryMatch
                                                                             ? "Matches both primary and additional positions"
                                                                             : candidate.hasPrimaryMatch
                                                                                 ? `Primary position match${candidate.matchedReasons.length ? ` · ${candidate.matchedReasons.join(" / ")}` : ""}`
@@ -779,7 +839,7 @@ function TaskManagementModals({
                                                                             </span>
                                                                         ))}
                                                                     </span>
-                                                                    <span className="reassign-match-note muted">No direct position match detected</span>
+                                                                    <span className="reassign-match-note muted">{candidate.employee.portal_assignment_ready ? "No direct position match detected" : `Cannot assign: ${candidate.employee.account_issue || candidate.employee.account_status || "Employee task login is required"}`}</span>
                                                                 </span>
                                                             </button>
                                                         );

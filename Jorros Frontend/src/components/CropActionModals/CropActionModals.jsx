@@ -12,6 +12,8 @@ import {
 
 import { workforceService } from "../../services/workforceService.js";
 
+import { harvestCropOptionLabel, harvestCropRecordCode, harvestSectionLabel, harvestYieldPerHectare } from "./harvestCropIdentity.mjs";
+
 import "./CropActionModals.css";
 
 const qualityOptions = [
@@ -74,32 +76,9 @@ export function AddYieldModal({
         );
     }, [crops, form.cropId]);
 
-    const yieldPerHectare = useMemo(() => {
-        if (
-            !selectedCrop ||
-            !form.quantityKg
-        ) {
-            return 0;
-        }
-
-        const quantity = Number(
-            form.quantityKg
-        );
-
-        if (
-            Number.isNaN(quantity) ||
-            selectedCrop.area <= 0
-        ) {
-            return 0;
-        }
-
-        return (
-            quantity / selectedCrop.area
-        );
-    }, [
-        selectedCrop,
-        form.quantityKg,
-    ]);
+    const yieldPerHectare = useMemo(() => harvestYieldPerHectare(
+        form.quantityKg, selectedCrop?.area
+    ), [selectedCrop, form.quantityKg]);
 
     useEffect(() => {
         if (!open) {
@@ -139,6 +118,17 @@ export function AddYieldModal({
             document.body.style.overflow =
                 "";
         };
+    }, [open, initialCropId]);
+
+    // Choices may load asynchronously; select the preferred record without
+    // clearing already-entered harvest information when the list refreshes.
+    useEffect(() => {
+        if (!open || crops.length === 0) return;
+        setForm(current => {
+            if (current.cropId && crops.some(crop => String(crop.id) === String(current.cropId))) return current;
+            const preferred = crops.find(crop => String(crop.id) === String(initialCropId)) || crops[0];
+            return { ...current, cropId: String(preferred.id) };
+        });
     }, [open, crops, initialCropId]);
 
     useEffect(() => {
@@ -354,17 +344,20 @@ export function AddYieldModal({
     return (
         <div
             className="crop-action-overlay"
-            onMouseDown={onClose}
+            onMouseDown={() => { if (!submitting) onClose(); }}
         >
             <div
                 className="crop-action-modal yield-record-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="add-yield-dialog-title"
                 onMouseDown={(event) =>
                     event.stopPropagation()
                 }
             >
                 <header className="crop-action-header">
                     <div>
-                        <h2>
+                        <h2 id="add-yield-dialog-title">
                             Add Yield Record
                         </h2>
 
@@ -377,6 +370,7 @@ export function AddYieldModal({
                         type="button"
                         onClick={onClose}
                         aria-label="Close yield form"
+                        disabled={submitting}
                     >
                         <span className="material-symbols-outlined">
                             close
@@ -413,19 +407,7 @@ export function AddYieldModal({
                             </div>
                         )}
 
-                        {selectedCrop && (
-                            <div className="yield-calculation-grid" aria-label="Crop cycle context">
-                                <div><small>Crop / Variety</small><strong>{selectedCrop.name} — {selectedCrop.variety || "Not Recorded"}</strong></div>
-                                <div><small>Field</small><strong>{selectedCrop.field}</strong></div>
-                                <div><small>Planting Date</small><strong>{selectedCrop.plantingDate || "Not Recorded"}</strong></div>
-                                <div><small>Previous Partial Harvests</small><strong>{Number(selectedCrop.previousPartialHarvestTotalKg || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} kg</strong></div>
-                                <div><small>Existing Harvest Count</small><strong>{selectedCrop.harvestCount || 0}</strong></div>
-                                <div><small>Readiness</small><strong>{selectedCrop.readinessStatus || "Estimated Ready"}</strong></div>
-                            </div>
-                        )}
-
-                        <div className="crop-action-form-grid">
-                            <div className="crop-action-form-group full-width">
+                        <div className="crop-action-form-group yield-crop-picker">
                                 <label htmlFor="yieldCrop">
                                     Crop Record
                                     <span>*</span>
@@ -447,17 +429,34 @@ export function AddYieldModal({
                                     </option>
 
                                     {crops.map((crop) => (
-                                        <option
-                                            key={crop.id}
-                                            value={crop.id}
-                                        >
-                                            {crop.name} —{" "}
-                                            {crop.field}
+                                        <option key={crop.id} value={crop.id}>
+                                            {harvestCropOptionLabel(crop)}
                                         </option>
                                     ))}
                                 </select>
-                            </div>
+                        </div>
 
+                        {selectedCrop && (
+                            <div className="yield-selected-planting" aria-label="Selected harvest planting" aria-live="polite">
+                                <div className="yield-selected-planting-heading">
+                                    <span className="material-symbols-outlined" aria-hidden="true">location_on</span>
+                                    <strong>Selected planting</strong>
+                                    <span className="yield-selected-planting-code">{harvestCropRecordCode(selectedCrop)}</span>
+                                </div>
+                                <div className="yield-selected-planting-grid">
+                                    <div><small>Crop / Variety</small><strong>{selectedCrop.name}{selectedCrop.variety ? ` — ${selectedCrop.variety}` : ""}</strong></div>
+                                    <div><small>Field</small><strong>{selectedCrop.field || "Not assigned"}</strong></div>
+                                    <div><small>Section</small><strong>{harvestSectionLabel(selectedCrop)}</strong></div>
+                                </div>
+                                <div className="yield-selected-planting-meta">
+                                    <span>Previous harvests: <strong>{selectedCrop.harvestCount || 0}</strong></span>
+                                    <span>Partial yield: <strong>{Number(selectedCrop.previousPartialHarvestTotalKg || 0).toLocaleString("en-US", { maximumFractionDigits: 2 })} kg</strong></span>
+                                    <span>Readiness: <strong>{selectedCrop.readinessStatus || "Estimated Ready"}</strong></span>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="crop-action-form-grid">
                             <div className="crop-action-form-group">
                                 <label htmlFor="harvestDate">
                                     Harvest Date
@@ -610,9 +609,9 @@ export function AddYieldModal({
                                 </small>
 
                                 <strong>
-                                    {selectedCrop
+                                    {selectedCrop?.area > 0
                                         ? `${selectedCrop.area} ha`
-                                        : "—"}
+                                        : "Not recorded"}
                                 </strong>
                             </div>
 
@@ -622,14 +621,9 @@ export function AddYieldModal({
                                 </small>
 
                                 <strong>
-                                    {yieldPerHectare.toLocaleString(
-                                        "en-US",
-                                        {
-                                            maximumFractionDigits:
-                                                2,
-                                        }
-                                    )}{" "}
-                                    kg/ha
+                                    {yieldPerHectare == null ? "Not calculated" : `${yieldPerHectare.toLocaleString(
+                                        "en-US", { maximumFractionDigits: 2 }
+                                    )} kg/ha`}
                                 </strong>
                             </div>
 
@@ -770,6 +764,7 @@ export function AddYieldModal({
                             type="button"
                             className="crop-action-cancel"
                             onClick={onClose}
+                            disabled={submitting}
                         >
                             Cancel
                         </button>

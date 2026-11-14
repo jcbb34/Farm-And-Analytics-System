@@ -56,6 +56,16 @@ router = APIRouter(
     tags=["Inventory"],
 )
 
+@router.get("/planting-catalog")
+def inventory_planting_catalog():
+    """Built-in crop varieties and permitted planting inputs for stock entry.
+
+    Served with Inventory permission; inventory clerks do not need Crop edit rights.
+    """
+    from app.services.crop_planting_material_catalog import catalog_entries
+    return {"items": catalog_entries()}
+
+
 # =========================================================
 # HELPERS
 # =========================================================
@@ -537,6 +547,16 @@ def _create_inventory_item(db, payload, current_user, idempotency_key, fingerpri
         created_by_user_id=current_user.id,
     )
 
+    from app.services.crop_planting_material import validate_material_tag
+    for key in ("planting_crop_reference", "planting_variety_reference", "planting_material_kind", "planting_units_per_position"):
+        setattr(item, key, getattr(payload, key))
+    validate_material_tag(item, require_for_planting_category=True)
+    if item.planting_crop_reference:
+        from app.models import CropSpacingProfile
+        if not db.scalar(select(CropSpacingProfile.id).where(
+                CropSpacingProfile.crop_key == item.planting_crop_reference,
+                CropSpacingProfile.variety_key == item.planting_variety_reference).limit(1)):
+            raise HTTPException(422, "This crop and variety do not exist in the agricultural reference catalog.")
     db.add(item)
     db.flush()
 
@@ -628,6 +648,17 @@ def _update_inventory_item(inventory_id, payload, db, current_user):
 
         setattr(item, field_name, value)
 
+    from app.services.crop_planting_material import validate_material_tag, reserved_quantity
+    validate_material_tag(item)
+    if item.planting_crop_reference:
+        from app.models import CropSpacingProfile
+        if not db.scalar(select(CropSpacingProfile.id).where(
+                CropSpacingProfile.crop_key == item.planting_crop_reference,
+                CropSpacingProfile.variety_key == item.planting_variety_reference).limit(1)):
+            raise HTTPException(422, "This crop and variety do not exist in the agricultural reference catalog.")
+    if any(key in changes for key in ("planting_crop_reference", "planting_variety_reference", "planting_material_kind", "planting_units_per_position", "category", "unit")):
+        if reserved_quantity(db, item.id):
+            raise HTTPException(409, "This item has open planting tasks. Finish or cancel those tasks before changing the planting-material identity.")
     item.updated_at = datetime.now()
 
     record_inventory_change(db, item, current_user, action="Updated inventory record", before=before)

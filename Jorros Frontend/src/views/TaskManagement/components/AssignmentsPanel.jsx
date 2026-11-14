@@ -217,12 +217,15 @@ function TaskRow({
 export default function AssignmentsPanel({
     allEmployeesById,
     filteredTasks,
+    error,
     filterProps,
     focusedTaskId,
     loading,
     onAssignTask,
     onCorrectUsage,
     onLoadMore,
+    onRetryLoad,
+    onShowAllScheduled,
     onOpenReview,
     onReassign,
     onRecordWork,
@@ -264,7 +267,14 @@ export default function AssignmentsPanel({
                 )}
             </div>
 
-            {loading ? <div className="workforce-empty">Loading tasks…</div> : (
+            {loading ? <div className="workforce-empty">Loading tasks…</div> : error ? (
+                <div className="workforce-empty assignment-empty" role="alert">
+                    <span className="material-symbols-outlined">error_outline</span>
+                    <strong>Could not load tasks</strong>
+                    <span>{error}</span>
+                    <button className="workforce-button secondary" type="button" onClick={onRetryLoad}>Retry loading</button>
+                </div>
+            ) : (
                 <div className="workforce-table-wrap">
                     <table className="workforce-table">
                         <thead>
@@ -291,8 +301,17 @@ export default function AssignmentsPanel({
                                     <td colSpan="7">
                                         <div className="workforce-empty assignment-empty">
                                             <span className="material-symbols-outlined">search_off</span>
-                                            <strong>No assignments match the selected filters.</strong>
-                                            <span>Try changing the search or clearing one of the filters.</span>
+                                            <strong>{taskTotal === 0 ? "No assignments found for this view." : "No assignments match the selected filters."}</strong>
+                                            <span>{taskTotal === 0 ? "Tasks may exist on another date or under a different status. Check All Scheduled before creating a new task." : "Try clearing the search or changing the filters."}</span>
+                                            {filterProps.filtersAreDefault ? (
+                                                <button type="button" className="workforce-button secondary" onClick={onRetryLoad}>
+                                                    <span className="material-symbols-outlined">refresh</span> Retry loading tasks
+                                                </button>
+                                            ) : (
+                                                <button type="button" className="workforce-button secondary" onClick={onShowAllScheduled}>
+                                                    <span className="material-symbols-outlined">calendar_month</span> View All Scheduled Tasks
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -301,7 +320,7 @@ export default function AssignmentsPanel({
                     </table>
                 </div>
             )}
-            {!loading && tasks.length < taskTotal && (
+            {!loading && !error && tasks.length < taskTotal && (
                 <div className="assignment-load-more">
                     <button type="button" className="workforce-button secondary" onClick={onLoadMore}>
                         <span className="material-symbols-outlined">expand_more</span>

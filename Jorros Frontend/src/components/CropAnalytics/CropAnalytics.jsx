@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { asFiniteAnalyticsNumber, formatAnalyticsDecimal, formatAnalyticsQuantity } from "./analyticsNumbers.mjs";
 
 import "./CropAnalytics.css";
 
@@ -53,7 +54,7 @@ function formatMonth(monthKey) {
 }
 
 function getQualityClass(quality) {
-    return quality
+    return String(quality || "unknown")
         .toLowerCase()
         .replaceAll(" ", "-");
 }
@@ -70,7 +71,7 @@ function CropAnalytics({
 }) {
     const monthlyPrediction =
         useMemo(() => {
-            if (analytics) return analytics.monthlyPrediction.slice(0, 12);
+            if (Array.isArray(analytics?.monthlyPrediction)) return analytics.monthlyPrediction.slice(0, 12);
             const groupedMonths =
                 new Map();
 
@@ -97,9 +98,7 @@ function CropAnalytics({
                     };
 
                 current.cropCount += 1;
-                current.area += Number(
-                    crop.area
-                );
+                current.area += asFiniteAnalyticsNumber(crop.area) ?? 0;
 
                 groupedMonths.set(
                     monthKey,
@@ -117,7 +116,7 @@ function CropAnalytics({
         }, [crops, analytics]);
 
     const yieldByCrop = useMemo(() => {
-        if (analytics) return analytics.yieldByCrop.slice(0, 10);
+        if (Array.isArray(analytics?.yieldByCrop)) return analytics.yieldByCrop.slice(0, 10);
         const groupedYield =
             new Map();
 
@@ -156,7 +155,7 @@ function CropAnalytics({
 
     const productivityStats =
         useMemo(() => {
-            if (analytics) return analytics.productivityStats;
+            if (analytics?.productivityStats) return analytics.productivityStats;
             const totalYield =
                 yieldRecords.reduce(
                     (total, record) =>
@@ -175,20 +174,14 @@ function CropAnalytics({
                     0
                 );
 
-            const averageGrowth =
-                crops.length > 0
-                    ? crops.reduce(
-                          (
-                              total,
-                              crop
-                          ) =>
-                              total +
-                              Number(
-                                  crop.growth
-                              ),
-                          0
-                      ) / crops.length
-                    : 0;
+            // Existing crops may have no growth observation yet. Do not
+            // invent an average of 0% from missing data.
+            const growthValues = crops
+                .map((crop) => asFiniteAnalyticsNumber(crop.growth))
+                .filter((value) => value !== null);
+            const averageGrowth = growthValues.length
+                ? growthValues.reduce((sum, value) => sum + value, 0) / growthValues.length
+                : null;
 
             const survivalRates =
                 crops
@@ -238,15 +231,14 @@ function CropAnalytics({
         Math.max(
             1,
             ...monthlyPrediction.map(
-                (item) => item.area
+                (item) => asFiniteAnalyticsNumber(item.area) ?? 0
             )
         );
 
     const maxCropYield = Math.max(
         1,
         ...yieldByCrop.map(
-            (item) =>
-                item.quantityKg
+            (item) => asFiniteAnalyticsNumber(item.quantityKg) ?? 0
         )
     );
 
@@ -306,17 +298,14 @@ function CropAnalytics({
                                                 style={{
                                                     height: `${Math.max(
                                                         10,
-                                                        (item.area /
+                                                        ((asFiniteAnalyticsNumber(item.area) ?? 0) /
                                                             maxPredictionArea) *
                                                             100
                                                     )}%`,
                                                 }}
                                             >
                                                 <strong>
-                                                    {item.area.toFixed(
-                                                        1
-                                                    )}{" "}
-                                                    ha
+                                                    {formatAnalyticsDecimal(item.area, 1, " ha", "No area data")}
                                                 </strong>
                                             </span>
                                         </div>
@@ -384,10 +373,7 @@ function CropAnalytics({
                                             </strong>
 
                                             <span>
-                                                {item.quantityKg.toLocaleString(
-                                                    "en-US"
-                                                )}{" "}
-                                                kg
+                                                {formatAnalyticsQuantity(item.quantityKg, " kg")}
                                             </span>
                                         </div>
 
@@ -396,7 +382,7 @@ function CropAnalytics({
                                                 style={{
                                                     width: `${Math.max(
                                                         5,
-                                                        (item.quantityKg /
+                                                        ((asFiniteAnalyticsNumber(item.quantityKg) ?? 0) /
                                                             maxCropYield) *
                                                             100
                                                     )}%`,
@@ -455,10 +441,7 @@ function CropAnalytics({
                                 </small>
 
                                 <strong>
-                                    {productivityStats.totalYield.toLocaleString(
-                                        "en-US"
-                                    )}{" "}
-                                    kg
+                                    {formatAnalyticsQuantity(productivityStats.totalYield, " kg")}
                                 </strong>
                             </div>
                         </div>
@@ -474,10 +457,7 @@ function CropAnalytics({
                                 </small>
 
                                 <strong>
-                                    {productivityStats.totalArea.toFixed(
-                                        2
-                                    )}{" "}
-                                    ha
+                                    {formatAnalyticsDecimal(productivityStats.totalArea, 2, " ha")}
                                 </strong>
                             </div>
                         </div>
@@ -493,10 +473,7 @@ function CropAnalytics({
                                 </small>
 
                                 <strong>
-                                    {productivityStats.averageGrowth.toFixed(
-                                        1
-                                    )}
-                                    %
+                                    {formatAnalyticsDecimal(productivityStats.averageGrowth, 1, "%", "Not estimated")}
                                 </strong>
                             </div>
                         </div>
@@ -512,9 +489,7 @@ function CropAnalytics({
                                 </small>
 
                                 <strong>
-                                    {productivityStats.averageSurvival === null
-                                        ? "No data"
-                                        : `${productivityStats.averageSurvival.toFixed(1)}%`}
+                                    {formatAnalyticsDecimal(productivityStats.averageSurvival, 1, "%")}
                                 </strong>
                             </div>
                         </div>
@@ -549,14 +524,7 @@ function CropAnalytics({
                                 </small>
 
                                 <strong>
-                                    {productivityStats.yieldPerHectare.toLocaleString(
-                                        "en-US",
-                                        {
-                                            maximumFractionDigits:
-                                                2,
-                                        }
-                                    )}{" "}
-                                    kg/ha
+                                    {formatAnalyticsQuantity(productivityStats.yieldPerHectare, " kg/ha", "No data", 2)}
                                 </strong>
                             </div>
                         </div>
@@ -656,12 +624,7 @@ function CropAnalytics({
                                             </td>
 
                                             <td>
-                                                {Number(
-                                                    record.quantityKg
-                                                ).toLocaleString(
-                                                    "en-US"
-                                                )}{" "}
-                                                kg
+                                                {formatAnalyticsQuantity(record.quantityKg, " kg")}
                                             </td>
 
                                             <td>
@@ -670,9 +633,7 @@ function CropAnalytics({
                                                         record.quality
                                                     )}`}
                                                 >
-                                                    {
-                                                        record.quality
-                                                    }
+                                                    {record.quality || "Not recorded"}
                                                 </span>
                                             </td>
 
@@ -683,16 +644,7 @@ function CropAnalytics({
                                             </td>
 
                                             <td>
-                                                {Number(
-                                                    record.yieldPerHectare
-                                                ).toLocaleString(
-                                                    "en-US",
-                                                    {
-                                                        maximumFractionDigits:
-                                                            2,
-                                                    }
-                                                )}{" "}
-                                                kg/ha
+                                                {formatAnalyticsQuantity(record.yieldPerHectare, " kg/ha", "No data", 2)}
                                             </td>
 
                                             <td>

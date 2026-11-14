@@ -6,7 +6,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import FunctionElement
 
 from app.core.farm_time import farm_today
-from app.models import AuditLog, Crop, CropPestDisease, CropYieldRecord
+from app.models import AuditLog, Crop, CropPestDisease, CropYieldRecord, CropSection
 
 
 class DayDifference(FunctionElement):
@@ -85,11 +85,12 @@ def crop_projection(today=None):
     pest_exists = select(CropPestDisease.id).where(CropPestDisease.crop_id == Crop.id, CropPestDisease.status != "Resolved").exists()
     pest_id = select(CropPestDisease.id).where(CropPestDisease.crop_id == Crop.id, CropPestDisease.status != "Resolved")\
         .order_by(CropPestDisease.date_detected.desc(), CropPestDisease.id.desc()).limit(1).scalar_subquery()
-    return select(*Crop.__table__.columns,
+    return select(*Crop.__table__.columns, CropSection.name.label("section_name"),
         *(history.c[name] for name in ("harvest_count", "total_harvest_quantity_kg", "previous_partial_harvest_total_kg", "first_harvest_date", "final_harvest_date")),
         case((final, 1), else_=0).label("has_final"), case((partial, 1), else_=0).label("has_partial"),
         case((pest_exists, 1), else_=0).label("has_pest_alert"), pest_id.label("active_pest_id"),
         effective_status.label("computed_status"))\
+        .outerjoin(CropSection, CropSection.id == Crop.section_id)\
         .outerjoin(history, history.c.crop_id == Crop.id).outerjoin(reopened, reopened.c.code == Crop.crop_code)
 
 

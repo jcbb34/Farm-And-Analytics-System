@@ -29,10 +29,12 @@ from app.services.leave_coverage_service import (
 from app.services.care_task_overlap import resolve_pending_protocol_overlaps
 
 from app.models.activity import FarmActivity
+from app.models.crop_planning import CropSection
 from app.models.crop import (
     Crop,
     CropGrowthRecord,
     CropPestDisease,
+    CropYieldRecord,
 )
 from app.models.inventory import (
     InventoryItem,
@@ -320,6 +322,26 @@ def _upsert_automatic_task(
             FarmActivity.source_key == source_key,
         )
     )
+
+    # Upgrade an older date-specific pending harvest occurrence in place.
+    # This preserves its task code and any manager assignment instead of
+    # creating a duplicate task on an expected-harvest-date edit.
+    if task is None and source_type == "crop_harvest":
+        from app.services.farm_event_service import task_schedule_locked
+        earlier = list(db.scalars(select(FarmActivity).where(
+            FarmActivity.source_module == "Crop",
+            FarmActivity.source_type == "crop_harvest",
+            FarmActivity.source_record_id == source_record_id,
+            FarmActivity.is_automatic == True,
+            FarmActivity.is_archived == False,
+            FarmActivity.status == "Pending",
+        ).order_by(FarmActivity.activity_date.desc(), FarmActivity.id.desc())).all())
+        for candidate in earlier:
+            has_work = db.scalar(select(TaskSubmission.id).where(
+                TaskSubmission.activity_id == candidate.id).limit(1)) is not None
+            if not has_work and not assignment_is_protected(candidate) and not task_schedule_locked(db, candidate.id):
+                task = candidate
+                break
 
     now = farm_now_naive()
 
@@ -706,6 +728,13 @@ def _crop_tasks(
         ].append(record)
 
     for crop in crops:
+        # Persist the natural Planted -> Growing transition after the planting
+        # date, without treating elapsed time as a confirmed biological event.
+        if (crop.registration_kind == "new" and crop.status == "Planted"
+            and crop.planting_date is not None and crop.planting_date < today):
+            crop.status = "Growing"
+            if not crop.observed_growth_stage:
+                crop.growth_stage = "Vegetative"
         if crop.care_schedules_json is not None:
             from app.services.crop_direct_care import sync_direct_care
             sync_direct_care(db, crop)
@@ -723,81 +752,78 @@ def _crop_tasks(
             counters=counters,
         )
 
-        if crop_status in {"Harvested", "Failed"}:
+        if crop_status in {"Harvested", "Failed", "Planting Scheduled"}:
             continue
 
-        if crop.estimated_harvest is not None and crop_status not in {
-            "Harvesting",
-            "Harvested",
-            "Failed",
-        }:
-            days_until_harvest = (
-                crop.estimated_harvest -
-                today
-            ).days
-
-            if (
-                days_until_harvest <=
-                HARVEST_ADVANCE_DAYS
-            ):
-                key = (
-                    "crop:harvest:"
-                    f"{crop.id}:"
-                    f"{crop.estimated_harvest.isoformat()}"
+        # Every saved expected harvest is scheduled immediately, including
+        # future occurrences months ahead. The ALERT engine alone owns the
+        # configurable seven-day notification window.
+        if crop.estimated_harvest is not None:
+            latest_yield = db.scalar(select(CropYieldRecord).where(
+                CropYieldRecord.crop_id == crop.id,
+            ).order_by(CropYieldRecord.harvest_date.desc(), CropYieldRecord.id.desc()).limit(1))
+            # Repeated crops remain active after a Partial Harvest, but an old
+            # due date must not recreate work that was just completed.
+            if latest_yield is None or crop.estimated_harvest > latest_yield.harvest_date:
+                cycle_tag = f"after-{latest_yield.id}" if latest_yield else "initial"
+                key = f"crop:harvest:{crop.id}:{cycle_tag}"
+                days_until_harvest = (crop.estimated_harvest - today).days
+                priority = "High" if days_until_harvest <= 3 else (
+                    "Medium" if days_until_harvest <= HARVEST_ADVANCE_DAYS else "Low"
                 )
-
-                priority = (
-                    "High"
-                    if days_until_harvest <= 3
-                    else "Medium"
-                )
-
                 if days_until_harvest < 0:
-                    wording = (
-                        f"Harvest is overdue by "
-                        f"{abs(days_until_harvest)} day(s)."
-                    )
+                    wording = f"Estimated harvest is overdue by {abs(days_until_harvest)} day(s)."
                 elif days_until_harvest == 0:
-                    wording = (
-                        "Estimated harvest is due today."
-                    )
+                    wording = "Estimated harvest is due today."
                 else:
-                    wording = (
-                        "Estimated harvest is due in "
-                        f"{days_until_harvest} day(s)."
-                    )
-
-                _, result = _upsert_automatic_task(
-                    db,
-                    source_key=key,
-                    source_module="Crop",
-                    source_type="crop_harvest",
-                    source_record_id=crop.id,
-                    source_detail_id=None,
-                    source_code=crop.crop_code,
-                    source_path="/crops",
-                    name=(
-                        f"Harvest {crop.name}"
-                    ),
-                    category="Harvesting",
-                    related_to=(
-                        f"{crop.name} — {crop.field}"
-                    ),
-                    location=crop.field,
-                    description=(
-                        f"{wording} The assigned employee records this occurrence's actual yield and reports "
-                        "Partial Harvest or Final Harvest in My Tasks. Crop Management waits for manager "
-                        "confirmation in Task Management; approval creates the authoritative harvest record."
-                    ),
-                    activity_date=(
-                        crop.estimated_harvest
-                    ),
-                    start_time=time(7, 0),
-                    assigned_to="Farm Staff",
-                    priority=priority,
-                )
-                active_keys.add(key)
-                counters[result] += 1
+                    wording = f"Expected harvest in {days_until_harvest} day(s)."
+                section = db.get(CropSection, crop.section_id) if crop.section_id else None
+                section_name = section.name if section else None
+                location = f"{crop.field} / {section_name}" if section_name else crop.field
+                identity = f"{crop.name} {crop.variety} — {section_name or crop.field} ({crop.crop_code})"
+                # Never create a shadow automatic task for already active manual
+                # work, or silently reschedule submitted / in-progress work.
+                existing_work = db.scalar(select(FarmActivity).where(
+                    FarmActivity.source_module == "Crop",
+                    FarmActivity.source_type == "crop_harvest",
+                    FarmActivity.source_record_id == crop.id,
+                    FarmActivity.is_archived == False,
+                    FarmActivity.status.in_(["In Progress", "Submitted for Review", "Returned"]),
+                ).order_by(FarmActivity.activity_date.desc()).limit(1))
+                if existing_work is not None:
+                    if existing_work.source_key:
+                        active_keys.add(existing_work.source_key)
+                else:
+                    planned_manually = db.scalar(select(FarmActivity).where(
+                        FarmActivity.source_module == "Crop",
+                        FarmActivity.source_type == "crop_harvest",
+                        FarmActivity.source_record_id == crop.id,
+                        FarmActivity.activity_date == crop.estimated_harvest,
+                        FarmActivity.is_automatic == False,
+                        FarmActivity.is_archived == False,
+                        FarmActivity.status.in_(["Pending", "In Progress", "Submitted for Review", "Returned"]),
+                    ).limit(1))
+                    if planned_manually is not None:
+                        if planned_manually.source_key:
+                            active_keys.add(planned_manually.source_key)
+                    else:
+                        _, result = _upsert_automatic_task(
+                            db, source_key=key, source_module="Crop", source_type="crop_harvest",
+                            source_record_id=crop.id, source_detail_id=None,
+                            source_code=crop.crop_code, source_path="/crops",
+                            name=f"Harvest {crop.name} {crop.variety} — {section_name or crop.field}"[:150],
+                            category="Harvesting", related_to=identity[:150], location=location[:150],
+                            description=(
+                                f"{wording} Reference-based timing does not confirm physical readiness. "
+                                "Inspect harvest maturity; record actual yield and Partial or Final Harvest "
+                                "in My Tasks. Manager approval creates the authoritative yield record. "
+                                f"Planting: {crop.crop_code}; location: {location}."
+                            ),
+                            activity_date=crop.estimated_harvest, start_time=time(7, 0),
+                            assigned_to="Farm Staff", priority=priority,
+                        )
+                        active_keys.add(key)
+                        counters[result] += 1
 
         for pest_record in pests_by_crop.get(
             crop.id,
@@ -1436,6 +1462,14 @@ def _complete_resolved_tasks(
     for task in tasks:
         if str(task.source_key or "").startswith("crop:direct:"):
             continue
+        # The scheduler must never erase started, manually locked, or
+        # employee-submitted harvest work while reconciling forecasts.
+        if task.source_type == "crop_harvest":
+            from app.services.farm_event_service import task_schedule_locked
+            if (task.status != "Pending" or task_schedule_locked(db, task.id)
+                or db.scalar(select(TaskSubmission.id).where(
+                    TaskSubmission.activity_id == task.id).limit(1)) is not None):
+                continue
         if (
             task.source_key
             and task.source_key

@@ -10,6 +10,7 @@ from app.core.dependencies import require_permission, require_administrator
 from app.models import Crop, CropField, CropSection, CropSpacingProfile, AuditLog
 from app.schemas.crop_planning import LandAreaInput, FarmAreaInput, PositionEventInput, EndPlantingInput, DirectCropSchedule, SpacingAdjustment
 from app.services import crop_land
+from app.services.crop_planting_material_catalog import catalog_entries
 from app.services.crop_planting import profile_dict, built_in_profiles, position_summary, record_position_event, end_planting
 from app.services.crop_direct_care import preview_schedules
 from app.services.record_editing import check_edit_version
@@ -29,7 +30,7 @@ def references(db=Depends(get_db)):
     latest = select(CropSpacingProfile.profile_key, func.max(CropSpacingProfile.version).label("version")).group_by(CropSpacingProfile.profile_key).subquery()
     profiles = db.scalars(select(CropSpacingProfile).join(latest, (CropSpacingProfile.profile_key == latest.c.profile_key) & (CropSpacingProfile.version == latest.c.version))).all()
     legacy = db.execute(select(Crop.name, Crop.variety, Crop.field, Crop.crop_reference, Crop.variety_reference).distinct()).all()
-    return {"profiles": [profile_dict(x) for x in profiles], "sources": built_in_profiles()["sources"],
+    return {"profiles": [profile_dict(x) for x in profiles], "planting_material_catalog": catalog_entries(), "sources": built_in_profiles()["sources"],
             "legacy_choices": [{"name": r.name, "variety": r.variety, "field": r.field,
                                 "crop_reference": r.crop_reference, "variety_reference": r.variety_reference} for r in legacy],
             "unknown_label": "Unknown / Not recorded", "supported_layouts": ["square", "rectangular"]}

@@ -3,6 +3,8 @@
 import { RecordHeader, RecordTableSurface } from "../../../components/Records/RecordsLayout.jsx";
 
 
+import { sectionLabelForCrop } from "./cropRecordLocation.mjs";
+
 import { MonitoringStatus } from "../../../components/Monitoring/Monitoring.jsx";
 
 import "../../../components/Monitoring/Monitoring.css";
@@ -63,7 +65,7 @@ function CropsRecordsTable({
     onArchiveCrop,
     onHarvestCrop,
     onOpenHarvestTask,
-    onConfirmReady,
+    onInspectReadiness,
     onReopenCrop,
 }) {
     return (
@@ -105,7 +107,7 @@ function CropsRecordsTable({
                         <thead>
                             <tr>
                                 <th>Crop Name</th>
-                                <th>Field</th>
+                                <th>Field / Section</th>
                                 <th>Area</th>
                                 <th>Growth</th>
                                 <th>Surviving</th>
@@ -156,11 +158,20 @@ function CropsRecordsTable({
                                                 <div>
                                                     <strong>{crop.name}</strong>
                                                     <small>{crop.variety}</small>
+                                                    <small className="crop-record-code">{crop.cropCode || `Crop #${crop.id}`}</small>
                                                 </div>
                                             </div>
                                         </td>
 
-                                        <td data-label="Field"><span className="crop-mobile-label">Field</span>{crop.field}</td>
+                                        <td data-label="Field">
+                                            <span className="crop-mobile-label">Field / Section</span>
+                                            <div className="crop-record-location">
+                                                <span className="crop-record-field">{crop.field || "Field not recorded"}</span>
+                                                {sectionLabelForCrop(crop) && (
+                                                    <span className="crop-record-section">{sectionLabelForCrop(crop)}</span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td data-label="Area"><span className="crop-mobile-label">Area</span>{crop.area} ha</td>
 
                                         <td data-label="Growth">
@@ -209,6 +220,11 @@ function CropsRecordsTable({
                                                         {crop.readinessStatus || "Estimated Ready"}
                                                     </small>
                                                 )}
+                                                {crop.lastReadinessVerdict === "not_ready" && crop.readinessStatus !== "Confirmed Ready" && (
+                                                    <small className="crop-readiness-inspection-warning">
+                                                        Inspected: Not yet ready{crop.lastReadinessInspectionDate ? ` (${crop.lastReadinessInspectionDate})` : ""}
+                                                    </small>
+                                                )}
                                                 <MonitoringStatus summary={crop.monitoringSummary} />
                                                 {crop.pendingHarvestMessage && (
                                                     <small className="crop-harvest-waiting-label">
@@ -255,14 +271,11 @@ function CropsRecordsTable({
                                                     </button>
                                                 )}
 
-                                                {canUpdateCrops && crop.status === "Ready for Harvest" && crop.readinessStatus !== "Confirmed Ready" && !crop.isArchived && (
-                                                    <button
-                                                        type="button"
-                                                        title="Confirm physical harvest readiness"
-                                                        aria-label={`Confirm ${crop.name} is physically ready for harvest`}
-                                                        onClick={() => onConfirmReady?.(crop)}
-                                                    >
-                                                        <span className="material-symbols-outlined">verified</span>
+                                                {canUpdateCrops && ["Planted", "Growing", "Ready for Harvest", "Harvesting"].includes(crop.status) && !crop.isArchived && (
+                                                    <button type="button" title="Inspect harvest readiness"
+                                                        aria-label={`Inspect harvest readiness for ${crop.name} ${crop.variety}, ${crop.field}, ${sectionLabelForCrop(crop) || "no section"}, ${crop.cropCode || crop.id}`}
+                                                        onClick={() => onInspectReadiness?.(crop)}>
+                                                        <span className="material-symbols-outlined">fact_check</span>
                                                     </button>
                                                 )}
 

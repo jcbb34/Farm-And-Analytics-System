@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import has_permission
-from app.models import Crop, InventoryItem, Livestock, LivestockPen, FarmActivity, User
+from app.models import Crop, CropField, FarmAreaZone, InventoryItem, Livestock, LivestockPen, FarmActivity, User
 from app.routers.auth import get_current_user
 from app.services.event_planning import event_domain, EQUIPMENT_CATEGORIES
 from sqlalchemy import func
@@ -42,11 +42,15 @@ def location_choices(
     include_livestock = context == "events" and domain in {"Livestock", "General"}
     sources = []
     if include_crop:
+        if not source_record_id:
+            sources.append(select(CropField.name).distinct().order_by(CropField.name))
         statement = select(Crop.field).where(Crop.is_archived == False)
         if context == "events" and source_record_id and domain == "Crop":
             statement = statement.where(Crop.id == source_record_id)
         sources.append(statement.distinct().order_by(Crop.field))
     if include_inventory:
+        if not source_record_id:
+            sources.append(select(FarmAreaZone.name).where(FarmAreaZone.kind == 'storage', FarmAreaZone.is_active == True).order_by(FarmAreaZone.name))
         statement = select(InventoryItem.location).where(
             InventoryItem.is_archived == False
         )
@@ -64,6 +68,8 @@ def location_choices(
             )
         sources.append(statement.distinct().order_by(InventoryItem.location))
     if include_livestock:
+        if not source_record_id:
+            sources.append(select(FarmAreaZone.name).where(FarmAreaZone.kind == 'livestock', FarmAreaZone.is_active == True).order_by(FarmAreaZone.name))
         statement = select(Livestock.pen_location).where(Livestock.is_archived == False)
         if source_record_id and domain == "Livestock":
             statement = statement.where(Livestock.id == source_record_id)

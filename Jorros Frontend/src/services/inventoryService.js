@@ -101,6 +101,10 @@ function normalizeInventoryItem(record = {}) {
 
         name: record.name ?? "",
         category: record.category ?? "",
+        plantingCropReference: record.plantingCropReference ?? record.planting_crop_reference ?? "",
+        plantingVarietyReference: record.plantingVarietyReference ?? record.planting_variety_reference ?? "",
+        plantingMaterialKind: record.plantingMaterialKind ?? record.planting_material_kind ?? "",
+        plantingUnitsPerPosition: record.plantingUnitsPerPosition ?? record.planting_units_per_position ?? null,
         batchNumber:
             record.batchNumber ??
             record.batch_number ??
@@ -164,6 +168,10 @@ function createInventoryPayload(data = {}) {
     return {
         name: data.name?.trim() ?? "",
         category: data.category?.trim() ?? "",
+        planting_crop_reference: data.plantingCropReference || null,
+        planting_variety_reference: data.plantingVarietyReference || null,
+        planting_material_kind: data.plantingMaterialKind || null,
+        planting_units_per_position: data.plantingUnitsPerPosition ? Number(data.plantingUnitsPerPosition) : null,
         batch_number: data.batchNumber?.trim() || null,
         quantity: Number(data.quantity ?? 0),
         unit: data.unit?.trim() ?? "",
@@ -196,6 +204,10 @@ function createInventoryUpdatePayload(data = {}) {
         payload.category = data.category.trim();
     }
 
+    if (data.plantingCropReference !== undefined) payload.planting_crop_reference = data.plantingCropReference || null;
+    if (data.plantingVarietyReference !== undefined) payload.planting_variety_reference = data.plantingVarietyReference || null;
+    if (data.plantingMaterialKind !== undefined) payload.planting_material_kind = data.plantingMaterialKind || null;
+    if (data.plantingUnitsPerPosition !== undefined) payload.planting_units_per_position = data.plantingUnitsPerPosition ? Number(data.plantingUnitsPerPosition) : null;
     if (data.batchNumber !== undefined) {
         payload.batch_number = data.batchNumber?.trim() || null;
     }
@@ -252,6 +264,9 @@ function createInventoryUpdatePayload(data = {}) {
 }
 
 export const inventoryService = Object.freeze({
+    async getPlantingCatalog() {
+        return httpClient.get("/inventory/planting-catalog", { cache: "no-store" });
+    },
     async getInventoryPage(options = {}) {
         const response = await httpClient.get("/inventory/page", { query: options });
         return { ...response, items: (response.items || []).map(normalizeInventoryItem) };

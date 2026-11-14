@@ -52,6 +52,12 @@ const menuItems = [
         permission: "crops:view",
     },
     {
+        name: "Farm Areas",
+        icon: "map",
+        path: "/farm-plan",
+        permission: "crops:view",
+    },
+    {
         name: "Livestock",
         icon: "pets",
         path: "/livestock",

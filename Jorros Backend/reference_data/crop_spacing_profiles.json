@@ -356,6 +356,31 @@
       "additional_source_urls": [
         "https://extension.rutgers.edu/fs1279"
       ]
+    },
+    {
+      "profile_key": "lakatan-separate-block",
+      "crop_name": "Banana",
+      "crop_key": "banana",
+      "variety_name": "Lakatan",
+      "variety_key": "lakatan",
+      "label": "Lakatan Separate Block (3 × 3 m)",
+      "row_spacing_m": "3",
+      "plant_spacing_m": "3",
+      "layout": "square",
+      "count_unit": "banana mat/clump",
+      "version": 1,
+      "source_url": "https://hvcdp.da.gov.ph/wp-content/uploads/2022/05/Banana-Production-Manual.pdf",
+      "evidence_scope": "Philippine DA Banana Production Guide offers both 2 × 2.5 m and 3 × 3 m for Lakatan. The farm plan uses the wider 3 × 3 m option as an editable estimate, not an observed measurement.",
+      "harvest_parts": [
+        "fruit"
+      ],
+      "harvest_behavior": "mat",
+      "guidance": "One fruiting pseudostem bears once, but the mat persists through suckers. Do not release the footprint after bunch harvest. Confirm actual mat spacing and field arrangement.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://www.pca.gov.ph/pdf/cocoTech/intercropping/CoconutBananaIntercropping.pdf"
+      ]
     }
   ]
 }

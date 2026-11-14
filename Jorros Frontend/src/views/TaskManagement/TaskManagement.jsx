@@ -62,7 +62,7 @@ function TaskManagement() {
     const canManageLeaveRequests = hasPermission("*") || hasPermission("workforce:manage") || hasPermission("workforce:attendance");
     const notification = useNotification();
     const [tab, setTab] = useState(() => navigation.tab);
-    const [taskScheduleFilter, setTaskScheduleFilter] = useState(() => navigation.date ? "All" : "Actionable Now");
+    const [taskScheduleFilter, setTaskScheduleFilter] = useState(() => navigation.date ? "All" : "All Scheduled");
     const [taskDateFilter, setTaskDateFilter] = useState(() => navigation.date);
     const [taskStatusFilter, setTaskStatusFilter] = useState("All");
     const [taskEmployeeFilter, setTaskEmployeeFilter] = useState(() => navigation.employeeId || "All");
@@ -314,7 +314,7 @@ function TaskManagement() {
     const clearTaskFilters = () => {
         setTaskSearch("");
         setTaskStatusFilter("All");
-        setTaskScheduleFilter("Actionable Now");
+        setTaskScheduleFilter("All Scheduled");
         setTaskPriorityFilter("All");
         setTaskEmployeeFilter("All");
         setTaskReassignmentFilter("All");
@@ -325,7 +325,7 @@ function TaskManagement() {
 
     const taskFiltersAreDefault = taskSearch === ""
         && taskStatusFilter === "All"
-        && taskScheduleFilter === "Actionable Now"
+        && taskScheduleFilter === "All Scheduled"
         && taskPriorityFilter === "All"
         && taskEmployeeFilter === "All"
         && taskReassignmentFilter === "All"
@@ -366,7 +366,7 @@ function TaskManagement() {
         const query = normalizeRecommendationText(reassignSearch);
         return employees
             .filter((employee) => employee.employment_status === "Active" && !employee.is_archived)
-            .filter((employee) => employee.id !== reassignTask.assigned_employee_id)
+            .filter((employee) => Number(employee.id) !== Number(reassignTask.assigned_employee_id))
             .filter((employee) => {
                 if (!query) return true;
                 const searchable = normalizeRecommendationText([
@@ -1232,6 +1232,9 @@ function TaskManagement() {
                     <AssignmentsPanel
                         allEmployeesById={allEmployeesById}
                         filteredTasks={filteredTasks}
+                        error={error}
+                        onShowAllScheduled={clearTaskFilters}
+                        onRetryLoad={load}
                         filterProps={{
                             employees,
                             filtersAreDefault: taskFiltersAreDefault,
@@ -1239,7 +1242,7 @@ function TaskManagement() {
                             onClearDate: () => {
                                 setTaskDateFilter("");
                                 setFocusedTaskId("");
-                                setTaskScheduleFilter("Actionable Now");
+                                setTaskScheduleFilter("All Scheduled");
                             },
                             priority: taskPriorityFilter,
                             priorityOptions: taskPriorityOptions,
@@ -1352,7 +1355,7 @@ function TaskManagement() {
                     employeeAssignmentsLoaded,
                     employeeAssignmentsLoading,
                     employeeForm,
-                    employees,
+                    employees, employeesLoading, employeesError, loadEmployees,
                     filteredPositionGroups,
                     manualTaskResourceItems,
                     openEditEmployee,

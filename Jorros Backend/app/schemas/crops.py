@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import Literal
 from decimal import Decimal
 from app.schemas.crop_planning import DirectCropSchedule, SpacingAdjustment
@@ -18,6 +18,8 @@ from pydantic import (
 
 class CropCreate(BaseModel):
     registration_kind: Literal["legacy", "new", "existing"] = "legacy"
+    planting_inventory_item_id: int | None = Field(default=None, gt=0)
+    planting_start_time: time | None = None
     crop_reference: str | None = Field(default=None, max_length=60)
     variety_reference: str | None = Field(default=None, max_length=80)
     section_id: int | None = Field(default=None, gt=0)
@@ -236,6 +238,7 @@ class CropResponse(BaseModel):
     name: str
     variety: str
     field: str
+    section_name: str | None = None
 
     area_hectares: float
     current_growth: float | None
@@ -244,6 +247,8 @@ class CropResponse(BaseModel):
     current_surviving: int | None
     status: str
     readiness_status: str | None = None
+    last_readiness_verdict: str | None = None
+    last_readiness_inspection_date: date | None = None
     confirmed_ready_at: datetime | None = None
     confirmed_ready_by_user_id: int | None = None
     completed_at: datetime | None = None
@@ -283,6 +288,18 @@ class CropResponse(BaseModel):
         from_attributes=True
     )
 
+
+# =========================================================
+# MATURITY REFERENCE / GROWTH EVENT
+# =========================================================
+class CropMaturityEventCreate(BaseModel):
+    event_kind: Literal["shooting", "flowering"]
+    observed_date: date
+    notes: str | None = Field(default=None, max_length=1000)
+
+class CropMaturityScheduleRequest(BaseModel):
+    expected_harvest: date
+    reason: str | None = Field(default=None, max_length=500)
 
 # =========================================================
 # SURVIVAL OBSERVATION (LEGACY/COMPATIBILITY ENDPOINT)
@@ -447,7 +464,15 @@ class CropReopenRequest(BaseModel):
 
 
 class CropReadyConfirmationRequest(BaseModel):
-    notes: str | None = Field(default=None, max_length=500)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class CropReadinessInspectionCreate(BaseModel):
+    inspection_date: date
+    verdict: Literal["ready", "not_ready"]
+    findings: dict[str, bool] = Field(default_factory=dict)
+    notes: str | None = Field(default=None, max_length=1000)
+
 
 
 # =========================================================

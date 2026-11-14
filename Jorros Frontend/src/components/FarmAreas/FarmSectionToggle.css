@@ -1,0 +1,20 @@
+/* A single disclosure style shared by Farm Plan, measured field lists and Add Crop. */
+.farm-section-toggle{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;max-width:100%;min-height:38px;padding:6px 10px;border:1px solid var(--ui-border,#d4e4d8);border-radius:9px;background:var(--ui-surface,#fff);color:var(--ui-primary,#176b3d);font:inherit;font-size:.82rem;font-weight:720;text-align:left;cursor:pointer;transition:background .15s,border-color .15s}
+.farm-section-toggle:hover:not(:disabled){border-color:#78ac87;background:var(--ui-primary-soft,#edf8ef)}
+.farm-section-toggle:focus-visible{outline:2px solid #278451;outline-offset:3px}
+.farm-section-toggle:disabled{cursor:default;opacity:.75}
+.farm-section-toggle-arrow{display:inline-block;font-size:22px;line-height:1;flex:none;transition:transform .16s ease}
+.farm-section-toggle.is-expanded .farm-section-toggle-arrow{transform:rotate(90deg)}
+.farm-section-toggle-label{min-width:0;overflow-wrap:anywhere;color:var(--ui-text,#2b4838);font-weight:750}
+.farm-section-toggle-count{flex:none;color:var(--ui-primary,#176b3d);background:var(--ui-primary-soft,#e9f5eb);border-radius:100px;padding:4px 9px;font-size:.73rem;font-weight:700;white-space:nowrap}
+.farm-section-toggle--table{width:100%;border:0;background:transparent;padding:3px 0;min-height:37px}
+.farm-section-toggle--table:hover:not(:disabled){border-color:transparent;background:transparent}
+.farm-section-toggle--table:hover:not(:disabled) .farm-section-toggle-label{text-decoration:underline;text-underline-offset:3px}
+.farm-section-toggle--table .farm-section-toggle-count{margin-left:5px}
+.farm-section-toggle--card{background:var(--ui-surface,#fff)}
+html[data-theme="dark"] .farm-section-toggle{background:#22372a;color:#b2edc7;border-color:#3b5944}
+html[data-theme="dark"] .farm-section-toggle--table{background:transparent;border-color:transparent}
+html[data-theme="dark"] .farm-section-toggle-label{color:#e2f1e6}
+html[data-theme="dark"] .farm-section-toggle-count{background:#294f34;color:#b3e9c1}
+@media(max-width:660px){.farm-section-toggle{gap:5px}.farm-section-toggle--table .farm-section-toggle-count{margin-left:0}.farm-section-toggle-count{padding:4px 7px}}
+@media(prefers-reduced-motion:reduce){.farm-section-toggle-arrow{transition:none}}

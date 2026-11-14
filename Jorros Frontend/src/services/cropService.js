@@ -449,6 +449,7 @@ function normalizeCrop(
         name: crop.name ?? "",
         variety: crop.variety ?? "",
         field: crop.field ?? "",
+        sectionName: crop.sectionName ?? crop.section_name ?? null,
         area: Number(
             crop.area ??
                 crop.areaHectares ??
@@ -508,6 +509,8 @@ function normalizeCrop(
             crop.readinessStatus ??
             crop.readiness_status ??
             null,
+        lastReadinessVerdict: crop.lastReadinessVerdict ?? crop.last_readiness_verdict ?? null,
+        lastReadinessInspectionDate: crop.lastReadinessInspectionDate ?? crop.last_readiness_inspection_date ?? null,
         confirmedReadyAt:
             crop.confirmedReadyAt ??
             crop.confirmed_ready_at ??
@@ -953,6 +956,29 @@ export const cropService =
             );
         },
 
+
+        getMaturityReference(name, variety) {
+            return httpClient.get("/crops/maturity-reference", { query: { name, variety }, cache: "no-store" });
+        },
+        getMaturityPlan(cropId) {
+            return httpClient.get(`/crops/${cropId}/maturity-plan`, { cache: "no-store" });
+        },
+        saveMaturityEvent(cropId, payload) {
+            return httpClient.post(`/crops/${cropId}/maturity-events`, payload);
+        },
+        scheduleMaturityHarvest(cropId, payload) {
+            return httpClient.post(`/crops/${cropId}/schedule-maturity`, payload);
+        },
+
+        async getReadinessInspections(cropId) {
+            const response = await httpClient.get(`/crops/${cropId}/readiness-inspections`);
+            return response?.data ?? response;
+        },
+
+        async saveReadinessInspection(cropId, data) {
+            const response = await httpClient.post(`/crops/${cropId}/readiness-inspections`, data);
+            return response?.data ?? response;
+        },
 
         async confirmReady(cropId, notes = null) {
             const response = await httpClient.post(`/crops/${cropId}/confirm-ready`, { notes: notes?.trim() || null });

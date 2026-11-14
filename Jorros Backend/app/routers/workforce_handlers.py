@@ -1024,6 +1024,7 @@ def _infer_usage_type(module: str | None, item: InventoryItem | None, task: Farm
     ]))
     if module == "Crop":
         if category in {"seed", "seeds"}: return "Seed"
+        if category in {"seedling", "seedlings", "planting material", "planting materials", "cuttings", "suckers", "corms"}: return "Planting Material"
         if category in {"fertilizer", "fertilizers"}: return "Fertilizer"
         if category in {"pesticide", "pesticides"}: return "Pesticide"
         if category in {"herbicide", "herbicides"}: return "Herbicide"
@@ -1065,7 +1066,7 @@ def _validate_task_resource_choice(
     }
 
     if module == "Crop":
-        if category in crop_seed_categories or "seed" in category:
+        if (category in crop_seed_categories or "seed" in category) and "plant " not in work and "planting" not in work:
             raise HTTPException(
                 status_code=400,
                 detail="Seed and planting-material usage must be recorded through Crops Management, not Task Management.",
@@ -3843,6 +3844,8 @@ def submit_task(
 
     override_reason = str(payload.inventory_override_reason or "").strip() or None
     allow_negative_inventory = bool(payload.allow_negative_inventory)
+    if allow_negative_inventory and task.source_type == "crop_planting":
+        raise HTTPException(400, "New planting cannot bypass the required stock quantity with a negative-inventory override.")
     if allow_negative_inventory:
         if not _manager(current_user):
             raise HTTPException(status_code=403, detail="Only an authorized manager/administrator can allow negative inventory.")
@@ -4212,6 +4215,30 @@ def review_task(
             submission=submission,
             current_user=current_user,
         )
+        if task.source_type == "crop_planting" and task.source_module == "Crop":
+            from app.core.farm_time import farm_now_naive
+            crop = db.get(Crop, task.source_record_id)
+            if crop is None:
+                raise HTTPException(409, "The crop linked to this planting task no longer exists.")
+            item = db.get(InventoryItem, task.planned_inventory_item_id)
+            if item is None or not item.planting_units_per_position:
+                raise HTTPException(409, "The planting material conversion is missing. Correct the Inventory record before approving.")
+            actual = float(submission.actual_quantity or 0)
+            if actual > float(task.planned_quantity or 0) + 1e-9:
+                raise HTTPException(409, "Actual planting material usage exceeds the reserved quantity. Update the plan before approval.")
+            units_per_position = int(item.planting_units_per_position)
+            exact_positions = actual / units_per_position
+            if abs(exact_positions - round(exact_positions)) > 1e-8 or exact_positions < 1:
+                raise HTTPException(409, "Actual planting material usage must be a whole number of planting positions based on the lot conversion.")
+            # Actual planted counts are authoritative only after approved work.
+            # Land remains allocated until separately verified clearing.
+            crop.quantity_planted = int(round(exact_positions))
+            crop.current_surviving = crop.quantity_planted
+            crop.initial_surviving = crop.quantity_planted
+            crop.survival_count_date = task.activity_date
+            crop.status = "Planted" if crop.planting_date >= farm_today() else "Growing"
+            crop.growth_stage = "Seeded" if crop.status == "Planted" else "Vegetative"
+            crop.planting_confirmed_at = farm_now_naive()
         submission.review_status = "Approved"
         task.status = "Completed"
         task.completed_at = datetime.now()

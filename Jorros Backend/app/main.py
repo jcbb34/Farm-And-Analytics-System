@@ -42,6 +42,7 @@ from app.routers.events import router as events_router
 from app.routers.system import router as system_router
 from app.routers.farm_events import router as farm_events_router
 from app.routers.farm_locations import router as farm_locations_router
+from app.routers.farm_plan import router as farm_plan_router
 from app.services.report_scheduler import (
     attendance_schema_missing_columns,
     report_scheduler_loop,
@@ -127,11 +128,11 @@ app = FastAPI(
 )
 
 for router in [
-    auth_router, users_router, roles_router, crops_router, crop_p lanning_router, locations_router, archives_router, void_authorizations_router,
+    auth_router, users_router, roles_router, crops_router, crop_planning_router, locations_router, archives_router, void_authorizations_router,
     livestock_router, inventory_router, activities_router,
     alerts_router, weather_router, reports_router, backups_router,
     backup_recovery_router, imports_router, audit_router, resource_usages_router, production_sales_router, analytics_router, workforce_router,
-    events_router, system_router, farm_events_router, farm_locations_router, display_router,
+    events_router, system_router, farm_events_router, farm_locations_router, farm_plan_router, display_router,
 ]:
     app.include_router(router)
 

@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 
 from app.models.crop_planning import FarmLandConfiguration, CropField, CropSection, CropFootprint
+from app.models.farm_plan import FarmAreaZone
 from app.models import Crop
 from app.services.db_concurrency import acquire_transaction_lock
 from app.services.record_editing import check_edit_version
@@ -49,15 +50,17 @@ def land_overview(db):
     farm = configured_farm(db)
     sections = list(db.scalars(select(CropSection).order_by(CropSection.name)).all())
     fields = list(db.scalars(select(CropField).order_by(CropField.name)).all())
+    field_codes = dict(db.execute(select(FarmAreaZone.crop_field_id, FarmAreaZone.code).where(FarmAreaZone.crop_field_id.is_not(None), FarmAreaZone.is_active == True)).all())
+    section_codes = dict(db.execute(select(FarmAreaZone.crop_section_id, FarmAreaZone.code).where(FarmAreaZone.crop_section_id.is_not(None), FarmAreaZone.is_active == True)).all())
     allocated = dict(db.execute(select(CropFootprint.section_id, func.sum(CropFootprint.area_m2))
         .where(CropFootprint.released_at.is_(None)).group_by(CropFootprint.section_id)).all())
     return dict(total_area_m2=farm.total_area_m2, unavailable_area_m2=farm.unavailable_area_m2,
                 unavailable_reason=farm.unavailable_reason, edit_version=farm.edit_version,
                 measured_fields_area_m2=sum((decimal(f.area_m2) for f in fields), ZERO),
                 legacy_unmapped_count=db.scalar(select(func.count()).select_from(Crop).where(Crop.footprint_id.is_(None))),
-                fields=[dict(id=f.id, name=f.name, area_m2=f.area_m2, unavailable_area_m2=f.unavailable_area_m2,
+                fields=[dict(id=f.id, name=f.name, plan_code=field_codes.get(f.id), area_m2=f.area_m2, unavailable_area_m2=f.unavailable_area_m2,
                              unavailable_reason=f.unavailable_reason, edit_version=f.edit_version,
-                             sections=[section_summary(db, s, allocated=decimal(allocated.get(s.id))) for s in sections if s.field_id == f.id]) for f in fields])
+                             sections=[dict(section_summary(db, s, allocated=decimal(allocated.get(s.id))), plan_code=section_codes.get(s.id)) for s in sections if s.field_id == f.id]) for f in fields])
 
 
 def save_area(db, payload, *, field_id=None, section_id=None, field_record_id=None, actor=None):

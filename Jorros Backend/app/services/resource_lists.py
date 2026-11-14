@@ -132,7 +132,8 @@ def _attach_crop_page(db, items):
         parent = annotated[row["id"]]
         for name in ("monitoring_summary", "care_protocol_name", "care_protocol_version", "care_protocol_status",
                      "pending_harvest_task_id", "pending_harvest_task_code", "pending_harvest_task_status",
-                     "pending_harvest_type", "pending_harvest_message"):
+                     "pending_harvest_type", "pending_harvest_message",
+                     "last_readiness_verdict", "last_readiness_inspection_date"):
             row[name] = getattr(parent, name, None)
         # One real unresolved issue for the badge; full history loads on open.
         pest = pests.get(row.pop("active_pest_id"))
