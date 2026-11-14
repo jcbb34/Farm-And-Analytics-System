@@ -26,7 +26,10 @@ def _crop_rows(db, statement=None):
         progress = calculate_crop_progress(row["planting_date"], row["estimated_harvest"])
         row["estimated_progress"] = progress
         row["estimated_growth_stage"] = stage_for_progress(progress)
-        if row["status"] == "Failed":
+        if row.get("registration_kind", "legacy") != "legacy":
+            row["current_growth"] = progress
+            row["growth_stage"] = row["observed_growth_stage"] or stage_for_progress(progress)
+        elif row["status"] == "Failed":
             pass
         elif row["status"] == "Harvested" or row["has_final"]:
             row.update(status="Harvested", current_growth=100, growth_stage="Harvested")
@@ -46,13 +49,14 @@ def _crop_rows(db, statement=None):
 def _crop_scan_summary(db, *, offset=0, limit=0, search="", crop_type="All", status_filter="Active Crops", field="All", planting_date=None):
     names, current_names, fields, status_counts, months = set(), set(), set(), Counter(), defaultdict(lambda: {"cropCount": 0, "area": 0})
     totals = {"total": 0, "active": 0, "harvested": 0, "alerts": 0, "ready": 0, "area": 0.0}
-    growth_sum = survival_sum = survival_count = 0
+    growth_sum = growth_count = survival_sum = survival_count = 0
+    counted_footprints = set()
     matches = 0
     needle = str(search or "").strip().casefold()
     rank = {"Ready for Harvest": 0, "Harvesting": 1, "Growing": 2, "Planted": 3}
 
     def matching_rows():
-        nonlocal matches, growth_sum, survival_sum, survival_count
+        nonlocal matches, growth_sum, growth_count, survival_sum, survival_count
         for row in _crop_rows(db):
             names.add(row["name"]); fields.add(row["field"])
             active = not row["is_archived"]
@@ -63,13 +67,18 @@ def _crop_scan_summary(db, *, offset=0, limit=0, search="", crop_type="All", sta
                 totals["harvested"] += row["status"] == "Harvested"
                 totals["alerts"] += bool(row["has_pest_alert"])
                 totals["ready"] += row["status"] == "Ready for Harvest"
-                totals["area"] += float(row["area_hectares"] or 0)
+                footprint_key = row.get("footprint_id") or f"legacy:{row['id']}"
+                if footprint_key not in counted_footprints:
+                    totals["area"] += float(row["area_hectares"] or 0)
+                    counted_footprints.add(footprint_key)
                 status_counts[row["status"]] += 1
-                growth_sum += float(row["current_growth"] or 0)
+                if row["current_growth"] is not None:
+                    growth_sum += float(row["current_growth"])
+                    growth_count += 1
                 if row["quantity_planted"]:
                     survival_sum += float(row["current_surviving"] or 0) / row["quantity_planted"] * 100
                     survival_count += 1
-                if row["status"] not in {"Harvested", "Failed"}:
+                if row["status"] not in {"Harvested", "Failed"} and row["estimated_harvest"] is not None:
                     month = row["estimated_harvest"].strftime("%Y-%m")
                     months[month]["cropCount"] += 1
                     months[month]["area"] += float(row["area_hectares"] or 0)
@@ -87,7 +96,7 @@ def _crop_scan_summary(db, *, offset=0, limit=0, search="", crop_type="All", sta
     # Only the requested prefix is retained; histories never enter this list.
     if limit:
         retained = nsmallest(offset + limit, matching_rows(), key=lambda row: (
-            rank.get(row["status"], 4), row["estimated_harvest"] if row["status"] == "Ready for Harvest" else date.max,
+            rank.get(row["status"], 4), row["estimated_harvest"] if row["status"] == "Ready for Harvest" and row["estimated_harvest"] else date.max,
             row["name"].casefold(), row["id"]))
     else:
         deque(matching_rows(), maxlen=0)  # Aggregate without retaining rows.
@@ -104,7 +113,7 @@ def _crop_scan_summary(db, *, offset=0, limit=0, search="", crop_type="All", sta
             "monthlyPrediction": [{"monthKey": key, **value} for key, value in sorted(months.items())],
             "yieldByCrop": [{"cropName": name, "quantityKg": float(quantity or 0), "records": count} for name, quantity, count in yield_groups],
             "productivityStats": {"totalYield": total_yield, "totalArea": totals["area"],
-                "averageGrowth": growth_sum / totals["total"] if totals["total"] else 0,
+                "averageGrowth": growth_sum / growth_count if growth_count else None if totals["total"] else 0,
                 "averageSurvival": survival_sum / survival_count if survival_count else None,
                 "topYieldCrop": yield_groups[0][0] if yield_groups else "No data",
                 "yieldPerHectare": total_yield / totals["area"] if totals["area"] else 0},

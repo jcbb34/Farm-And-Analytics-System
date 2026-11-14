@@ -38,6 +38,7 @@ from app.models import (
 )
 from app.routers.auth import get_current_user
 from app.services.task_engine import evaluate_automatic_tasks
+from app.services.crop_planting import established_count
 from app.services.crop_growth import (
     calculate_crop_progress,
     stage_for_progress,
@@ -244,6 +245,10 @@ def apply_automatic_progress(
                 # Display estimates are not database writes or new edit versions.
                 set_committed_value(crop, name, value)
         return crop
+
+    if crop.registration_kind and crop.registration_kind != "legacy":
+        progress = calculate_crop_progress(crop.planting_date, crop.estimated_harvest)
+        return finish(current_growth=progress, growth_stage=crop.observed_growth_stage or stage_for_progress(progress))
 
     # Growth % is automatic until the first real harvest is recorded.
     # A partial harvest means the crop has reached production and remains
@@ -510,6 +515,10 @@ def create_crop(
 ):
     request_hash = request_fingerprint(payload)
     try:
+        if payload.registration_kind != "legacy":
+            acquire_transaction_lock(db, "automation:tasks")
+            from app.services.crop_land import lock_land
+            lock_land(db)
         existing_command = begin_creation_command(
             db,
             idempotency_key=idempotency_key,
@@ -528,7 +537,7 @@ def create_crop(
 
         current_surviving = (
             payload.current_surviving
-            if payload.current_surviving is not None
+            if payload.current_surviving is not None or payload.registration_kind != "legacy"
             else payload.quantity_planted
         )
         try:
@@ -562,7 +571,7 @@ def create_crop(
             pesticide_used=payload.pesticide_used.strip() if payload.pesticide_used else None,
             watering_schedule=payload.watering_schedule.strip() if payload.watering_schedule else None,
             notes=payload.notes.strip() if payload.notes else None,
-            survival_count_date=farm_today(),
+            survival_count_date=farm_today() if current_surviving is not None else None,
             monitoring_enabled=payload.monitoring_enabled,
             monitoring_start_date=payload.monitoring_start_date,
             monitoring_end_date=payload.monitoring_end_date,
@@ -572,6 +581,8 @@ def create_crop(
             created_by_user_id=current_user.id,
             is_archived=False,
         )
+        from app.services.crop_planting import initialize_registration
+        initialize_registration(db, crop, payload, current_user)
         validate_schedule(crop, "Crop")
         apply_automatic_progress(crop, persist=True)
 
@@ -586,6 +597,10 @@ def create_crop(
 
         db.add(crop)
         db.flush()
+
+        if crop.care_schedules_json is not None:
+            from app.services.crop_direct_care import sync_direct_care
+            sync_direct_care(db, crop, strict=True)
 
         if template is not None:
             generate_care_tasks_for_target(
@@ -631,6 +646,9 @@ def update_crop(
         require_crop_admin
     ),
 ):
+    acquire_transaction_lock(db, "automation:tasks")
+    from app.services.crop_land import lock_land
+    lock_land(db)
     acquire_transaction_lock(db, f"crop-harvest:{crop_id}")
     crop = get_crop_or_404(
         crop_id,
@@ -641,7 +659,8 @@ def update_crop(
 
     check_edit_version(crop, payload.expected_version)
     before = crop_snapshot(crop)
-    changes = payload.model_dump(exclude_unset=True, exclude={"expected_version"})
+    from app.services.crop_planting import PLANNING_INPUTS, apply_planning_update, established_count
+    changes = payload.model_dump(exclude_unset=True, exclude={"expected_version", *PLANNING_INPUTS})
     future_care_task_action = changes.pop("future_care_task_action", None)
     old_care_template_id = crop.care_template_id
     old_planting_date = crop.planting_date
@@ -688,8 +707,9 @@ def update_crop(
     )
 
     if (
-        proposed_harvest_date
-        < proposed_planting_date
+        proposed_harvest_date is not None
+        and proposed_planting_date is not None
+        and proposed_harvest_date < proposed_planting_date
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -699,18 +719,18 @@ def update_crop(
             ),
         )
 
-    proposed_quantity = int(changes.get("quantity_planted", crop.quantity_planted))
-    proposed_surviving = int(changes.get("current_surviving", crop.current_surviving))
+    proposed_quantity = changes.get("quantity_planted", crop.quantity_planted)
+    proposed_surviving = changes.get("current_surviving", crop.current_surviving)
     try:
-        validate_survival_counts(proposed_quantity, proposed_surviving)
+        validate_survival_counts(established_count(db, crop) if proposed_quantity == crop.quantity_planted else proposed_quantity, proposed_surviving)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
 
-    if "current_surviving" in changes and int(changes["current_surviving"]) != int(crop.current_surviving):
-        crop.survival_count_date = farm_today()
+    if "current_surviving" in changes and changes["current_surviving"] != crop.current_surviving:
+        crop.survival_count_date = farm_today() if changes["current_surviving"] is not None else None
     text_fields = {
         "name",
         "variety",
@@ -740,10 +760,12 @@ def update_crop(
             crop.growth_stage = "Harvested"
             crop.current_growth = 100.0
     else:
-        # Active records always return to automatic date-based tracking.
-        crop.status = "Planted"
+        # Legacy records retain the existing date-based workflow.
+        if crop.registration_kind == "legacy":
+            crop.status = "Planted"
         apply_automatic_progress(crop, persist=True)
 
+    apply_planning_update(db, crop, payload, _, before=before)
     validate_schedule(crop, "Crop")
     crop.updated_at = datetime.now()
 
@@ -906,7 +928,7 @@ def create_growth_record(
             detail=f"Growth checks cannot be added to a {crop.status.lower()} crop cycle.",
         )
 
-    if payload.update_date < crop.planting_date:
+    if crop.planting_date and payload.update_date < crop.planting_date:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Growth check date cannot be earlier than the planting date.",
@@ -935,12 +957,12 @@ def create_growth_record(
     current_surviving = (
         payload.current_surviving
         if payload.current_surviving is not None
-        else int(crop.current_surviving)
+        else crop.current_surviving
     )
 
     try:
         validate_survival_counts(
-            int(crop.quantity_planted),
+            established_count(db, crop),
             current_surviving,
         )
     except ValueError as exc:
@@ -999,6 +1021,8 @@ def create_yield_record(
             harvest_date=payload.harvest_date,
             quantity_kg=payload.quantity_kg,
             harvest_type=payload.harvest_type or "",
+            harvested_part=payload.harvested_part,
+            plants_harvested_out=payload.plants_harvested_out,
             actor=current_user,
             performed_by_employee_id=payload.performed_by_employee_id,
             related_task_id=None,
@@ -1100,7 +1124,7 @@ def create_pest_disease_record(
             detail=f"Pest or disease records cannot be added to a {crop.status.lower()} crop cycle.",
         )
 
-    if payload.date_detected < crop.planting_date:
+    if crop.planting_date and payload.date_detected < crop.planting_date:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Detection date cannot be earlier than the crop planting date.",

@@ -532,6 +532,7 @@ export default function useCropsPage() {
         addYieldOpen,
         setAddYieldOpen,
         selectedCrop,
+        refreshSelectedCrop: async () => { if (selectedCrop?.id) setSelectedCrop(await cropService.getCrop(selectedCrop.id)); await refreshCrops(); },
         setSelectedCrop,
         editCrop,
         setEditCrop,

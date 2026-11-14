@@ -310,6 +310,7 @@ export default function WorkSubmissionReviewModal({
                                     <div className="work-review-section-title"><span className="material-symbols-outlined" aria-hidden="true">agriculture</span><div><h3>Harvest Lifecycle Decision</h3><p>The employee reports only this occurrence's actual yield. The manager must decide whether the crop remains active or this is the final harvest.</p></div></div>
                                     <div className="work-review-grid">
                                         <InfoItem label="Employee reported yield">{formatQuantity(submission?.actual_quantity, submission?.actual_unit || "kg")}</InfoItem>
+                                        <InfoItem label="Harvested product">{submission?.harvested_part || "Legacy crop output"} ? {submission?.plants_harvested_out || 0} plants harvested out</InfoItem>
                                         <InfoItem label="Employee reported harvest type">{submission?.harvest_type_intent || "Not selected (legacy submission)"}</InfoItem>
                                         <InfoItem label="Harvest task date">{formatDate(task?.activity_date)}</InfoItem>
                                     </div>

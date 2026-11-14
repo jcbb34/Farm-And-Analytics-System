@@ -341,6 +341,8 @@ def create_manual_activity(
                 422,
                 "This work uses inventory. Link its crop/livestock and inventory resource before saving. Seed use is recorded through Crops.",
             )
+    from app.services.workforce_intervals import validate_task_interval
+    validate_task_interval(db, activity)
     db.add(activity)
     db.flush()
     if employee:
@@ -497,7 +499,7 @@ def prepare_monitoring_occurrence(db: Session, task: FarmActivity, target) -> bo
     if task.planned_inventory_item_id:
         raise HTTPException(422, "Monitoring records observations. Schedule inventory usage as a separate task.")
     base = target.planting_date if module == "Crop" else target.date_acquired
-    if task.activity_date < base or (target.monitoring_end_date and task.activity_date > target.monitoring_end_date):
+    if (base and task.activity_date < base) or (target.monitoring_end_date and task.activity_date > target.monitoring_end_date):
         raise HTTPException(422, "Choose a monitoring date after planting/acquisition and within the monitoring period.")
     from app.models import CropGrowthRecord, LivestockGrowthRecord
 

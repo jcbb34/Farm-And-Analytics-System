@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 import re
+import json
+from app.services.crop_growth import calculate_crop_progress
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -174,6 +176,8 @@ def _void_future_pending_crop_tasks(
     rows = list(db.scalars(stmt).all())
     now = farm_now_naive()
     for task in rows:
+        if db.scalar(select(TaskSubmission.id).where(TaskSubmission.activity_id == task.id).limit(1)):
+            continue
         task.status = "Voided"
         task.problem_report = "Crop cycle fully harvested."
         task.completed_at = None
@@ -207,7 +211,7 @@ def confirm_crop_ready(db: Session, *, crop: Crop, actor: User) -> Crop:
         raise HTTPException(status_code=400, detail="A completed or failed crop cycle cannot be marked ready for harvest.")
     crop.status = "Ready for Harvest" if crop.status != "Harvesting" else "Harvesting"
     crop.growth_stage = "Harvest Ready" if crop.status == "Ready for Harvest" else "Harvesting / Production"
-    crop.current_growth = 100.0
+    crop.current_growth = calculate_crop_progress(crop.planting_date, crop.estimated_harvest) if crop.registration_kind != "legacy" else 100.0
     crop.confirmed_ready_at = farm_now_naive()
     crop.confirmed_ready_by_user_id = actor.id
     _audit(
@@ -228,6 +232,8 @@ def record_harvest(
     quantity_kg: float,
     harvest_type: str,
     actor: User,
+    harvested_part: str | None = None,
+    plants_harvested_out: int = 0,
     performed_by_employee_id: int | None,
     related_task_id: int | None = None,
     manual_reason: str | None = None,
@@ -253,14 +259,32 @@ def record_harvest(
         raise HTTPException(status_code=400, detail="Archived crop records cannot receive a harvest.")
     if crop.status == "Failed":
         raise HTTPException(status_code=400, detail="A failed crop cycle cannot receive a harvest record.")
-    if harvest_date < crop.planting_date:
+    if crop.planting_date and harvest_date < crop.planting_date:
         raise HTTPException(status_code=400, detail="Harvest date cannot be earlier than the planting date.")
     if harvest_date > farm_today():
         raise HTTPException(status_code=400, detail="Harvest date cannot be in the future.")
     if float(quantity_kg or 0) <= 0:
         raise HTTPException(status_code=400, detail="Harvest quantity must be greater than zero.")
 
-    normalized_type = " ".join(str(harvest_type or "").strip().lower().split())
+    snapshot = json.loads(crop.spacing_snapshot_json or "{}")
+    parts = snapshot.get("harvest_parts", [])
+    if parts:
+        harvested_part = harvested_part or (parts[0] if len(parts) == 1 else None)
+        if harvested_part not in parts:
+            raise HTTPException(400, "Choose the harvested product: " + ", ".join(parts))
+    retains_plants = snapshot.get("harvest_behavior") in {"repeated", "mat"} or harvested_part in {"leaves", "leaves/shoots"}
+    if retains_plants and plants_harvested_out:
+        raise HTTPException(400, "This harvest retains living trees, plants or banana mats. Record clearing separately.")
+    if snapshot and harvested_part in {"roots", "corms"} and plants_harvested_out <= 0:
+        raise HTTPException(400, "Record how many plants were harvested out for this root/corm harvest.")
+    if crop.area_cleared_at:
+        raise HTTPException(400, "This planting was physically cleared. Register a new planting.")
+    normalized_type = " ".join(str(harvest_type or ("Partial Harvest" if snapshot else "")).strip().lower().split())
+    if retains_plants and normalized_type == "final harvest":
+        raise HTTPException(400, "Use Partial Harvest for a continuing planting; use End Planting to end it explicitly.")
+    if snapshot and normalized_type == "final harvest" and harvested_part in {"roots", "corms"}:
+        if crop.current_surviving is None or plants_harvested_out != crop.current_surviving:
+            raise HTTPException(400, "Use Partial Harvest while plants remain. Confirm a known remaining count before a final root/corm harvest.")
     if normalized_type not in {"partial harvest", "final harvest"}:
         raise HTTPException(status_code=400, detail="Harvest type must be Partial Harvest or Final Harvest.")
     if normalized_type == "final harvest" and not final_harvest_confirmed:
@@ -358,6 +382,8 @@ def record_harvest(
     now = farm_now_naive()
     row = CropYieldRecord(
         crop_id=crop.id,
+        harvested_part=harvested_part,
+        plants_harvested_out=plants_harvested_out,
         harvest_date=harvest_date,
         quantity_kg=float(quantity_kg),
         farm_use_quantity_kg=float(farm_use_quantity_kg or 0),
@@ -376,6 +402,11 @@ def record_harvest(
     )
     db.add(row)
     db.flush()
+    if plants_harvested_out:
+        from app.schemas.crop_planning import PositionEventInput
+        from app.services.crop_planting import record_position_event
+        record_position_event(db, crop, PositionEventInput(event_type="harvested_out", event_date=harvest_date,
+            quantity=plants_harvested_out, notes=f"Actual {harvested_part or 'crop'} harvest #{row.id}"), actor, f"yield:{row.id}")
     create_crop_production_from_yield(db, row, crop, actor)
 
     if normalized_type == "final harvest":
@@ -404,7 +435,7 @@ def record_harvest(
     else:
         crop.status = "Harvesting"
         crop.growth_stage = "Harvesting / Production"
-        crop.current_growth = 100.0
+        crop.current_growth = calculate_crop_progress(crop.planting_date, crop.estimated_harvest) if crop.registration_kind != "legacy" else 100.0
         _audit(
             db,
             crop=crop,
@@ -425,6 +456,8 @@ def reopen_crop_cycle(
     new_status: str,
 ) -> Crop:
     acquire_transaction_lock(db, f"crop-harvest:{crop.id}")
+    if crop.registration_kind != "legacy":
+        raise HTTPException(400, "Register a new planting for a new season. The previous planting and its history remain intact.")
     if crop.is_archived:
         raise HTTPException(status_code=400, detail="Restore the archived crop before reopening its crop cycle.")
     if crop.status != FINAL_STATUS:

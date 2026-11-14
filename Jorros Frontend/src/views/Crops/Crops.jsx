@@ -165,6 +165,7 @@ function Crops() {
                     onSavePestDisease={page.handleSavePestDisease}
                     onUpdatePestDisease={page.handleUpdatePestDisease}
                     onSaveGrowthCheck={page.handleSaveGrowthCheck}
+                    onPlantingChanged={page.refreshSelectedCrop}
                     canEditResources={page.canUpdateCrops}
                 />
             )}

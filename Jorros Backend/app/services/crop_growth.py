@@ -22,11 +22,13 @@ GROWTH_STAGES = tuple(GROWTH_STAGE_PROGRESS.keys())
 
 
 def calculate_crop_progress(
-    planting_date: date,
-    estimated_harvest: date,
+    planting_date: date | None,
+    estimated_harvest: date | None,
     today: date | None = None,
-) -> float:
+) -> float | None:
     """Return automatic crop progress based only on the crop schedule."""
+    if planting_date is None or estimated_harvest is None:
+        return None
     current_date = today or farm_today()
 
     if current_date <= planting_date:
@@ -44,8 +46,10 @@ def calculate_crop_progress(
     return round(max(0.0, min(100.0, progress)), 1)
 
 
-def stage_for_progress(progress: float) -> str:
+def stage_for_progress(progress: float | None) -> str:
     """Derive a readable biological stage from automatic progress."""
+    if progress is None:
+        return "Not estimated"
     value = max(0.0, min(100.0, float(progress or 0)))
 
     if value >= 100:
@@ -65,7 +69,9 @@ def stage_for_progress(progress: float) -> str:
     return "Seeded"
 
 
-def status_for_progress(progress: float) -> str:
+def status_for_progress(progress: float | None) -> str:
+    if progress is None:
+        return "Growing"
     value = float(progress or 0)
     if value <= 0:
         return "Planted"
@@ -90,13 +96,13 @@ def status_for_growth_stage(stage: str | None) -> str:
 
 
 def validate_survival_counts(quantity_planted: int, current_surviving: int) -> None:
-    if quantity_planted < 0 or current_surviving < 0:
+    if (quantity_planted is not None and quantity_planted < 0) or (current_surviving is not None and current_surviving < 0):
         raise ValueError("Plant quantities cannot be negative.")
-    if quantity_planted and current_surviving > quantity_planted:
+    if quantity_planted is not None and current_surviving is not None and current_surviving > quantity_planted:
         raise ValueError("Current surviving plants cannot exceed quantity planted.")
 
 
 def survival_rate(quantity_planted: int, current_surviving: int) -> float | None:
-    if quantity_planted <= 0:
+    if quantity_planted is None or current_surviving is None or quantity_planted <= 0:
         return None
     return round((current_surviving / quantity_planted) * 100, 1)

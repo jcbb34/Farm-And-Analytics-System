@@ -72,10 +72,10 @@ def crop_projection(today=None):
             and_(reopened.c.boundary.is_(None), recorded_at > reopened.c.at)))
 
     final, partial = current_harvest("final"), current_harvest("partial")
-    progress = case((Crop.planting_date >= today, 0.0), (Crop.estimated_harvest <= today, 100.0),
+    progress = case((or_(Crop.planting_date.is_(None), Crop.estimated_harvest.is_(None)), None), (Crop.planting_date >= today, 0.0), (Crop.estimated_harvest <= today, 100.0),
         else_=func.round(cast(DayDifference(Crop.planting_date, today), Float) /
             func.nullif(cast(DayDifference(Crop.planting_date, Crop.estimated_harvest), Float), 0) * 100.0, 1))
-    effective_status = case((Crop.status == "Failed", "Failed"),
+    effective_status = case((Crop.registration_kind != "legacy", Crop.status), (Crop.status == "Failed", "Failed"),
         (or_(Crop.status == "Harvested", final), "Harvested"),
         (or_(Crop.status == "Harvesting", partial), "Harvesting"),
         (Crop.confirmed_ready_at.is_not(None), "Ready for Harvest"),

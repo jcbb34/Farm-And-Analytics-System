@@ -1,12 +1,13 @@
 "use client";
+import PlantingPositions from "../CropPlanning/PlantingPositions.jsx";
+import CropPlanningFields, { emptyDirectSchedules } from "../CropPlanning/CropPlanningFields.jsx";
+import { planningPayload, parseSnapshot, cropPlanningService, farmTodayDateKey, validScheduleStartDate } from "../../services/cropPlanningService.js";
 import useRecordEditConflict from "../../hooks/useRecordEditConflict.js";
 import RecordConflictNotice from "../RecordConflictNotice/RecordConflictNotice.jsx";
 import { cropService } from "../../services/cropService.js";
 
 
-import { MonitoringScheduleFields, scheduleForm, HistoryDateRange, useHistoryRange } from "../Monitoring/Monitoring.jsx";
-
-import FarmLocationInput from "../FarmLocationInput/FarmLocationInput.jsx";
+import { HistoryDateRange, useHistoryRange } from "../Monitoring/Monitoring.jsx";
 import { notify } from "../../context/NotificationContext.jsx";
 
 import {
@@ -15,22 +16,15 @@ import {
     useState,
 } from "react";
 
-import {
-    calculateAutomaticCropProgress,
-    getAutomaticGrowthStage,
-    parseWateringSchedule,
-    serializeWateringSchedule,
-    WATERING_FREQUENCIES,
-    WATERING_PERIODS,
-    WATERING_WEEKDAYS,
-} from "../../services/cropService.js";
 import ResourceUsagePanel from "../ResourceUsagePanel/ResourceUsagePanel.jsx";
 import { workforceService } from "../../services/workforceService.js";
 
 import "./CropModals.css";
 
 const emptyCropForm = {
-    ...scheduleForm({}, true),
+    registration_kind: "new", crop_reference: null, variety_reference: null, field_id: "", section_id: null,
+    spacing_profile_id: null, planting_date_precision: "known", initial_status: "Growing", confirm_ready: false,
+    care_schedules: emptyDirectSchedules(),
     name: "",
     variety: "",
     field: "",
@@ -39,15 +33,8 @@ const emptyCropForm = {
     estimatedHarvest: "",
     quantityPlanted: "",
     currentSurviving: "",
-    wateringFrequency: "Daily",
-    wateringDays: [],
-    wateringPeriods: ["Morning"],
-    wateringLegacy: "",
     notes: "",
     assignedEmployeeId: "",
-    careTemplateId: "",
-    futureCareTaskAction: "",
-    statusMode: "Automatic",
 };
 
 const initialPestForm = {
@@ -98,11 +85,14 @@ function cropToForm(crop) {
         return emptyCropForm;
     }
 
-    const watering = parseWateringSchedule(crop.wateringSchedule);
-
     return {
+        ...emptyCropForm,
+        ...planningPayload(crop),
+        registration_kind: crop.registration_kind || "legacy",
+        care_schedules: (() => { const saved = parseSnapshot(crop.care_schedules_json) || []; return emptyDirectSchedules().map(item => saved.find(x => x.activity === item.activity) || item); })(),
+        initial_status: ["Growing", "Ready for Harvest", "Harvesting"].includes(crop.status) ? crop.status : "Growing",
+        spacing_profile_id: null,
         editVersion: crop.editVersion,
-        ...scheduleForm(crop, true),
         name: crop.name ?? "",
         variety: crop.variety ?? "",
         field: crop.field ?? "",
@@ -125,24 +115,12 @@ function cropToForm(crop) {
             crop.currentSurviving === undefined
                 ? ""
                 : String(crop.currentSurviving),
-        wateringFrequency: watering.frequency,
-        wateringDays: watering.days,
-        wateringPeriods: watering.periods,
-        wateringLegacy: watering.legacy,
         notes:
             crop.notes ===
             "No additional notes."
                 ? ""
                 : crop.notes ?? "",
         assignedEmployeeId: crop.assignedEmployeeId == null ? "" : String(crop.assignedEmployeeId),
-        careTemplateId: crop.careTemplateId == null ? "" : String(crop.careTemplateId),
-        futureCareTaskAction: "",
-        statusMode:
-            crop.status === "Failed"
-                ? "Failed"
-                : crop.status === "Harvested"
-                  ? "Harvested"
-                  : "Automatic",
     };
 }
 
@@ -161,7 +139,7 @@ function CropRecordFormModal({
         emptyCropForm
     );
     const [employees, setEmployees] = useState([]);
-    const [careTemplates, setCareTemplates] = useState([]);
+    const [planningPreview, setPlanningPreview] = useState(null);
 
     const conflict = useRecordEditConflict({
         open, id: crop?.id, loadRecord: cropService.getCrop,
@@ -172,21 +150,17 @@ function CropRecordFormModal({
         if (open) {
             submittingRef.current = false;
             setSaving(false);
+            setPlanningPreview(null);
             setForm(
                 editing
                     ? cropToForm(crop)
-                    : emptyCropForm
+                    : { ...emptyCropForm, plantingDate: farmTodayDateKey() }
             );
-            Promise.all([
-                workforceService.getEmployees(),
-                workforceService.getCareTemplates("Crop", false),
-            ]).then(([employeeRows, templateRows]) => {
+            workforceService.getEmployees().then((employeeRows) => {
                 setEmployees(employeeRows || []);
-                setCareTemplates(templateRows || []);
             }).catch((error) => {
                 console.warn("Unable to load crop workforce choices:", error);
                 setEmployees([]);
-                setCareTemplates([]);
             });
             document.body.style.overflow =
                 "hidden";
@@ -202,70 +176,6 @@ function CropRecordFormModal({
         return null;
     }
 
-    const handleChange = (event) => {
-        const { name, value } =
-            event.target;
-
-        setForm((currentForm) => ({
-            ...currentForm,
-            [name]: value,
-        }));
-    };
-
-    const handleWateringFrequencyChange = (event) => {
-        const frequency = event.target.value;
-        setForm((currentForm) => ({
-            ...currentForm,
-            wateringFrequency: frequency,
-            wateringDays: [],
-            wateringPeriods:
-                frequency === "Twice Daily"
-                    ? ["Morning", "Afternoon"]
-                    : ["As Needed", "Rain-Fed", "Automated/Continuous"].includes(frequency)
-                      ? []
-                      : ["Morning"],
-            wateringLegacy: "",
-        }));
-    };
-
-    const toggleWateringValue = (field, value, maximum = null) => {
-        setForm((currentForm) => {
-            const values = Array.isArray(currentForm[field]) ? currentForm[field] : [];
-            const exists = values.includes(value);
-            let next = exists ? values.filter((item) => item !== value) : [...values, value];
-            if (maximum && next.length > maximum) {
-                next = next.slice(next.length - maximum);
-            }
-            return { ...currentForm, [field]: next, wateringLegacy: "" };
-        });
-    };
-
-    const visualProgress =
-        editing && form.statusMode === "Harvested"
-            ? 100
-            : calculateAutomaticCropProgress(
-                  form.plantingDate,
-                  form.estimatedHarvest
-              );
-
-    const automaticGrowthStage =
-        editing && form.statusMode === "Harvested"
-            ? "Harvested"
-            : getAutomaticGrowthStage(
-                  visualProgress
-              );
-
-    const survivalRate =
-        Number(form.quantityPlanted) > 0 &&
-        form.currentSurviving !== ""
-            ? Math.round(
-                  (Number(form.currentSurviving) /
-                      Number(form.quantityPlanted)) *
-                      1000
-              ) / 10
-            : null;
-
-
     const closeForm = () => { if (!submittingRef.current) onClose(); };
 
     const handleSubmit = async (event) => {
@@ -273,123 +183,50 @@ function CropRecordFormModal({
         if (conflict.reloading) return;
         if (submittingRef.current) return;
 
-        if (
-            !form.name.trim() ||
-            !form.variety.trim() ||
-            !form.field.trim() ||
-            !form.area ||
-            !form.plantingDate ||
-            !form.estimatedHarvest
-        ) {
-            notify(
-                "Please complete all required crop fields."
-            );
-            return;
+        if (!form.name.trim() || !form.variety.trim() || !form.field.trim() || !(Number(form.area) > 0)) {
+            notify("Choose the crop, variety and measured location, and enter its allocated area."); return;
         }
-
-        const area = Number(form.area);
-        const quantityPlanted =
-            form.quantityPlanted === ""
-                ? 0
-                : Number(form.quantityPlanted);
-
-        const currentSurviving =
-            form.currentSurviving === ""
-                ? quantityPlanted
-                : Number(form.currentSurviving);
-
-        if (area <= 0) {
-            notify(
-                "Crop area must be greater than zero."
-            );
-            return;
+        const today = farmTodayDateKey();
+        if (form.registration_kind === 'new' && form.plantingDate && form.plantingDate < today
+            && !(editing && form.plantingDate === crop?.plantingDate)) {
+            notify('A new planting must be dated today or later. Existing crops can keep their actual historical dates.'); return;
         }
-
-        if (
-            !Number.isInteger(quantityPlanted) ||
-            quantityPlanted < 0 ||
-            !Number.isInteger(currentSurviving) ||
-            currentSurviving < 0 ||
-            currentSurviving > quantityPlanted
-        ) {
-            notify(
-                "Quantity planted and current surviving must be whole numbers, and surviving plants cannot exceed the quantity planted."
-            );
-            return;
+        const savedSchedules = parseSnapshot(crop?.care_schedules_json) || [];
+        const invalidStart = (form.care_schedules || []).find(schedule => schedule.enabled && !validScheduleStartDate(
+            schedule.start_date,
+            savedSchedules.find(old => old.activity === schedule.activity)?.start_date || '', today,
+        ));
+        if (invalidStart) {
+            notify(`${invalidStart.activity === 'watering' ? 'Watering' : 'Growth Observation'} cannot start before today.`); return;
         }
-
-        if (
-            form.estimatedHarvest <
-            form.plantingDate
-        ) {
-            notify(
-                "Estimated harvest date must be later than or equal to the planting date."
-            );
-            return;
+        if (form.plantingDate && form.estimatedHarvest && form.estimatedHarvest < form.plantingDate) {
+            notify("Expected harvest cannot precede the planting date."); return;
         }
-
-        let wateringSchedule = form.wateringLegacy;
-        if (form.wateringFrequency) {
-            const frequency = form.wateringFrequency;
-            const days = form.wateringDays || [];
-            const periods = form.wateringPeriods || [];
-
-            if (frequency === "3 Times per Week" && days.length !== 3) {
-                notify("Please select exactly 3 watering days.");
-                return;
-            }
-            if (frequency === "Weekly" && days.length !== 1) {
-                notify("Please select exactly 1 watering day.");
-                return;
-            }
-            if (frequency === "Twice Daily" && periods.length !== 2) {
-                notify("Please select exactly 2 watering periods for Twice Daily.");
-                return;
-            }
-            if (["Daily", "Every 2 Days", "3 Times per Week", "Weekly"].includes(frequency) && periods.length !== 1) {
-                notify("Please select exactly 1 watering period for this schedule.");
-                return;
-            }
-
-            wateringSchedule = serializeWateringSchedule({ frequency, days, periods });
+        const quantityPlanted = form.quantityPlanted === "" ? null : Number(form.quantityPlanted);
+        const currentSurviving = form.currentSurviving === "" ? null : Number(form.currentSurviving);
+        if ([quantityPlanted, currentSurviving].some(x => x !== null && (!Number.isInteger(x) || x < 0))) {
+            notify("Actual plant counts must be whole, nonnegative numbers; leave unknown counts blank."); return;
         }
-
-        if (
-            editing
-            && crop?.careTemplateId
-            && !form.careTemplateId
-            && !form.futureCareTaskAction
-        ) {
-            notify("Choose what should happen to future Pending care tasks before removing this care template.");
-            return;
-        }
-
+        const schedules = (form.care_schedules || []).filter(x => x.enabled);
+        submittingRef.current = true; setSaving(true);
+        try {
+            const preview = await cropPlanningService.preview({ care_schedules: schedules,
+                assigned_employee_id: form.assignedEmployeeId ? Number(form.assignedEmployeeId) : null,
+                crop_id: crop?.id, effective_date: form.schedule_effective_date || null });
+            setPlanningPreview(preview);
+            if (preview.conflicts) { submittingRef.current = false; setSaving(false); notify("Resolve the conflicts shown in Upcoming Activities before saving."); return; }
+        } catch (error) { submittingRef.current = false; setSaving(false); notify(error.message || "Unable to check the care schedules. Your entries are kept."); return; }
         const payload = {
+            ...planningPayload(form),
+            care_schedules: schedules,
             editVersion: form.editVersion,
-            name: form.name.trim(),
-            variety:
-                form.variety.trim(),
-            field: form.field.trim(),
-            area,
-            plantingDate:
-                form.plantingDate,
-            estimatedHarvest:
-                form.estimatedHarvest,
-            quantityPlanted,
-            currentSurviving,
-            wateringSchedule: wateringSchedule || "Not specified",
-            notes:
-                form.notes.trim() ||
-                "No additional notes.",
-            ...scheduleForm(form, true),
+            name: form.name.trim(), variety: form.variety.trim(), field: form.field.trim(), area: form.area,
+            plantingDate: form.plantingDate || null, estimatedHarvest: form.estimatedHarvest || null,
+            quantityPlanted, currentSurviving,
+            notes: form.notes.trim() || null,
             assignedEmployeeId: form.assignedEmployeeId ? Number(form.assignedEmployeeId) : null,
-            careTemplateId: form.careTemplateId ? Number(form.careTemplateId) : null,
-            futureCareTaskAction: form.futureCareTaskAction || undefined,
         };
-
-        if (editing) {
-            payload.statusMode = form.statusMode;
-        }
+        if (editing && ["Harvested", "Failed"].includes(crop.status)) delete payload.initial_status;
 
         submittingRef.current = true;
         setSaving(true);
@@ -397,16 +234,13 @@ function CropRecordFormModal({
             await onSave(payload);
         } catch (error) {
             if (conflict.handleError(error)) return;
+            if (error?.response?.detail?.preview) setPlanningPreview(error.response.detail.preview);
             notify(error?.message || "Unable to save crop. Your entries are kept for retry.");
         } finally {
             submittingRef.current = false;
             setSaving(false);
         }
     };
-
-    const idPrefix = editing
-        ? "edit-crop"
-        : "add-crop";
 
     return (
         <div
@@ -415,13 +249,16 @@ function CropRecordFormModal({
         >
             <div
                 className="add-crop-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="crop-form-dialog-title"
                 onMouseDown={(event) =>
                     event.stopPropagation()
                 }
             >
                 <header className="crop-modal-header">
                     <div>
-                        <h2>
+                        <h2 id="crop-form-dialog-title">
                             {editing
                                 ? "Edit Crop"
                                 : "Add Crop"}
@@ -430,7 +267,7 @@ function CropRecordFormModal({
                         <p>
                             {editing
                                 ? "Update crop information and surviving plants. Schedule estimates remain separate from approved observations."
-                                : "Add a crop record with its planting schedule and planted quantity. Growth tracking starts automatically."}
+                                : "Register a new or existing physical planting, its usable area, actual counts and care schedules."}
                         </p>
                     </div>
 
@@ -455,376 +292,13 @@ function CropRecordFormModal({
                     aria-busy={saving}
                     onSubmit={handleSubmit}
                 >
-                    <RecordConflictNotice conflict={conflict} disabled={saving} />
-                    <fieldset className="crop-form-fields" disabled={saving}>
-                    <section className="crop-form-section">
-                        <div className="crop-form-section-title">
-                            <span className="material-symbols-outlined">
-                                eco
-                            </span>
-
-                            <div>
-                                <h3>
-                                    Crop Information
-                                </h3>
-
-                                <p>
-                                    Enter the basic crop
-                                    and field details.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="crop-form-grid">
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-name`}>
-                                    Crop Name
-                                    <span>*</span>
-                                </label>
-
-                                <input
-                                    id={`${idPrefix}-name`}
-                                    name="name"
-                                    type="text"
-                                    placeholder="Example: Yellow Corn"
-                                    value={form.name}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-variety`}>
-                                    Variety
-                                    <span>*</span>
-                                </label>
-
-                                <input
-                                    id={`${idPrefix}-variety`}
-                                    name="variety"
-                                    type="text"
-                                    placeholder="Example: Hybrid Corn"
-                                    value={form.variety}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-field`}>
-                                    Field / Location
-                                    <span>*</span>
-                                </label>
-
-                                <FarmLocationInput id={`${idPrefix}-field`} name="field" label="Field / Location" knownOptions={fieldOptions} context="crops" active={open} value={form.field} onValueChange={(field) => setForm((old) => ({ ...old, field }))} required maxLength={100} />
-                            </div>
-
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-area`}>
-                                    Area in Hectares
-                                    <span>*</span>
-                                </label>
-
-                                <input
-                                    id={`${idPrefix}-area`}
-                                    name="area"
-                                    type="number"
-                                    min="0.01"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    value={form.area}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
-                        </div>
-                    </section>
-
-                    <section className="crop-form-section">
-                        <div className="crop-form-section-title">
-                            <span className="material-symbols-outlined">
-                                calendar_month
-                            </span>
-
-                            <div>
-                                <h3>Planting & Growth</h3>
-                                <p>
-                                    Estimated progress follows the planting schedule. Approved observations record the actual stage; harvest readiness requires confirmation.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="crop-form-grid">
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-planting-date`}>
-                                    Planting Date <span>*</span>
-                                </label>
-                                <input
-                                    id={`${idPrefix}-planting-date`}
-                                    name="plantingDate"
-                                    type="date"
-                                    value={form.plantingDate}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-estimated-harvest`}>
-                                    Expected First Harvest <span>*</span>
-                                </label>
-                                <input
-                                    id={`${idPrefix}-estimated-harvest`}
-                                    name="estimatedHarvest"
-                                    type="date"
-                                    value={form.estimatedHarvest}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="crop-form-group">
-                                <label>Automatic Growth Stage</label>
-                                <input
-                                    type="text"
-                                    value={automaticGrowthStage}
-                                    readOnly
-                                    disabled
-                                />
-                            </div>
-
-                            <div className="crop-form-group">
-                                <label>Automatic Growth Progress</label>
-                                <div className="growth-input-wrapper">
-                                    <input
-                                        type="text"
-                                        value={`${visualProgress}%`}
-                                        readOnly
-                                        disabled
-                                    />
-                                    <span>%</span>
-                                </div>
-                            </div>
-
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-quantity-planted`}>
-                                    Quantity Planted
-                                </label>
-                                <input
-                                    id={`${idPrefix}-quantity-planted`}
-                                    name="quantityPlanted"
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    placeholder="Example: 500"
-                                    value={form.quantityPlanted}
-                                    onChange={handleChange}
-                                />
-                            </div>
-
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-current-surviving`}>
-                                    Current Surviving Plants
-                                </label>
-                                <input
-                                    id={`${idPrefix}-current-surviving`}
-                                    name="currentSurviving"
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    max={form.quantityPlanted || undefined}
-                                    placeholder="Example: 462"
-                                    value={form.currentSurviving}
-                                    onChange={handleChange}
-                                />
-                                {survivalRate !== null && (
-                                    <small>
-                                        Automatic survival rate: {survivalRate}%
-                                    </small>
-                                )}
-                            </div>
-
-                            {editing && (
-                                <div className="crop-form-group">
-                                    <label htmlFor={`${idPrefix}-record-status`}>
-                                        Record Status
-                                    </label>
-                                    <select
-                                        id={`${idPrefix}-record-status`}
-                                        name="statusMode"
-                                        value={form.statusMode}
-                                        onChange={handleChange}
-                                    >
-                                        <option value="Automatic">Automatic / Active</option>
-                                        <option value="Harvested">Harvested</option>
-                                        <option value="Failed">Failed</option>
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-
-                        <p className="crop-form-info-note">
-                            <span className="material-symbols-outlined">info</span>
-                            <span>
-                                Growth percentage and growth stage are system-controlled from the planting schedule. Only planted quantity and current surviving plants are edited manually; survival rate is calculated automatically.
-                            </span>
-                        </p>
-                    </section>
-
-                    <section className="crop-form-section">
-                        <div className="crop-form-section-title">
-                            <span className="material-symbols-outlined">
-                                compost
-                            </span>
-
-                            <div>
-                                <h3>
-                                    Crop Maintenance
-                                </h3>
-
-                                <p>
-                                    Use a standardized watering schedule so automatic tasks are consistent. Fertilizer, pesticide, herbicide, and other consumables are recorded through Inventory Resource Usage and deduct stock immediately.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="crop-form-grid watering-schedule-grid">
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-watering-frequency`}>
-                                    Watering Frequency
-                                </label>
-                                <select
-                                    id={`${idPrefix}-watering-frequency`}
-                                    value={form.wateringFrequency}
-                                    onChange={handleWateringFrequencyChange}
-                                >
-                                    {form.wateringLegacy && !form.wateringFrequency && (
-                                        <option value="">Existing / Legacy Schedule</option>
-                                    )}
-                                    {WATERING_FREQUENCIES.map((frequency) => (
-                                        <option key={frequency} value={frequency}>
-                                            {frequency}
-                                        </option>
-                                    ))}
-                                </select>
-                                {form.wateringLegacy && !form.wateringFrequency && (
-                                    <small>
-                                        Existing value: {form.wateringLegacy}. Select a standardized schedule to enable reliable automatic watering tasks.
-                                    </small>
-                                )}
-                            </div>
-
-                            {["3 Times per Week", "Weekly"].includes(form.wateringFrequency) && (
-                                <div className="crop-form-group full-width watering-option-group">
-                                    <label>Watering Days</label>
-                                    <div className="watering-chip-group" role="group" aria-label="Watering days">
-                                        {WATERING_WEEKDAYS.map((day) => {
-                                            const active = form.wateringDays.includes(day);
-                                            return (
-                                                <button
-                                                    key={day}
-                                                    type="button"
-                                                    className={active ? "watering-chip active" : "watering-chip"}
-                                                    onClick={() =>
-                                                        toggleWateringValue(
-                                                            "wateringDays",
-                                                            day,
-                                                            form.wateringFrequency === "Weekly" ? 1 : 3
-                                                        )
-                                                    }
-                                                >
-                                                    {day.slice(0, 3)}{active ? " ✓" : ""}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                    <small>
-                                        {form.wateringFrequency === "Weekly"
-                                            ? "Select exactly 1 day."
-                                            : "Select exactly 3 days, for example Monday, Wednesday, and Friday."}
-                                    </small>
-                                </div>
-                            )}
-
-                            {!["As Needed", "Rain-Fed", "Automated/Continuous"].includes(form.wateringFrequency) && (
-                                <div className="crop-form-group full-width watering-option-group">
-                                    <label>Watering Period</label>
-                                    <div className="watering-chip-group" role="group" aria-label="Watering periods">
-                                        {WATERING_PERIODS.map((period) => {
-                                            const active = form.wateringPeriods.includes(period);
-                                            const maximum = form.wateringFrequency === "Twice Daily" ? 2 : 1;
-                                            return (
-                                                <button
-                                                    key={period}
-                                                    type="button"
-                                                    className={active ? "watering-chip active" : "watering-chip"}
-                                                    onClick={() => toggleWateringValue("wateringPeriods", period, maximum)}
-                                                >
-                                                    {period}{active ? " ✓" : ""}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                    <small>
-                                        {form.wateringFrequency === "Twice Daily"
-                                            ? "Select exactly 2 periods."
-                                            : "Select exactly 1 period."}
-                                    </small>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="crop-form-group">
-                            <label htmlFor={`${idPrefix}-notes`}>
-                                Notes
-                            </label>
-
-                            <textarea
-                                id={`${idPrefix}-notes`}
-                                name="notes"
-                                rows="4"
-                                placeholder="Enter crop observations or instructions..."
-                                value={form.notes}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </section>
-
-
-                    <section className="crop-form-section">
-                        <div className="crop-form-section-title">
-                            <span className="material-symbols-outlined">assignment_ind</span>
-                            <div><h3>Employee & Care Plan</h3><p>Assign responsibility and optionally generate scheduled work from an approved care template.</p></div>
-                        </div>
-                        <div className="crop-form-grid">
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-employee`}>Assigned Employee</label>
-                                <select id={`${idPrefix}-employee`} name="assignedEmployeeId" value={form.assignedEmployeeId} onChange={handleChange}>
-                                    <option value="">Unassigned</option>
-                                    {employees.filter((employee) => employee.employment_status === "Active").map((employee) => <option key={employee.id} value={employee.id}>{employee.full_name} — {employee.positions?.length ? `${employee.positions.find((p)=>p.is_primary)?.name || employee.positions[0].name}${employee.positions.length > 1 ? ` +${employee.positions.length - 1} more` : ""}` : employee.position || "Employee"}</option>)}
-                                </select>
-                            </div>
-                            <div className="crop-form-group">
-                                <label htmlFor={`${idPrefix}-care-template`}>Crop Care Template</label>
-                                <select id={`${idPrefix}-care-template`} name="careTemplateId" value={form.careTemplateId} onChange={handleChange}>
-                                    <option value="">No template</option>
-                                    {careTemplates.map((template) => <option key={template.id} value={template.id}>{template.name} ({template.steps?.length || 0} steps)</option>)}
-                                </select>
-                            </div>
-                            {editing && crop?.careTemplateId && !form.careTemplateId && (
-                                <div className="crop-form-group">
-                                    <label htmlFor={`${idPrefix}-future-care-action`}>Future Pending Care Tasks</label>
-                                    <select id={`${idPrefix}-future-care-action`} name="futureCareTaskAction" value={form.futureCareTaskAction} onChange={handleChange} required>
-                                        <option value="">Choose an action</option>
-                                        <option value="keep">Keep existing future tasks</option>
-                                        <option value="resolve">Resolve future tasks</option>
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-                    </section>
-                    <MonitoringScheduleFields value={form} onChange={setForm} module="Crop" earliestDate={form.plantingDate} />
-                    </fieldset>
+                    <div className="add-crop-form-body">
+                        <RecordConflictNotice conflict={conflict} disabled={saving} />
+                        <fieldset className="crop-form-fields" disabled={saving}>
+                            <CropPlanningFields form={form} setForm={setForm} crop={crop} employees={employees}
+                                preview={planningPreview} setPreview={setPlanningPreview} editing={editing} />
+                        </fieldset>
+                    </div>
                     <footer className="crop-form-footer">
                         <button
                             type="button"
@@ -876,6 +350,7 @@ export function EditCropModal(props) {
 export function CropDetailsModal({
     crop,
     onClose,
+    onPlantingChanged,
     onSavePestDisease,
     onUpdatePestDisease,
     onSaveGrowthCheck,
@@ -958,7 +433,7 @@ export function CropDetailsModal({
             notify("Enter a valid growth check date and surviving plant count.");
             return;
         }
-        if (surviving > Number(crop.quantityPlanted || 0)) {
+        if (crop.registration_kind === "legacy" && crop.quantityPlanted != null && surviving > Number(crop.quantityPlanted)) {
             notify("Current surviving plants cannot exceed quantity planted.");
             return;
         }
@@ -1144,26 +619,6 @@ export function CropDetailsModal({
                         </div>
                     </section>
 
-                    {crop.careTemplateId && (
-                        <section className="crop-details-section">
-                            <div className="crop-details-section-heading">
-                                <div>
-                                    <h3>Assigned Care Protocol</h3>
-                                    <p>Care guidance linked to this planting cycle. Built-in watering and harvest schedules remain the source of those tasks.</p>
-                                </div>
-                            </div>
-                            <div className="crop-care-grid">
-                                <div className="crop-care-item">
-                                    <span className="material-symbols-outlined" aria-hidden="true">assignment</span>
-                                    <div><small>Protocol</small><strong>{crop.careProtocolName || `Protocol #${crop.careTemplateId}`}{crop.careProtocolVersion ? ` · v${crop.careProtocolVersion}` : ""}</strong></div>
-                                </div>
-                                <div className="crop-care-item">
-                                    <span className="material-symbols-outlined" aria-hidden="true">verified</span>
-                                    <div><small>Status</small><strong>{crop.careProtocolStatus || "Assigned"}</strong></div>
-                                </div>
-                            </div>
-                        </section>
-                    )}
 
                     <section className="crop-details-section crop-yield-cycle-section">
                         <div className="crop-details-section-heading">
@@ -1226,7 +681,7 @@ export function CropDetailsModal({
                             </div>
 
                             <strong className="crop-growth-number">
-                                {(crop.estimatedProgress ?? crop.growth)}%
+                                {crop.estimatedProgress == null ? "Not estimated" : `${crop.estimatedProgress}%`}
                             </strong>
                         </div>
 
@@ -1243,7 +698,7 @@ export function CropDetailsModal({
                                 <div>
                                     <small>Plant Survival</small>
                                     <strong>
-                                        {crop.currentSurviving ?? 0} / {crop.quantityPlanted ?? 0}
+                                        {crop.currentSurviving ?? "Unknown"} / {crop.quantityPlanted ?? "Unknown"}
                                     </strong>
                                     <p>
                                         {crop.survivalRate === null || crop.survivalRate === undefined
@@ -1257,7 +712,7 @@ export function CropDetailsModal({
                         <div className="crop-details-progress">
                             <span
                                 style={{
-                                    width: `${(crop.estimatedProgress ?? crop.growth)}%`,
+                                    width: `${crop.estimatedProgress == null ? "Not estimated" : `${crop.estimatedProgress}%`}`,
                                 }}
                             />
                         </div>
@@ -1277,7 +732,7 @@ export function CropDetailsModal({
                         </div>
                     </section>
 
-                    <div className="monitoring-summary"><div><dt>Estimated schedule progress</dt><dd>{crop.estimatedProgress ?? crop.growth}%</dd></div><div><dt>Latest approved observed stage</dt><dd>{crop.observedGrowthStage || (crop.readinessStatus === "Confirmed Ready" ? "Harvest Ready (confirmed)" : "Not recorded")}</dd></div><div><dt>Last inspection</dt><dd>{crop.monitoringSummary?.last_date || crop.lastObservationDate || "Not recorded"}</dd></div></div>
+                    <div className="monitoring-summary"><div><dt>Estimated schedule progress</dt><dd>{crop.estimatedProgress == null ? "Not estimated" : `${crop.estimatedProgress}%`}</dd></div><div><dt>Latest approved observed stage</dt><dd>{crop.observedGrowthStage || (crop.readinessStatus === "Confirmed Ready" ? "Harvest Ready (confirmed)" : "Not recorded")}</dd></div><div><dt>Last inspection</dt><dd>{crop.monitoringSummary?.last_date || crop.lastObservationDate || "Not recorded"}</dd></div></div>
                     <section className="crop-details-section crop-growth-check-section">
                         <div className="crop-details-section-heading">
                             <div>
@@ -1307,7 +762,7 @@ export function CropDetailsModal({
                                                 <strong>{formatDate(record.updateDate)}</strong>
                                                 <small>{record.currentSurviving ?? crop.currentSurviving} surviving • {record.observedStage ? `Approved stage: ${record.observedStage}` : `Estimated stage: ${record.growthStage}`}</small>
                                             </div>
-                                            <span>{record.growth}% estimated{record.relatedTaskId && <a href={`/task-management?taskId=${record.relatedTaskId}&tab=tasks`}> View approved work</a>}</span>
+                                            <span>{record.growth == null ? "Not estimated" : `${record.growth}% estimated`}{record.relatedTaskId && <a href={`/task-management?taskId=${record.relatedTaskId}&tab=tasks`}> View approved work</a>}</span>
                                         </div>
                                     ))}
                             </div>
@@ -1337,7 +792,7 @@ export function CropDetailsModal({
                                             name="currentSurviving"
                                             type="number"
                                             min="0"
-                                            max={crop.quantityPlanted}
+                                            max={undefined}
                                             step="1"
                                             value={growthForm.currentSurviving}
                                             onChange={handleGrowthChange}
@@ -1410,6 +865,7 @@ export function CropDetailsModal({
                         </div>
                     </section>
 
+                    <PlantingPositions crop={crop} onChanged={onPlantingChanged} />
                     <ResourceUsagePanel
                         module="Crop"
                         target={crop}

@@ -29,6 +29,8 @@ def sync_monitoring_tasks(db, *, today, active_keys, counters):
                 dates_by_id[resource_id].add(recorded_date)
         for resource in module_rows:
             resources[(module, resource.id)] = resource
+            if module == "Crop" and resource.care_schedules_json is not None:
+                continue
             active = not resource.is_archived and (
                 resource.status not in {"Harvested", "Failed"} if module == "Crop"
                 else resource.lifecycle_status == "Active" and resource.quantity > 0)
@@ -37,7 +39,7 @@ def sync_monitoring_tasks(db, *, today, active_keys, counters):
             interval = resource.monitoring_frequency_days or (crop_interval if module == "Crop" else None)
             if not interval:
                 continue
-            base = resource.planting_date if module == "Crop" else resource.date_acquired
+            base = (resource.planting_date or today) if module == "Crop" else resource.date_acquired
             dates = dates_by_id[resource.id]
             recorded_dates[(module, resource.id)] = dates
             anchor = resource.monitoring_start_date or ((max(dates) if dates else base) + timedelta(days=interval))
@@ -75,6 +77,8 @@ def sync_monitoring_tasks(db, *, today, active_keys, counters):
         FarmActivity.is_automatic == True, FarmActivity.status == "Pending",
         FarmActivity.is_archived == False,
     )).all():
+        if str(task.source_key or "").startswith("crop:direct:"):
+            continue
         resource = resources.get((task.source_module, task.source_record_id))
         closed = resource is None or resource.is_archived or (
             resource.status in {"Harvested", "Failed"} if task.source_module == "Crop"

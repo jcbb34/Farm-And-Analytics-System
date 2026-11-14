@@ -429,6 +429,8 @@ class TaskSubmitRequest(BaseModel):
     actual_quantity_confirmed: bool = False
     inventory_item_id: int | None = Field(default=None, gt=0)
     actual_unit: str | None = Field(default=None, max_length=40)
+    harvested_part: str | None = Field(default=None, max_length=40)
+    plants_harvested_out: int = Field(default=0, ge=0)
     harvest_type_intent: Literal["Partial Harvest", "Final Harvest"] | None = None
     # evidence_ids is the authoritative new workflow. evidence_url remains as a
     # compatibility field for the managed URL returned by the upload endpoint;
@@ -499,6 +501,8 @@ class TaskSubmissionResponse(BaseModel):
     attempt_number: int
     actual_quantity: float | None
     actual_unit: str | None
+    harvested_part: str | None = None
+    plants_harvested_out: int = 0
     harvest_type_intent: str | None = None
     harvest_type_confirmed: str | None = None
     evidence_url: str | None
@@ -525,6 +529,7 @@ class MyTasksSummaryResponse(BaseModel):
 
 
 class TaskResponse(BaseModel):
+    harvest_context: dict | None = None
     work_suspended: bool = False
     suspension_holds: list[dict] = Field(default_factory=list)
     monitoring_context: dict | None = None

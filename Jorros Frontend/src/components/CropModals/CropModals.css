@@ -1154,3 +1154,120 @@
     }
 }
 
+
+/* Add/Edit Crop modal: integrate planning forms with the farm's UI tokens.
+   The footer remains visible while the long form scrolls independently. */
+.add-crop-modal {
+    width: min(1040px, 100%);
+    max-height: min(93dvh, 980px);
+    min-height: 0;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    border-radius: var(--ui-modal-radius, 14px);
+    background: var(--ui-surface, #fff);
+    box-shadow: var(--ui-modal-shadow, 0 20px 50px rgba(0,0,0,.18));
+    color: var(--ui-text, #26322b);
+}
+.add-crop-modal .crop-modal-header {
+    align-items: flex-start;
+    gap: 18px;
+    padding: 22px 28px;
+    border-bottom: 2px solid var(--ui-primary, #166534);
+    background: var(--ui-surface, #fff);
+}
+.add-crop-modal .crop-modal-header h2 {
+    margin: 0 0 6px;
+    color: var(--ui-primary, #166534);
+    font-size: clamp(1.38rem, 2.2vw, 1.7rem);
+    font-weight: 750;
+    line-height: 1.2;
+}
+.add-crop-modal .crop-modal-header p {
+    max-width: 720px;
+    color: var(--ui-text-muted, #66736b);
+    font-size: .85rem;
+    line-height: 1.45;
+}
+.add-crop-modal .crop-modal-header > button { color: var(--ui-text-muted, #66736b); }
+.add-crop-modal .crop-modal-header > button:hover { background: var(--ui-surface-soft, #f8faf8); }
+.add-crop-modal .add-crop-form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+.add-crop-modal .add-crop-form-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 23px 28px 10px;
+    scrollbar-gutter: stable;
+}
+.add-crop-modal .crop-form-section {
+    padding: 21px;
+    margin-bottom: 18px;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    border-radius: 12px;
+    background: var(--ui-surface, #fff);
+    box-shadow: var(--ui-card-shadow, 0 3px 12px rgba(0,0,0,.05));
+}
+.add-crop-modal .crop-form-section-title { gap: 12px; margin-bottom: 19px; }
+.add-crop-modal .crop-form-section-title > .material-symbols-outlined {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--ui-primary-soft, #f0fdf4);
+    color: var(--ui-primary, #166534);
+    font-size: 23px;
+}
+.add-crop-modal .crop-form-section-title h3 {
+    margin: 0 0 4px;
+    color: var(--ui-primary, #166534);
+    font-size: 1.05rem;
+    line-height: 1.35;
+}
+.add-crop-modal .crop-form-section-title p {
+    color: var(--ui-text-muted, #66736b);
+    font-size: .78rem;
+    line-height: 1.45;
+}
+.add-crop-modal .crop-form-footer {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 28px;
+    border-top: 1px solid var(--ui-border, #e3e9e5);
+    background: var(--ui-surface, #fff);
+}
+.add-crop-modal :is(.crop-modal-cancel, .crop-modal-save) {
+    min-height: 43px;
+    padding: 10px 20px;
+    border-radius: var(--ui-control-radius, 8px);
+    font-size: .84rem;
+}
+.add-crop-modal .crop-modal-cancel {
+    background: var(--ui-surface, #fff);
+    border-color: var(--ui-border-strong, #d1d5db);
+    color: var(--ui-text, #26322b);
+}
+.add-crop-modal .crop-modal-cancel:hover { background: var(--ui-surface-soft, #f8faf8); }
+.add-crop-modal .crop-modal-save { background: #166534; color: #fff; }
+.add-crop-modal .crop-modal-save:hover { background: #14532d; }
+.add-crop-modal .crop-modal-save .material-symbols-outlined { font-size: 19px; }
+
+@media (max-width: 700px) {
+    .add-crop-modal { max-height: calc(100dvh - 20px); }
+    .add-crop-modal .crop-modal-header { padding: 18px 20px; }
+    .add-crop-modal .add-crop-form-body { padding: 18px 18px 4px; scrollbar-gutter: auto; }
+    .add-crop-modal .crop-form-section { padding: 16px; }
+    .add-crop-modal .crop-form-footer { padding: 14px 18px; }
+}
+@media (max-width: 500px) {
+    .add-crop-modal .crop-modal-header h2 { font-size: 1.4rem; }
+    .add-crop-modal .crop-form-footer { flex-direction: row; }
+    .add-crop-modal :is(.crop-modal-cancel, .crop-modal-save) { width: auto; flex: 1 1 0; padding-inline: 8px; }
+}

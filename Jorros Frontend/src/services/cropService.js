@@ -1,3 +1,4 @@
+import { planningPayload, parseSnapshot } from "./cropPlanningService.js";
 import { recordEditVersion } from "./recordEditing.js";
 import { schedulePayload, normalizeSchedule } from "../components/Monitoring/monitoring.js";
 import { httpClient } from "./httpClient.js";
@@ -38,7 +39,7 @@ export function calculateAutomaticCropProgress(
     today = new Date()
 ) {
     if (!plantingDate || !estimatedHarvest) {
-        return 0;
+        return null;
     }
 
     const planting = new Date(`${plantingDate}T00:00:00`);
@@ -70,6 +71,7 @@ export function calculateAutomaticCropProgress(
 }
 
 export function getAutomaticGrowthStage(progress) {
+    if (progress == null) return "Not estimated";
     const value = Math.max(0, Math.min(100, Number(progress) || 0));
     if (value >= 100) return "Harvest Ready";
     if (value >= 90) return "Maturity";
@@ -82,6 +84,7 @@ export function getAutomaticGrowthStage(progress) {
 }
 
 export function getAutomaticCropStatus(progress) {
+    if (progress == null) return "Growing";
     const value = Number(progress) || 0;
     if (value <= 0) return "Planted";
     if (value < 90) return "Growing";
@@ -251,13 +254,8 @@ function normalizeGrowthRecord(
         cropId:
             record.cropId ??
             record.crop_id,
-        growth:
-            Number(
-                record.growth ??
-                    record.growthPercentage ??
-                    record.growth_percentage ??
-                    getCropStageProgress(growthStage)
-            ),
+        growth: (record.growth ?? record.growthPercentage ?? record.growth_percentage) == null
+            ? null : Number(record.growth ?? record.growthPercentage ?? record.growth_percentage),
         observedStage: record.observed_stage ?? record.observedStage ?? null,
         relatedTaskId: record.related_task_id ?? record.relatedTaskId ?? null,
         approvedByUserId: record.approved_by_user_id ?? record.approvedByUserId ?? null,
@@ -418,27 +416,15 @@ function normalizeCrop(
             ? "Harvested"
             : "Seeded");
 
-    const growth = Number(
-        crop.growth ??
-            crop.currentGrowth ??
-            crop.current_growth ??
-            getCropStageProgress(growthStage)
-    );
-
-    const quantityPlanted = Number(
-        crop.quantityPlanted ??
-            crop.quantity_planted ??
-            0
-    );
-
-    const currentSurviving = Number(
-        crop.currentSurviving ??
-            crop.current_surviving ??
-            quantityPlanted
-    );
+    const rawGrowth = crop.growth ?? crop.currentGrowth ?? crop.current_growth;
+    const growth = rawGrowth == null ? null : Number(rawGrowth);
+    const rawQuantity = crop.quantityPlanted ?? crop.quantity_planted;
+    const quantityPlanted = rawQuantity == null ? null : Number(rawQuantity);
+    const rawSurviving = crop.currentSurviving ?? crop.current_surviving;
+    const currentSurviving = rawSurviving == null ? null : Number(rawSurviving);
 
     const survivalRate =
-        quantityPlanted > 0
+        quantityPlanted > 0 && currentSurviving != null
             ? Math.round(
                   (currentSurviving / quantityPlanted) * 1000
               ) / 10
@@ -447,6 +433,13 @@ function normalizeCrop(
     const status = crop.status ?? "Planted";
 
     return {
+        ...planningPayload(crop),
+        spacing_snapshot_json: crop.spacing_snapshot_json || null,
+        care_schedules_json: crop.care_schedules_json || null,
+        estimated_capacity: crop.estimated_capacity ?? null,
+        footprint_id: crop.footprint_id ?? null,
+        ended_at: crop.ended_at ?? null,
+        area_cleared_at: crop.area_cleared_at ?? null,
         editVersion: crop.editVersion ?? crop.edit_version,
         id: crop.id,
         cropCode:
@@ -572,6 +565,7 @@ function createCropPayload(
     crop = {}
 ) {
     return {
+        ...planningPayload(crop),
         ...schedulePayload({ monitoringEnabled: true, ...crop }),
         name:
             crop.name?.trim() ?? "",
@@ -592,14 +586,10 @@ function createCropPayload(
             crop.estimatedHarvest,
 
         quantity_planted:
-            Number(crop.quantityPlanted ?? 0),
+            crop.quantityPlanted == null ? null : Number(crop.quantityPlanted),
 
         current_surviving:
-            Number(
-                crop.currentSurviving ??
-                    crop.quantityPlanted ??
-                    0
-            ),
+            crop.currentSurviving == null ? null : Number(crop.currentSurviving),
 
         watering_schedule:
             crop.wateringSchedule?.trim() ||
@@ -618,7 +608,7 @@ function createCropPayload(
 function createUpdatePayload(
     crop = {}
 ) {
-    const payload = {};
+    const payload = { ...planningPayload(crop) };
     if (crop.editVersion !== undefined || crop.edit_version !== undefined) payload.expected_version = recordEditVersion(crop);
 
     if (crop.name !== undefined) {
@@ -671,12 +661,12 @@ function createUpdatePayload(
 
     if (crop.quantityPlanted !== undefined) {
         payload.quantity_planted =
-            Number(crop.quantityPlanted);
+            crop.quantityPlanted == null ? null : Number(crop.quantityPlanted);
     }
 
     if (crop.currentSurviving !== undefined) {
         payload.current_surviving =
-            Number(crop.currentSurviving);
+            crop.currentSurviving == null ? null : Number(crop.currentSurviving);
     }
 
     if (
@@ -885,6 +875,8 @@ export const cropService =
                         performed_by_employee_id: data.performedByEmployeeId ? Number(data.performedByEmployeeId) : null,
                         manual_reason: data.manualReason?.trim() || null,
                         evidence_url: data.evidenceUrl?.trim() || null,
+                        harvested_part: data.harvestedPart || null,
+                        plants_harvested_out: Number(data.plantsHarvestedOut || 0),
                         final_harvest_confirmed: Boolean(data.finalHarvestConfirmed),
                     },
                     {

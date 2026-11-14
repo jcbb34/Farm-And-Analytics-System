@@ -1016,7 +1016,7 @@ def create_crop_production_from_yield(db: Session, yield_record: CropYieldRecord
         existing.source_type = "Crop"
         existing.livestock_id = None
         existing.crop_id = crop.id
-        existing.output_type = crop.name
+        existing.output_type = f"{crop.name} - {yield_record.harvested_part}" if yield_record.harvested_part else crop.name
         existing.record_date = yield_record.harvest_date
         existing.period_start_date = yield_record.harvest_date
         existing.period_end_date = yield_record.harvest_date
@@ -1038,7 +1038,7 @@ def create_crop_production_from_yield(db: Session, yield_record: CropYieldRecord
         livestock_id=None,
         crop_id=crop.id,
         crop_yield_record_id=yield_record.id,
-        output_type=crop.name,
+        output_type=f"{crop.name} - {yield_record.harvested_part}" if yield_record.harvested_part else crop.name,
         record_date=yield_record.harvest_date,
         period_start_date=yield_record.harvest_date,
         period_end_date=yield_record.harvest_date,

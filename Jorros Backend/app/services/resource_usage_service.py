@@ -236,7 +236,7 @@ def create_usage(
             status_code=400,
             detail=f"Resource usage cannot be added to a {target.status.lower()} crop cycle.",
         )
-    if module == "Crop" and usage_date < target.planting_date:
+    if module == "Crop" and target.planting_date and usage_date < target.planting_date:
         raise HTTPException(
             status_code=400,
             detail="Crop resource usage date cannot be earlier than the planting date.",
@@ -353,7 +353,7 @@ def update_usage(
 
     _validate_usage_type(usage.module, new_usage_type)
 
-    if usage.module == "Crop" and new_usage_date < target.planting_date:
+    if usage.module == "Crop" and target.planting_date and new_usage_date < target.planting_date:
         raise HTTPException(
             status_code=400,
             detail="Crop resource usage date cannot be earlier than the planting date.",

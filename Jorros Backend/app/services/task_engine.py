@@ -567,14 +567,14 @@ def _watering_occurrences(crop: Crop, today: date) -> list[tuple[date, str, time
 
     for offset in range(0, 8):
         activity_date = today + timedelta(days=offset)
-        if activity_date < crop.planting_date:
+        if crop.planting_date and activity_date < crop.planting_date:
             continue
 
         include_date = False
         if frequency in {"Daily", "Twice Daily"}:
             include_date = True
         elif frequency == "Every 2 Days":
-            elapsed = (activity_date - crop.planting_date).days
+            elapsed = (activity_date - (crop.planting_date or today)).days
             include_date = elapsed >= 0 and elapsed % 2 == 0
         elif frequency == "3 Times per Week":
             include_date = activity_date.weekday() in selected_days
@@ -605,6 +605,9 @@ def _sync_crop_watering_tasks(
     active_keys: set[str],
     counters: dict[str, int],
 ) -> None:
+    if crop.care_schedules_json is not None:
+        return
+
     now = farm_now_naive()
     existing = db.scalars(
         select(FarmActivity).where(
@@ -703,6 +706,10 @@ def _crop_tasks(
         ].append(record)
 
     for crop in crops:
+        if crop.care_schedules_json is not None:
+            from app.services.crop_direct_care import sync_direct_care
+            sync_direct_care(db, crop)
+            active_keys.update(db.scalars(select(FarmActivity.source_key).where(FarmActivity.source_module == "Crop", FarmActivity.source_record_id == crop.id, FarmActivity.source_key.like("crop:direct:%"))).all())
         crop_status = str(
             crop.status or ""
         ).strip()
@@ -719,7 +726,7 @@ def _crop_tasks(
         if crop_status in {"Harvested", "Failed"}:
             continue
 
-        if crop_status not in {
+        if crop.estimated_harvest is not None and crop_status not in {
             "Harvesting",
             "Harvested",
             "Failed",
@@ -1427,6 +1434,8 @@ def _complete_resolved_tasks(
     ).all()
 
     for task in tasks:
+        if str(task.source_key or "").startswith("crop:direct:"):
+            continue
         if (
             task.source_key
             and task.source_key

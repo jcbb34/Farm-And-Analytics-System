@@ -172,7 +172,7 @@ function CropsRecordsTable({
                                                             (crop.estimatedProgress ?? crop.growth)
                                                         )}`}
                                                         style={{
-                                                            width: `${crop.estimatedProgress ?? crop.growth}%`,
+                                                            width: `${crop.estimatedProgress ?? crop.growth ?? 0}%`,
                                                         }}
                                                     />
                                                 </div>
@@ -182,7 +182,7 @@ function CropsRecordsTable({
                                                         <strong>
                                                             {crop.observedGrowthStage ? `Observed: ${crop.observedGrowthStage}` : `${crop.readinessStatus === "Confirmed Ready" ? "Confirmed" : "Estimated"}: ${crop.growthStage || "Seeded"}`}
                                                         </strong>
-                                                        <span>{crop.estimatedProgress ?? crop.growth}% estimated</span>
+                                                        <span>{crop.estimatedProgress == null && crop.growth == null ? "Not estimated" : `${crop.estimatedProgress ?? crop.growth}% estimated`}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -190,7 +190,7 @@ function CropsRecordsTable({
 
                                         <td data-label="Surviving">
                                             <span className="crop-mobile-label">Surviving</span>
-                                            <strong>{crop.currentSurviving ?? 0} / {crop.quantityPlanted ?? 0}</strong>
+                                            <strong>{crop.currentSurviving ?? "Unknown"} / {crop.quantityPlanted ?? "Unknown"}</strong>
                                             {crop.survivalCountDate && <small className="monitoring-estimate-label">As of {formatDate(crop.survivalCountDate)}</small>}
                                         </td>
 

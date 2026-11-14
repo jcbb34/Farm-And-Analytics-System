@@ -540,7 +540,7 @@ def _build_crop(db: Session, start: date, end: date, filters: dict[str, Any]) ->
     if crop_id: crops_stmt = crops_stmt.where(Crop.id == crop_id)
     if filters.get("field"): crops_stmt = crops_stmt.where(Crop.field == str(filters["field"]))
     crops = [
-        crop for crop in db.scalars(crops_stmt.where(Crop.planting_date <= end)).all()
+        crop for crop in db.scalars(crops_stmt.where((Crop.planting_date <= end) | Crop.planting_date.is_(None))).all()
         if not crop.is_archived or not crop.updated_at or crop.updated_at.date() >= start
     ]
     period_status = crop_statuses_at_period_end(db, crops, end)

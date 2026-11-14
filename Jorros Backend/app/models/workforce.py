@@ -182,6 +182,8 @@ class TaskAssignmentHistory(Base):
 
 
 class TaskSubmission(Base):
+    harvested_part: Mapped[str | None] = mapped_column(String(40))
+    plants_harvested_out: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
     __tablename__ = "task_submissions"
     __table_args__ = (
         UniqueConstraint("activity_id", "attempt_number", name="uq_task_submission_attempt"),

@@ -1,4 +1,6 @@
 "use client";
+import HarvestProductFields from "../CropPlanning/HarvestProductFields.jsx";
+import { parseSnapshot } from "../../services/cropPlanningService.js";
 
 import { notify } from "../../context/NotificationContext.jsx";
 
@@ -330,6 +332,8 @@ export function AddYieldModal({
                 harvestDate:
                     form.harvestDate,
                 quantityKg,
+                harvestedPart: form.harvested_part || null,
+                plantsHarvestedOut: Number(form.plants_harvested_out || 0),
                 farmUseQuantityKg,
                 damagedQuantityKg,
                 reservedQuantityKg,

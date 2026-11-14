@@ -22,7 +22,7 @@ def backup(farm, tmp_path, monkeypatch):
     version = Table('alembic_version', MetaData(), Column('version_num', String(32), primary_key=True))
     version.create(farm.engine)
     with farm.engine.begin() as connection:
-        connection.execute(version.insert().values(version_num='a7b8c9d0e1f2'))
+        connection.execute(version.insert().values(version_num='c9d0e1f2a3b4'))
     response, _ = submit(farm, 'Crop')
     assert response.status_code == 200,response.text
     assert review(farm, 'Crop').status_code == 200

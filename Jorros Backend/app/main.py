@@ -21,6 +21,7 @@ from app.routers.archives import router as archives_router
 from app.routers.void_authorizations import router as void_authorizations_router
 from app.routers.roles import router as roles_router
 from app.routers.crops import router as crops_router
+from app.routers.crop_planning import router as crop_planning_router
 from app.routers.display import router as display_router
 from app.routers.livestock import router as livestock_router
 from app.routers.inventory import router as inventory_router
@@ -126,7 +127,7 @@ app = FastAPI(
 )
 
 for router in [
-    auth_router, users_router, roles_router, crops_router, locations_router, archives_router, void_authorizations_router,
+    auth_router, users_router, roles_router, crops_router, crop_p lanning_router, locations_router, archives_router, void_authorizations_router,
     livestock_router, inventory_router, activities_router,
     alerts_router, weather_router, reports_router, backups_router,
     backup_recovery_router, imports_router, audit_router, resource_usages_router, production_sales_router, analytics_router, workforce_router,

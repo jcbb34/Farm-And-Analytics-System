@@ -159,13 +159,13 @@ TARGET_FIELDS: dict[str, dict[str, FieldSpec]] = {
         "planting_date": FieldSpec(
             "Planting Date",
             ("planting_date", "planting date", "date_planted", "date planted", "planted_date"),
-            True,
+            False,
             "date",
         ),
         "estimated_harvest": FieldSpec(
             "Estimated Harvest",
             ("estimated_harvest", "estimated harvest", "estimated_harvest_date", "est harvest", "harvest_estimate"),
-            True,
+            False,
             "date",
         ),
         "quantity_planted": FieldSpec(
@@ -1300,19 +1300,12 @@ def map_and_validate_row(
             if mapped["fertilizer_date"] < mapped["planting_date"]:
                 warnings.append("Fertilizer Date is earlier than Planting Date. Review this row.")
 
-        planted = int(mapped.get("quantity_planted") or 0)
+        planted = mapped.get("quantity_planted")
         surviving = mapped.get("current_surviving")
-        # Match the normal Crop Create behavior: if the user supplies a planted
-        # quantity but leaves Current Surviving blank, the baseline assumes all
-        # planted units are currently surviving. Zero remains valid for legacy
-        # records that do not track plant counts.
-        if surviving is None:
-            surviving = planted
-        surviving = int(surviving or 0)
-        mapped["quantity_planted"] = planted
-        mapped["current_surviving"] = surviving
-        if planted and surviving > planted:
+        if planted is not None and surviving is not None and surviving > planted:
             errors.append("Current Surviving cannot exceed Quantity Planted.")
+        if mapped.get("planting_date") is None:
+            warnings.append("Planting date is unknown; progress will remain Not estimated and the legacy location needs measured mapping.")
 
     elif target == "Livestock":
         # Smart Import uses the same aggregate-only livestock model as the UI.
@@ -2873,7 +2866,7 @@ def _create_record(db: Session, target: str, mapped: dict[str, Any], current_use
             is_archived=False,
         )
     elif target == "Crop":
-        progress, status_value = _crop_progress(mapped["planting_date"], mapped["estimated_harvest"])
+        progress, status_value = _crop_progress(mapped.get("planting_date"), mapped.get("estimated_harvest"))
         record = Crop(
             crop_code=mapped["crop_code"],
             name=str(mapped["name"]).strip(),
@@ -2882,11 +2875,12 @@ def _create_record(db: Session, target: str, mapped: dict[str, Any], current_use
             area_hectares=mapped["area_hectares"],
             current_growth=progress,
             growth_stage=stage_for_progress(progress),
-            quantity_planted=int(mapped.get("quantity_planted") or 0),
-            current_surviving=int(mapped.get("current_surviving") or mapped.get("quantity_planted") or 0),
+            quantity_planted=mapped.get("quantity_planted"),
+            current_surviving=mapped.get("current_surviving"),
             status=status_value,
-            planting_date=mapped["planting_date"],
-            estimated_harvest=mapped["estimated_harvest"],
+            planting_date=mapped.get("planting_date"),
+            planting_date_precision="known" if mapped.get("planting_date") else "unknown",
+            estimated_harvest=mapped.get("estimated_harvest"),
             fertilizer_quantity_kg=mapped.get("fertilizer_quantity_kg") or 0,
             fertilizer_date=mapped.get("fertilizer_date"),
             pesticide_used=_optional_text(mapped.get("pesticide_used")),
@@ -2958,7 +2952,7 @@ def _create_record(db: Session, target: str, mapped: dict[str, Any], current_use
         item = _resolve_resource_inventory_item(db, mapped)
         module = str(mapped["module"])
         usage_date = mapped["usage_date"]
-        if module == "Crop" and usage_date < parent.planting_date:
+        if module == "Crop" and parent.planting_date and usage_date < parent.planting_date:
             raise ValueError("Resource Usage Date cannot be earlier than the crop Planting Date.")
         if module == "Livestock" and parent.date_acquired and usage_date < parent.date_acquired:
             raise ValueError("Resource Usage Date cannot be earlier than the livestock Date Acquired.")

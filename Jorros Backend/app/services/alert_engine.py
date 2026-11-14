@@ -196,7 +196,7 @@ def _evaluate_crop_alerts(
                 continue
 
             days_until_harvest = (
-                crop.estimated_harvest - today
+                (crop.estimated_harvest or (today + timedelta(days=100000))) - today
             ).days
 
             if crop.confirmed_ready_at is not None:

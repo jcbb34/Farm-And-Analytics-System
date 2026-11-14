@@ -148,3 +148,4 @@ from app.services.change_events import install_change_events
 install_change_events()
 
 from app.models.report_pdf_job import ReportPdfJob
+from .crop_planning import FarmLandConfiguration, CropField, CropSection, CropFootprint, CropSpacingProfile, CropPositionEvent

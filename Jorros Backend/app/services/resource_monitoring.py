@@ -25,7 +25,7 @@ def monitoring_context(db, task):
     return {
         "resource_type": module,
         "quantity": resource.quantity_planted if module == "Crop" else resource.quantity,
-        "earliest_date": str(max(task.activity_date, resource.planting_date if module == "Crop" else resource.date_acquired)),
+        "earliest_date": str(max(task.activity_date, (resource.planting_date or task.activity_date) if module == "Crop" else resource.date_acquired)),
         "latest_date": str(min(farm_today(), resource.monitoring_end_date or farm_today())),
         "stage_choices": list(GROWTH_STAGES[:-2]) if module == "Crop" else sorted(ALLOWED_GROWTH_STATUSES),
         "current_stage": resource.observed_growth_stage if module == "Crop" else resource.growth_status,
@@ -35,9 +35,9 @@ def monitoring_context(db, task):
 def validate_schedule(resource, module):
     base = resource.planting_date if module == "Crop" else resource.date_acquired
     start, end = resource.monitoring_start_date, resource.monitoring_end_date
-    if start and start < base:
+    if base and start and start < base:
         raise HTTPException(400, "Monitoring cannot start before planting/acquisition.")
-    if end and end < (start or base):
+    if end and (start or base) and end < (start or base):
         raise HTTPException(400, "Monitoring end date cannot precede its start.")
     if resource.monitoring_enabled and module == "Livestock":
         if not start or not resource.monitoring_frequency_days:
@@ -59,7 +59,7 @@ def validate_task_observation(db, task, value, *, reviewing=False):
     if resource is None or resource.is_archived:
         raise HTTPException(400, "The linked monitoring record is unavailable or archived.")
     base = resource.planting_date if module == "Crop" else resource.date_acquired
-    if not base <= observation.observation_date <= farm_today():
+    if observation.observation_date > farm_today() or (base and observation.observation_date < base):
         raise HTTPException(400, "Observation date must be between planting/acquisition and today in farm time.")
     if observation.observation_date < task.activity_date:
         raise HTTPException(400, "An observation cannot precede this monitoring task's scheduled date.")
@@ -90,12 +90,13 @@ def record_crop_observation(db, crop, *, observation_date, surviving, observed_s
             return posted
     if db.scalar(select(CropGrowthRecord.id).where(CropGrowthRecord.crop_id == crop.id, CropGrowthRecord.update_date == observation_date)):
         raise HTTPException(409, "This crop already has an inspection on that date. Review its existing history.")
-    if not crop.planting_date <= observation_date <= farm_today():
+    if observation_date > farm_today() or (crop.planting_date and observation_date < crop.planting_date):
         raise HTTPException(400, "Inspection date must be between planting and today.")
     if observed_stage and observed_stage not in GROWTH_STAGES[:-2]:
         raise HTTPException(400, "Invalid observed crop stage.")
     try:
-        validate_survival_counts(crop.quantity_planted, surviving)
+        from app.services.crop_planting import established_count
+        validate_survival_counts(established_count(db, crop), surviving)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     latest = db.scalar(select(CropGrowthRecord).where(CropGrowthRecord.crop_id == crop.id)
@@ -118,6 +119,16 @@ def record_crop_observation(db, crop, *, observation_date, surviving, observed_s
     db.add(record)
     count_date = crop.survival_count_date or (latest.update_date if latest else None)
     if active and (count_date is None or observation_date >= count_date):
+        if crop.registration_kind != "legacy" and surviving is not None:
+            if crop.current_surviving is not None and surviving > crop.current_surviving:
+                raise HTTPException(400, "Record replacements before increasing the surviving count.")
+            if crop.current_surviving is not None and surviving < crop.current_surviving:
+                from app.services.crop_planting import record_position_event
+                from app.schemas.crop_planning import PositionEventInput
+                actor = db.get(User, reviewer_id or recorder_id)
+                record_position_event(db, crop, PositionEventInput(event_type="mortality", event_date=observation_date,
+                    quantity=crop.current_surviving - surviving, notes="Approved surviving-count observation"),
+                    actor, f"observation:{submission_id or observation_date.isoformat()}")
         crop.current_surviving = surviving
         crop.survival_count_date = observation_date
     if is_latest and active:

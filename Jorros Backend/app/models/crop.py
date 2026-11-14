@@ -29,6 +29,21 @@ from app.core.database import Base
 class Crop(Base):
     __tablename__ = "crops"
 
+    registration_kind: Mapped[str] = mapped_column(String(20), nullable=False, default="legacy", server_default=text("'legacy'"))
+    crop_reference: Mapped[str | None] = mapped_column(String(60))
+    variety_reference: Mapped[str | None] = mapped_column(String(80))
+    section_id: Mapped[int | None] = mapped_column(ForeignKey("crop_sections.id"), index=True)
+    footprint_id: Mapped[int | None] = mapped_column(ForeignKey("crop_footprints.id"), index=True)
+    spacing_snapshot_json: Mapped[str | None] = mapped_column(Text)
+    estimated_capacity: Mapped[int | None] = mapped_column(Integer)
+    planting_date_precision: Mapped[str] = mapped_column(String(20), nullable=False, default="known", server_default=text("'known'"))
+    initial_surviving: Mapped[int | None] = mapped_column(Integer)
+    care_schedules_json: Mapped[str | None] = mapped_column(Text)
+    schedule_effective_date: Mapped[date | None] = mapped_column(Date)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime)
+    area_cleared_at: Mapped[datetime | None] = mapped_column(DateTime)
+    area_cleared_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+
     edit_version: Mapped[int] = mapped_column(nullable=False, default=1, server_default=text("1"))
     __mapper_args__ = {"version_id_col": edit_version}
 
@@ -80,13 +95,13 @@ class Crop(Base):
     )
 
     area_hectares: Mapped[float] = mapped_column(
-        Numeric(10, 2),
+        Numeric(14, 6),
         nullable=False,
     )
 
-    current_growth: Mapped[float] = mapped_column(
-        Numeric(5, 2),
-        nullable=False,
+    current_growth: Mapped[float | None] = mapped_column(
+        Numeric(5, 2).evaluates_none(),
+        nullable=True,
         default=0,
         server_default=text("0"),
     )
@@ -99,16 +114,16 @@ class Crop(Base):
         index=True,
     )
 
-    quantity_planted: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
+    quantity_planted: Mapped[int | None] = mapped_column(
+        Integer().evaluates_none(),
+        nullable=True,
         default=0,
         server_default=text("0"),
     )
 
-    current_surviving: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
+    current_surviving: Mapped[int | None] = mapped_column(
+        Integer().evaluates_none(),
+        nullable=True,
         default=0,
         server_default=text("0"),
     )
@@ -121,14 +136,14 @@ class Crop(Base):
         index=True,
     )
 
-    planting_date: Mapped[date] = mapped_column(
+    planting_date: Mapped[date | None] = mapped_column(
         Date,
-        nullable=False,
+        nullable=True,
     )
 
-    estimated_harvest: Mapped[date] = mapped_column(
+    estimated_harvest: Mapped[date | None] = mapped_column(
         Date,
-        nullable=False,
+        nullable=True,
     )
 
     fertilizer_quantity_kg: Mapped[float] = mapped_column(
@@ -295,9 +310,9 @@ class CropGrowthRecord(Base):
         index=True,
     )
 
-    growth_percentage: Mapped[float] = mapped_column(
-        Numeric(5, 2),
-        nullable=False,
+    growth_percentage: Mapped[float | None] = mapped_column(
+        Numeric(5, 2).evaluates_none(),
+        nullable=True,
     )
 
     growth_stage: Mapped[str | None] = mapped_column(
@@ -347,6 +362,9 @@ class CropGrowthRecord(Base):
 
 class CropYieldRecord(Base):
     __tablename__ = "crop_yield_records"
+    harvested_part: Mapped[str | None] = mapped_column(String(40))
+    plants_harvested_out: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
+    idempotency_key: Mapped[str | None] = mapped_column(String(100))
     __table_args__ = (
         Index(
             "ux_crop_yield_related_task_not_null",
@@ -374,26 +392,26 @@ class CropYieldRecord(Base):
     )
 
     quantity_kg: Mapped[float] = mapped_column(
-        Numeric(12, 2),
+        Numeric(14, 3),
         nullable=False,
     )
 
     farm_use_quantity_kg: Mapped[float] = mapped_column(
-        Numeric(12, 2),
+        Numeric(14, 3),
         nullable=False,
         default=0,
         server_default=text("0"),
     )
 
     damaged_quantity_kg: Mapped[float] = mapped_column(
-        Numeric(12, 2),
+        Numeric(14, 3),
         nullable=False,
         default=0,
         server_default=text("0"),
     )
 
     reserved_quantity_kg: Mapped[float] = mapped_column(
-        Numeric(12, 2),
+        Numeric(14, 3),
         nullable=False,
         default=0,
         server_default=text("0"),
@@ -410,7 +428,7 @@ class CropYieldRecord(Base):
     )
 
     yield_per_hectare: Mapped[float | None] = mapped_column(
-        Numeric(12, 2),
+        Numeric(14, 3),
         nullable=True,
     )
 

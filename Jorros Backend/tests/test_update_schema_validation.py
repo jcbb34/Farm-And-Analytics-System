@@ -29,6 +29,11 @@ class UpdateSchemaValidationTests(unittest.TestCase):
         self.assert_rejects_null(CropUpdate, "planting_date")
         self.assert_rejects_null(CropUpdate, "area_hectares")
 
+    def test_existing_crop_can_explicitly_keep_unknown_dates(self):
+        value = CropUpdate.model_validate({"registration_kind": "existing", "planting_date_precision": "unknown", "planting_date": None, "estimated_harvest": None})
+        self.assertIsNone(value.planting_date)
+        self.assertIsNone(value.estimated_harvest)
+
     def test_inventory_required_fields_reject_explicit_null(self):
         self.assert_rejects_null(InventoryUpdate, "unit")
         self.assert_rejects_null(InventoryUpdate, "date_acquired")

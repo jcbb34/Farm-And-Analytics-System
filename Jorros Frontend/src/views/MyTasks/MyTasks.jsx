@@ -1,4 +1,5 @@
 "use client";
+import HarvestProductFields from "../../components/CropPlanning/HarvestProductFields.jsx";
 import useFarmModuleUpdates from "../../hooks/useFarmModuleUpdates.js";
 
 import { useVoidAuthorization } from "../../context/VoidAuthorizationContext.jsx";
@@ -717,6 +718,8 @@ function MyTasks() {
                 : task.resource_required
                     ? (task.planned_inventory_unit || task.planned_unit || "")
                     : (task.latest_submission?.actual_unit || ""),
+            harvested_part: task.latest_submission?.harvested_part || (task.harvest_context?.harvest_parts?.length === 1 ? task.harvest_context.harvest_parts[0] : ""),
+            plants_harvested_out: task.latest_submission?.plants_harvested_out || 0,
             harvest_type_intent: isCropHarvestTask ? (task.latest_submission?.harvest_type_intent || "") : "",
             monitoring: task.latest_submission?.monitoring || initialObservation(task.monitoring_context),
             evidence_url: "", worker_notes: "", problem_report: "",
@@ -740,6 +743,8 @@ function MyTasks() {
         const monitoringError = validateObservation(form.monitoring, task.monitoring_context);
         if (monitoringError) { notification.error(monitoringError, "Monitoring Observation"); return; }
         const payload = {
+            harvested_part: form.harvested_part || null,
+            plants_harvested_out: Number(form.plants_harvested_out || 0),
             monitoring: observationPayload(form.monitoring, task.monitoring_context),
             actual_quantity: form.actual_quantity === "" ? null : Number(form.actual_quantity),
             actual_unit: form.actual_unit || null,
@@ -1216,6 +1221,7 @@ function MyTasks() {
                             </select>
                             <small>This is the harvest type you are reporting. The crop will stay unchanged until the manager confirms it in Task Management.</small>
                         </div>}
+                        {isCropHarvestSubmission && <HarvestProductFields context={submitTask.harvest_context} value={form} onChange={setForm} />}
                         {(submitTask.resource_required || isCropHarvestSubmission) && <>
                             <div className="workforce-field">
                                 <label htmlFor="my-task-actual-quantity">{isCropHarvestSubmission ? "Actual Harvest Yield *" : "Actual Quantity Used *"}</label>

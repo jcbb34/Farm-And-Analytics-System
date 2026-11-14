@@ -23,6 +23,7 @@ import { cropService } from "../../services/cropService.js";
 import { livestockService } from "../../services/livestockService.js";
 import { inventoryService } from "../../services/inventoryService.js";
 import { reportService } from "../../services/reportService.js";
+import LandSetup from "../../components/CropPlanning/LandSetup.jsx";
 import BackupRecoveryPanel from "./components/BackupRecoveryPanel.jsx";
 import { backupService } from "../../services/backupService.js";
 import { authService } from "../../services/authService.js";
@@ -2079,7 +2080,8 @@ function Settings() {
                     if (next !== undefined) { event.preventDefault(); setDataSectionTab(tabs[next][0]); document.getElementById("system-data-tab-" + tabs[next][0])?.focus(); }
                 }}>{label}</button>)}
             </div>
-            <div id="system-data-panel-recovery" role="tabpanel" aria-labelledby="system-data-tab-recovery" hidden={dataSectionTab !== "recovery"} className="br-data-tab-panel">{isSystemAdministrator ? <BackupRecoveryPanel/> : <p>Administrator access is required for backup and recovery.</p>}</div>
+            <div id="system-data-panel-recovery" role="tabpanel" aria-labelledby="system-data-tab-recovery" hidden={dataSectionTab !== "recovery"} className="br-data-tab-panel">{isSystemAdministrator ? <><LandSetup />
+                <BackupRecoveryPanel/></> : <p>Administrator access is required for backup and recovery.</p>}</div>
             <div id="system-data-panel-imports" role="tabpanel" aria-labelledby="system-data-tab-imports" hidden={dataSectionTab !== "imports"} className="br-data-tab-panel"><div className="settings-page-data-grid"><article className="settings-page-data-card import">
                         <span>
                             <span className="material-symbols-outlined">

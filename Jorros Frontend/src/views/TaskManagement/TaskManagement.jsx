@@ -733,6 +733,8 @@ function TaskManagement() {
                 : resourceTask
                 ? (task.planned_inventory_unit || task.planned_unit || "")
                 : (task.latest_submission?.actual_unit || ""),
+            harvested_part: task.latest_submission?.harvested_part || (task.harvest_context?.harvest_parts?.length === 1 ? task.harvest_context.harvest_parts[0] : ""),
+            plants_harvested_out: task.latest_submission?.plants_harvested_out || 0,
             harvest_type_intent: cropHarvestTask ? (task.latest_submission?.harvest_type_intent || "") : "",
             assisted_reason: correctionMode ? "Correct actual resource quantity" : "Employee forgot to submit",
         });
@@ -795,6 +797,8 @@ function TaskManagement() {
             actual_quantity: assistedForm.actual_quantity === "" ? null : Number(assistedForm.actual_quantity),
             actual_quantity_confirmed: Boolean(assistedForm.actual_quantity_confirmed),
             actual_unit: assistedForm.actual_unit.trim() || null,
+            harvested_part: assistedForm.harvested_part || null,
+            plants_harvested_out: Number(assistedForm.plants_harvested_out || 0),
             harvest_type_intent: assistedIsCropHarvest ? assistedForm.harvest_type_intent : null,
             evidence_url: assistedForm.evidence_url.trim() || null,
             worker_notes: assistedForm.worker_notes.trim() || null,

@@ -205,6 +205,7 @@ async function request(
 
             const message =
                 data?.message ||
+                data?.detail?.message ||
                 data?.detail ||
                 `Request failed with status ${response.status}.`;
 

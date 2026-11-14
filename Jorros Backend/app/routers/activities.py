@@ -1074,6 +1074,8 @@ def update_activity(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_activity_editor),
 ):
+    from app.services.db_concurrency import acquire_transaction_lock
+    acquire_transaction_lock(db, "automation:tasks")
     activity = get_activity_or_404(activity_id, db, lock=True)
 
     if activity.is_archived:
@@ -1244,6 +1246,8 @@ def update_activity(
             activity.completed_at = None
 
     activity.updated_at = datetime.now()
+    from app.services.workforce_intervals import validate_task_interval
+    validate_task_interval(db, activity)
 
     db.commit()
     db.refresh(activity)

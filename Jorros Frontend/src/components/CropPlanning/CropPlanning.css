@@ -1,0 +1,375 @@
+/* Search choices and crop planning controls. Every add/edit crop override below is
+   scoped to the modal so other farm screens keep their own visual rules. */
+.crop-search-choice { position: relative; }
+.crop-choice-list {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 235px;
+    overflow: auto;
+    padding: 5px;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    border-radius: 10px;
+    background: var(--ui-surface, #fff);
+    box-shadow: 0 12px 30px rgba(17, 53, 29, .14);
+}
+.crop-choice-list button {
+    display: block;
+    width: 100%;
+    min-height: 38px;
+    padding: 9px 11px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--ui-text, #26322b);
+    text-align: left;
+    font: inherit;
+    font-size: .85rem;
+}
+.crop-choice-list button:hover,
+.crop-choice-list button[aria-selected="true"] {
+    background: var(--ui-primary-soft, #f0fdf4);
+}
+.crop-choice-list p { padding: 12px; }
+
+.crop-planning-note {
+    padding: 13px 15px;
+    margin: 14px 0;
+    border-radius: 10px;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    background: var(--ui-primary-soft, #f0fdf4);
+    color: var(--ui-text, #26322b);
+    font-size: .84rem;
+    line-height: 1.55;
+}
+.crop-planning-note p + p { margin-top: 8px; }
+.crop-planning-error { color: #b42318; }
+.crop-planning-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 12px 0;
+}
+.crop-planning-check input[type="checkbox"],
+.crop-care-row input[type="checkbox"] {
+    width: auto !important;
+    min-height: auto !important;
+    flex-shrink: 0;
+}
+.crop-upcoming { max-height: 220px; overflow: auto; font-size: .85rem; padding-left: 20px; }
+.crop-upcoming li { padding: 5px 0; }
+
+/* Other screens also use land-panel and position-summary: preserve the
+   original compact layout without imposing the Add Crop modal rules there. */
+.crop-land-panel {
+    padding: 20px;
+    border: 1px solid #dce5dd;
+    border-radius: 12px;
+    margin: 14px 0;
+}
+.crop-land-panel table { width: 100%; border-collapse: collapse; }
+.crop-land-panel td,
+.crop-land-panel th { text-align: left; padding: 9px; border-bottom: 1px solid #e6ece7; }
+.crop-land-panel form,
+.crop-land-panel .crop-land-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    align-items: end;
+}
+.crop-land-panel label { display: flex; flex-direction: column; gap: 6px; }
+.crop-land-panel input,
+.crop-land-panel select { padding: 9px; border: 1px solid #cad8cd; border-radius: 7px; }
+.crop-position-summary { display: flex; gap: 14px; flex-wrap: wrap; }
+.crop-position-summary > div { padding: 12px; background: #f1f7f1; border-radius: 8px; }
+.crop-position-summary strong { display: block; font-size: 1.3rem; }
+
+/* -------------------------------------------------------------
+   Unified Add / Edit Crop forms: same type, control height, cards,
+   buttons, focus states, and dark-mode tokens as the farm system.
+------------------------------------------------------------- */
+.add-crop-modal .crop-planning-intro {
+    margin: -5px 0 18px;
+    color: var(--ui-text-muted, #66736b);
+    font-size: .82rem;
+    line-height: 1.5;
+}
+.add-crop-modal .crop-existing-toggle {
+    align-items: center;
+    width: fit-content;
+    gap: 10px;
+    padding: 10px 14px;
+    margin: 0 0 12px;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    border-radius: 9px;
+    background: var(--ui-surface-soft, #f8faf8);
+    color: var(--ui-text, #26322b);
+    font-size: .86rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+.add-crop-modal .crop-form-grid { gap: 16px 18px; }
+.add-crop-modal .crop-form-grid > .crop-form-group { margin: 0; }
+.add-crop-modal .crop-form-section .crop-form-grid > label,
+.add-crop-modal .crop-form-section label.crop-form-group,
+.add-crop-modal .crop-land-form > label,
+.add-crop-modal .crop-care-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+    gap: 7px;
+    margin-bottom: 0;
+    color: var(--ui-text, #26322b);
+    font-size: .84rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+.add-crop-modal .crop-form-section > label.crop-form-group { margin-bottom: 16px; }
+.add-crop-modal .crop-form-section :is(input:not([type="checkbox"]), select, textarea),
+.add-crop-modal .crop-land-form :is(input:not([type="checkbox"]), select, textarea) {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 43px;
+    padding: 10px 12px;
+    margin: 0;
+    border: 1px solid var(--ui-border-strong, #d1d5db);
+    border-radius: var(--ui-control-radius, 8px);
+    outline: none;
+    background: var(--theme-input-bg, #fff);
+    color: var(--ui-text, #26322b);
+    font-family: inherit;
+    font-size: .86rem;
+    line-height: 1.35;
+    color-scheme: light;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.add-crop-modal .crop-form-section textarea { min-height: 90px; resize: vertical; }
+.add-crop-modal .crop-form-section :is(input:not([type="checkbox"]), select, textarea):focus-visible,
+.add-crop-modal .crop-land-form :is(input:not([type="checkbox"]), select, textarea):focus-visible {
+    border-color: var(--theme-green-bright, #16a34a);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, .14);
+}
+.add-crop-modal :is(input, select, textarea):disabled {
+    opacity: .7;
+    cursor: not-allowed;
+}
+.add-crop-modal input[readonly] {
+    background: var(--ui-surface-soft, #f8faf8) !important;
+    color: var(--ui-text-muted, #66736b) !important;
+    cursor: default;
+}
+.add-crop-modal input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    margin: 2px 0 0;
+    accent-color: #166534;
+    cursor: pointer;
+}
+.add-crop-modal .crop-planning-note a { color: var(--ui-primary, #166534); text-decoration: underline; }
+.add-crop-modal .crop-planning-note :is(p, strong) { color: inherit; }
+.add-crop-modal .crop-planning-error { font-size: .83rem; line-height: 1.5; }
+.add-crop-modal .crop-planning-action,
+.add-crop-modal .crop-land-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: fit-content;
+    max-width: 100%;
+    min-height: 41px;
+    padding: 9px 14px;
+    margin: 4px 0;
+    border: 1px solid var(--ui-border-strong, #d1d5db);
+    border-radius: var(--ui-control-radius, 8px);
+    background: var(--ui-surface, #fff);
+    color: var(--ui-primary, #166534);
+    font-family: inherit;
+    font-size: .83rem;
+    font-weight: 650;
+    line-height: 1.3;
+    text-align: center;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+.add-crop-modal .crop-planning-action:hover,
+.add-crop-modal .crop-land-edit:hover {
+    border-color: var(--ui-primary, #166534);
+    background: var(--ui-primary-soft, #f0fdf4);
+}
+.add-crop-modal .crop-planning-action .material-symbols-outlined { font-size: 19px; }
+.add-crop-modal :is(button, summary, input, select, textarea):focus-visible {
+    outline: 2px solid var(--theme-green-bright, #16a34a);
+    outline-offset: 2px;
+}
+.add-crop-modal button:disabled { opacity: .6; cursor: not-allowed; }
+
+.add-crop-modal .crop-spacing-details {
+    margin-top: 17px;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    border-radius: 11px;
+    background: var(--ui-surface-soft, #f8faf8);
+    overflow: hidden;
+}
+.add-crop-modal .crop-spacing-details > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 16px;
+    color: var(--ui-text, #26322b);
+    font-size: .88rem;
+    font-weight: 650;
+    cursor: pointer;
+    list-style-position: inside;
+}
+.add-crop-modal .crop-spacing-details > summary .material-symbols-outlined { color: var(--ui-primary, #166534); font-size: 20px; }
+.add-crop-modal .crop-spacing-details[open] > summary {
+    border-bottom: 1px solid var(--ui-border, #e3e9e5);
+    background: var(--ui-primary-soft, #f0fdf4);
+}
+.add-crop-modal .crop-spacing-details > .crop-form-grid { padding: 18px; }
+
+/* Scheduled activity cards */
+.add-crop-modal .crop-care-row {
+    padding: 17px 18px;
+    margin: 14px 0;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    border-radius: 12px;
+    background: var(--ui-surface, #fff);
+}
+.add-crop-modal .crop-care-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    color: var(--ui-text, #26322b);
+    font-size: .92rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.add-crop-modal .crop-care-heading .material-symbols-outlined { color: var(--ui-primary, #166534); font-size: 21px; }
+.add-crop-modal .crop-care-state {
+    margin-left: auto;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--ui-primary-soft, #f0fdf4);
+    color: var(--ui-primary, #166534);
+    font-size: .7rem;
+    font-weight: 700;
+}
+.add-crop-modal .crop-care-heading + .crop-form-grid { margin-top: 18px; }
+.add-crop-modal .crop-weekdays {
+    margin-top: 16px;
+    padding: 13px 15px;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    border-radius: 10px;
+    background: var(--ui-surface-soft, #f8faf8);
+}
+.add-crop-modal .crop-weekdays-title {
+    display: block;
+    margin-bottom: 11px;
+    color: var(--ui-text, #26322b);
+    font-size: .82rem;
+    font-weight: 650;
+}
+.add-crop-modal .crop-weekday-list { display: flex; gap: 8px; flex-wrap: wrap; }
+.add-crop-modal .crop-weekday-option {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 6px 9px;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    border-radius: 8px;
+    background: var(--ui-surface, #fff);
+    color: var(--ui-text, #26322b);
+    font-size: .79rem;
+    font-weight: 550;
+    cursor: pointer;
+}
+.add-crop-modal .crop-weekday-option:has(input:checked) {
+    border-color: var(--ui-primary, #166534);
+    background: var(--ui-primary-soft, #f0fdf4);
+}
+.add-crop-modal .crop-weekdays small {
+    display: block;
+    margin-top: 10px;
+    color: var(--ui-text-muted, #66736b);
+    font-size: .75rem;
+    line-height: 1.5;
+}
+.add-crop-modal .crop-care-slot { margin-top: 16px; }
+
+/* Land configuration nested in Add Crop */
+.add-crop-modal .crop-land-panel {
+    padding: 20px;
+    margin: 16px 0 2px;
+    border: 1px solid var(--ui-border, #e3e9e5);
+    border-radius: 12px;
+    background: var(--ui-surface-soft, #f8faf8);
+}
+.add-crop-modal .crop-land-heading { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+.add-crop-modal .crop-land-heading .material-symbols-outlined { color: var(--ui-primary, #166534); font-size: 24px; }
+.add-crop-modal .crop-land-panel h3 {
+    margin: 0;
+    color: var(--ui-primary, #166534);
+    font-size: 1.03rem;
+    font-weight: 700;
+}
+.add-crop-modal .crop-land-panel > p {
+    margin: 0 0 13px;
+    color: var(--ui-text-muted, #66736b);
+    font-size: .83rem;
+    line-height: 1.55;
+}
+.add-crop-modal .crop-land-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; margin: 12px 0 18px; }
+.add-crop-modal .crop-land-panel table { min-width: 600px; font-size: .8rem; }
+.add-crop-modal .crop-land-panel th {
+    background: var(--ui-primary-soft, #f0fdf4);
+    color: var(--ui-text, #26322b);
+    font-weight: 700;
+    white-space: nowrap;
+}
+.add-crop-modal .crop-land-panel :is(td, th) {
+    padding: 10px;
+    border-bottom: 1px solid var(--ui-border, #e3e9e5);
+    color: var(--ui-text, #26322b);
+    vertical-align: middle;
+}
+.add-crop-modal .crop-land-panel h4 {
+    margin: 18px 0 13px;
+    color: var(--ui-text, #26322b);
+    font-size: .93rem;
+}
+.add-crop-modal .crop-land-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px 18px;
+    align-items: end;
+}
+.add-crop-modal .crop-land-form .crop-land-save {
+    background: #166534;
+    color: #fff;
+    border-color: #166534;
+}
+.add-crop-modal .crop-land-form .crop-land-save:hover { background: #14532d; color: #fff; }
+.add-crop-modal .crop-land-panel .crop-land-edit { min-height: 34px; padding: 5px 10px; }
+
+html[data-theme="dark"] .add-crop-modal .crop-form-section :is(input:not([type="checkbox"]), select, textarea),
+html[data-theme="dark"] .add-crop-modal .crop-land-form :is(input:not([type="checkbox"]), select, textarea) { color-scheme: dark; }
+html[data-theme="dark"] .add-crop-modal .crop-planning-error { color: #fca5a5; }
+html[data-theme="dark"] .add-crop-modal .crop-land-form .crop-land-save { background: #166534; color: #fff; }
+
+@media (max-width: 700px) {
+    .add-crop-modal .crop-form-grid,
+    .add-crop-modal .crop-land-form { grid-template-columns: minmax(0, 1fr); }
+    .add-crop-modal .crop-land-panel { padding: 15px; }
+    .add-crop-modal .crop-care-row { padding: 14px; }
+    .add-crop-modal .crop-weekdays { padding: 12px; }
+}

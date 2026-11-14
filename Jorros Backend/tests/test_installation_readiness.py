@@ -153,7 +153,7 @@ def test_loading_actual_runtime_resolves_source_head_without_opening_a_database(
     with patch.object(engine, "connect", side_effect=AssertionError("Must not connect while loading runtime")):
         actual_engine, metadata, head, timezone_name = checker.load_runtime()
     assert actual_engine is engine and metadata.tables
-    assert head == "a7b8c9d0e1f2" and timezone_name == "Asia/Manila"
+    assert head == "c9d0e1f2a3b4" and timezone_name == "Asia/Manila"
 
 
 def test_registered_application_schema_and_workflow_keys_pass_in_an_isolated_database():

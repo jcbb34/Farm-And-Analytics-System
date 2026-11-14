@@ -1,5 +1,7 @@
 from datetime import date, datetime
 from typing import Literal
+from decimal import Decimal
+from app.schemas.crop_planning import DirectCropSchedule, SpacingAdjustment
 
 from pydantic import (
     BaseModel,
@@ -15,6 +17,21 @@ from pydantic import (
 # =========================================================
 
 class CropCreate(BaseModel):
+    registration_kind: Literal["legacy", "new", "existing"] = "legacy"
+    crop_reference: str | None = Field(default=None, max_length=60)
+    variety_reference: str | None = Field(default=None, max_length=80)
+    section_id: int | None = Field(default=None, gt=0)
+    spacing_profile_id: int | None = Field(default=None, gt=0)
+    spacing_override: SpacingAdjustment | None = None
+    shared_footprint_crop_id: int | None = Field(default=None, gt=0)
+    shared_footprint_reason: str | None = Field(default=None, max_length=500)
+    duplicate_acknowledged: bool = False
+    planting_date_precision: Literal["known", "estimated", "unknown"] = "known"
+    initial_status: Literal["Growing", "Ready for Harvest", "Harvesting"] = "Growing"
+    confirm_ready: bool = False
+    care_schedules: list[DirectCropSchedule] = Field(default_factory=list, max_length=2)
+    schedule_effective_date: date | None = None
+
     model_config = ConfigDict(str_strip_whitespace=True)
     monitoring_enabled: bool = True
     monitoring_start_date: date | None = None
@@ -36,15 +53,15 @@ class CropCreate(BaseModel):
         max_length=100,
     )
 
-    area_hectares: float = Field(
+    area_hectares: Decimal = Field(
         gt=0,
     )
 
-    quantity_planted: int = Field(default=0, ge=0)
+    quantity_planted: int | None = Field(default=None, ge=0)
     current_surviving: int | None = Field(default=None, ge=0)
 
-    planting_date: date
-    estimated_harvest: date
+    planting_date: date | None = None
+    estimated_harvest: date | None = None
 
     fertilizer_quantity_kg: float = Field(
         default=0,
@@ -69,7 +86,7 @@ class CropCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_dates(self):
-        if self.estimated_harvest < self.planting_date:
+        if self.estimated_harvest and self.planting_date and self.estimated_harvest < self.planting_date:
             raise ValueError(
                 "Estimated harvest date cannot "
                 "be earlier than planting date."
@@ -79,6 +96,21 @@ class CropCreate(BaseModel):
 
 
 class CropUpdate(BaseModel):
+    registration_kind: Literal["legacy", "new", "existing"] = "legacy"
+    crop_reference: str | None = Field(default=None, max_length=60)
+    variety_reference: str | None = Field(default=None, max_length=80)
+    section_id: int | None = Field(default=None, gt=0)
+    spacing_profile_id: int | None = Field(default=None, gt=0)
+    spacing_override: SpacingAdjustment | None = None
+    shared_footprint_crop_id: int | None = Field(default=None, gt=0)
+    shared_footprint_reason: str | None = Field(default=None, max_length=500)
+    duplicate_acknowledged: bool = False
+    planting_date_precision: Literal["known", "estimated", "unknown"] = "known"
+    initial_status: Literal["Growing", "Ready for Harvest", "Harvesting"] = "Growing"
+    confirm_ready: bool = False
+    care_schedules: list[DirectCropSchedule] = Field(default_factory=list, max_length=2)
+    schedule_effective_date: date | None = None
+
     expected_version: int | None = Field(default=None, ge=1)
 
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -105,7 +137,7 @@ class CropUpdate(BaseModel):
         max_length=100,
     )
 
-    area_hectares: float | None = Field(
+    area_hectares: Decimal | None = Field(
         default=None,
         gt=0,
     )
@@ -144,6 +176,15 @@ class CropUpdate(BaseModel):
     care_template_id: int | None = Field(default=None, gt=0)
     future_care_task_action: Literal["keep", "resolve"] | None = None
 
+    @model_validator(mode="after")
+    def explicitly_unknown_dates(self):
+        if "planting_date" in self.model_fields_set and self.planting_date is None:
+            if self.registration_kind != "existing" or self.planting_date_precision != "unknown":
+                raise ValueError("Clearing a planting date requires an existing planting with explicitly unknown date precision.")
+        if "estimated_harvest" in self.model_fields_set and self.estimated_harvest is None and self.registration_kind != "existing":
+            raise ValueError("An optional next harvest date applies to an existing planting.")
+        return self
+
     @field_validator("monitoring_enabled")
     @classmethod
     def monitoring_flag_cannot_be_null(cls, value):
@@ -152,8 +193,8 @@ class CropUpdate(BaseModel):
         return value
 
     @field_validator(
-        "name", "variety", "field", "area_hectares", "quantity_planted",
-        "current_surviving", "status", "planting_date", "estimated_harvest",
+        "name", "variety", "field", "area_hectares",
+        "status",
         "fertilizer_quantity_kg",
         mode="after",
     )
@@ -165,6 +206,18 @@ class CropUpdate(BaseModel):
 
 
 class CropResponse(BaseModel):
+    registration_kind: str = "legacy"
+    crop_reference: str | None = None
+    variety_reference: str | None = None
+    section_id: int | None = None
+    footprint_id: int | None = None
+    estimated_capacity: int | None = None
+    spacing_snapshot_json: str | None = None
+    care_schedules_json: str | None = None
+    planting_date_precision: str = "known"
+    position_summary: dict | None = None
+    ended_at: datetime | None = None
+    area_cleared_at: datetime | None = None
     edit_version: int = Field(default=1, ge=1)
 
     monitoring_summary: dict | None = None
@@ -172,7 +225,7 @@ class CropResponse(BaseModel):
     monitoring_start_date: date | None = None
     monitoring_end_date: date | None = None
     monitoring_frequency_days: int | None = Field(default=None, ge=1, le=365)
-    estimated_progress: float = 0
+    estimated_progress: float | None = None
     estimated_growth_stage: str | None = None
     observed_growth_stage: str | None = None
     last_observation_date: date | None = None
@@ -185,10 +238,10 @@ class CropResponse(BaseModel):
     field: str
 
     area_hectares: float
-    current_growth: float
+    current_growth: float | None
     growth_stage: str
-    quantity_planted: int
-    current_surviving: int
+    quantity_planted: int | None
+    current_surviving: int | None
     status: str
     readiness_status: str | None = None
     confirmed_ready_at: datetime | None = None
@@ -206,8 +259,8 @@ class CropResponse(BaseModel):
     pending_harvest_type: str | None = None
     pending_harvest_message: str | None = None
 
-    planting_date: date
-    estimated_harvest: date
+    planting_date: date | None = None
+    estimated_harvest: date | None = None
 
     fertilizer_quantity_kg: float
     fertilizer_date: date | None
@@ -252,7 +305,7 @@ class CropGrowthResponse(BaseModel):
 
     id: int
     crop_id: int
-    growth_percentage: float
+    growth_percentage: float | None
     growth_stage: str | None
     current_surviving: int | None
     status: str
@@ -271,6 +324,8 @@ class CropGrowthResponse(BaseModel):
 # =========================================================
 
 class CropYieldCreate(BaseModel):
+    harvested_part: str | None = Field(default=None, max_length=40)
+    plants_harvested_out: int = Field(default=0, ge=0)
     harvest_date: date
 
     quantity_kg: float = Field(
@@ -299,6 +354,8 @@ class CropYieldCreate(BaseModel):
 
 
 class CropYieldResponse(BaseModel):
+    harvested_part: str | None = None
+    plants_harvested_out: int = 0
     id: int
     crop_id: int
     harvest_date: date

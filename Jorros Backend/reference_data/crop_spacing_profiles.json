@@ -1,0 +1,361 @@
+{
+  "sources": {
+    "coconut": "https://www.fertilizer.org/wp-content/uploads/1992/06/IFA_World_Fertilizer_Use_Manual.pdf",
+    "coconut_gap": "https://www.pca.gov.ph/images/cocotech/PNS_BAFS_238_2018_Code_of_Good_Agricultural_Practices_for_Coconut.pdf",
+    "saba": "https://pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/tissue-cultured-and-macropropagated-disease-free-saba-plantlets-to-boost-production-and-empower-farmers-in-cagayan-valley",
+    "banana_intercrop": "https://www.pca.gov.ph/pdf/cocoTech/intercropping/CoconutBananaIntercropping.pdf",
+    "banana_manual": "https://hvcdp.da.gov.ph/wp-content/uploads/2022/05/Banana-Production-Manual.pdf",
+    "banana_behavior": "https://ask.ifas.ufl.edu/publication/MG040",
+    "cassava": "https://www.iita.org/wp-content/uploads/2016/06/Cassava_system_cropping_guide.pdf",
+    "cassava_leaves": "https://www.ukdr.uplb.edu.ph/pas/vol109/iss2/18/",
+    "sweetpotato": "https://cagayanvalley.da.gov.ph/wp-content/uploads/2018/02/sweet_potato.pdf",
+    "sp30_trial": "https://atr.vsu.edu.ph/article/view/9",
+    "sp30_trial_index": "https://agris.fao.org/search/en/providers/122631/records/67bdad8efd06341431d85374",
+    "gabi": "https://hvcdp.da.gov.ph/wp-content/uploads/2022/05/TARO-Production-Guide.pdf",
+    "gabi_varieties": "https://ispweb.pcaarrd.dost.gov.ph/st-based-agricultural-farming-interventions-on-the-production-of-camote-and-gabi/",
+    "basil": "https://hgic.clemson.edu/factsheet/basil/",
+    "siam_queen": "https://all-americaselections.org/product/basil-siam-queen/",
+    "basil_harvest": "https://extension.rutgers.edu/fs1279",
+    "taro_general_spacing": "https://files.peacecorps.gov/documents/R0006_New-Crop-Production-Handbook.pdf"
+  },
+  "profiles": [
+    {
+      "profile_key": "coconut-tall",
+      "crop_name": "Coconut",
+      "crop_key": "coconut",
+      "variety_name": "Tall",
+      "variety_key": "tall",
+      "label": "Coconut Tall",
+      "row_spacing_m": "10",
+      "plant_spacing_m": "10",
+      "layout": "square",
+      "count_unit": "tree",
+      "version": 1,
+      "source_url": "https://www.fertilizer.org/wp-content/uploads/1992/06/IFA_World_Fertilizer_Use_Manual.pdf",
+      "evidence_scope": "General coconut type guidance; Tall and Dwarf are broad types, not exact cultivar identities. Square layout is the selected farm arrangement.",
+      "harvest_parts": [
+        "nuts"
+      ],
+      "harvest_behavior": "repeated",
+      "guidance": "Ordinary nut harvest retains living palms and occupied land.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://www.pca.gov.ph/images/cocotech/PNS_BAFS_238_2018_Code_of_Good_Agricultural_Practices_for_Coconut.pdf"
+      ]
+    },
+    {
+      "profile_key": "coconut-dwarf",
+      "crop_name": "Coconut",
+      "crop_key": "coconut",
+      "variety_name": "Dwarf (Short)",
+      "variety_key": "dwarf",
+      "label": "Coconut Dwarf",
+      "row_spacing_m": "8",
+      "plant_spacing_m": "8",
+      "layout": "square",
+      "count_unit": "tree",
+      "version": 1,
+      "source_url": "https://www.fertilizer.org/wp-content/uploads/1992/06/IFA_World_Fertilizer_Use_Manual.pdf",
+      "evidence_scope": "General coconut type guidance; Tall and Dwarf are broad types, not exact cultivar identities. Square layout is the selected farm arrangement.",
+      "harvest_parts": [
+        "nuts"
+      ],
+      "harvest_behavior": "repeated",
+      "guidance": "Ordinary nut harvest retains living palms and occupied land.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://www.pca.gov.ph/images/cocotech/PNS_BAFS_238_2018_Code_of_Good_Agricultural_Practices_for_Coconut.pdf"
+      ]
+    },
+    {
+      "profile_key": "saba-block",
+      "crop_name": "Banana",
+      "crop_key": "banana",
+      "variety_name": "Saba",
+      "variety_key": "saba",
+      "label": "Saba Block",
+      "row_spacing_m": "4",
+      "plant_spacing_m": "4",
+      "layout": "square",
+      "count_unit": "banana mat/clump",
+      "version": 1,
+      "source_url": "https://pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/tissue-cultured-and-macropropagated-disease-free-saba-plantlets-to-boost-production-and-empower-farmers-in-cagayan-valley",
+      "evidence_scope": "PCAARRD Cagayan Valley separate row planting guidance for Saba/Cardaba.",
+      "harvest_parts": [
+        "fruit"
+      ],
+      "harvest_behavior": "mat",
+      "guidance": "One fruiting stem bears once; a living mat continues through suckers. Count occupied mats, not individual stems.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://hvcdp.da.gov.ph/wp-content/uploads/2022/05/Banana-Production-Manual.pdf",
+        "https://ask.ifas.ufl.edu/publication/MG040"
+      ]
+    },
+    {
+      "profile_key": "saba-under-coconut",
+      "crop_name": "Banana",
+      "crop_key": "banana",
+      "variety_name": "Saba",
+      "variety_key": "saba",
+      "label": "Saba Under Coconut",
+      "row_spacing_m": "5",
+      "plant_spacing_m": "5",
+      "layout": "square",
+      "count_unit": "banana mat/clump",
+      "version": 1,
+      "source_url": "https://www.pca.gov.ph/pdf/cocoTech/intercropping/CoconutBananaIntercropping.pdf",
+      "evidence_scope": "PCA coconut intercropping context for Cardaba/Saba; explicitly share an existing coconut footprint.",
+      "harvest_parts": [
+        "fruit"
+      ],
+      "harvest_behavior": "mat",
+      "guidance": "Nut and banana harvests do not automatically clear their shared land.",
+      "is_default": false,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://hvcdp.da.gov.ph/wp-content/uploads/2022/05/Banana-Production-Manual.pdf",
+        "https://ask.ifas.ufl.edu/publication/MG040"
+      ]
+    },
+    {
+      "profile_key": "latundan-coconut-context",
+      "crop_name": "Banana",
+      "crop_key": "banana",
+      "variety_name": "Latundan",
+      "variety_key": "latundan",
+      "label": "Latundan Coconut Context",
+      "row_spacing_m": "3",
+      "plant_spacing_m": "3",
+      "layout": "square",
+      "count_unit": "banana mat/clump",
+      "version": 1,
+      "source_url": "https://www.pca.gov.ph/pdf/cocoTech/intercropping/CoconutBananaIntercropping.pdf",
+      "evidence_scope": "PCA guidance for Lakatan/Latundan in coconut interspaces; assess light and actual arrangement.",
+      "harvest_parts": [
+        "fruit"
+      ],
+      "harvest_behavior": "mat",
+      "guidance": "A harvested stem does not mean its whole mat has died.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://hvcdp.da.gov.ph/wp-content/uploads/2022/05/Banana-Production-Manual.pdf",
+        "https://ask.ifas.ufl.edu/publication/MG040"
+      ]
+    },
+    {
+      "profile_key": "cassava-lakan-1",
+      "crop_name": "Cassava",
+      "crop_key": "cassava",
+      "variety_name": "Lakan 1",
+      "variety_key": "lakan-1",
+      "label": "Cassava Lakan 1",
+      "row_spacing_m": "1",
+      "plant_spacing_m": "1",
+      "layout": "square",
+      "count_unit": "plant",
+      "version": 1,
+      "source_url": "https://www.iita.org/wp-content/uploads/2016/06/Cassava_system_cropping_guide.pdf",
+      "evidence_scope": "General cassava guidance, not a separately verified Lakan 1 optimum.",
+      "harvest_parts": [
+        "roots",
+        "leaves"
+      ],
+      "harvest_behavior": "root",
+      "guidance": "Root harvest uproots counted plants; record harvested-out plants separately from mortality. Variety name does not establish food/feed safety.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://www.ukdr.uplb.edu.ph/pas/vol109/iss2/18/"
+      ]
+    },
+    {
+      "profile_key": "sweet-potato-nsic-sp20",
+      "crop_name": "Sweet Potato / Kamote",
+      "crop_key": "sweet-potato",
+      "variety_name": "NSIC Sp20",
+      "variety_key": "nsic-sp20",
+      "label": "Sweet Potato Nsic Sp20",
+      "row_spacing_m": "0.75",
+      "plant_spacing_m": "0.3",
+      "layout": "rectangular",
+      "count_unit": "plant",
+      "version": 1,
+      "source_url": "https://cagayanvalley.da.gov.ph/wp-content/uploads/2018/02/sweet_potato.pdf",
+      "evidence_scope": "General DA ridge and hill spacing; no cultivar-specific optimum claimed.",
+      "harvest_parts": [
+        "roots",
+        "leaves/shoots"
+      ],
+      "harvest_behavior": "root",
+      "guidance": "Leaf/shoot picking retains plants. Dig/lift roots carefully to avoid damage; record plants removed.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://atr.vsu.edu.ph/article/view/9",
+        "https://agris.fao.org/search/en/providers/122631/records/67bdad8efd06341431d85374"
+      ]
+    },
+    {
+      "profile_key": "sweet-potato-nsic-sp30",
+      "crop_name": "Sweet Potato / Kamote",
+      "crop_key": "sweet-potato",
+      "variety_name": "NSIC Sp30",
+      "variety_key": "nsic-sp30",
+      "label": "Sweet Potato Nsic Sp30",
+      "row_spacing_m": "0.75",
+      "plant_spacing_m": "0.3",
+      "layout": "rectangular",
+      "count_unit": "plant",
+      "version": 1,
+      "source_url": "https://cagayanvalley.da.gov.ph/wp-content/uploads/2018/02/sweet_potato.pdf",
+      "evidence_scope": "General DA ridge and hill spacing; no cultivar-specific optimum claimed.",
+      "harvest_parts": [
+        "roots",
+        "leaves/shoots"
+      ],
+      "harvest_behavior": "root",
+      "guidance": "Leaf/shoot picking retains plants. Dig/lift roots carefully to avoid damage; record plants removed.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://atr.vsu.edu.ph/article/view/9",
+        "https://agris.fao.org/search/en/providers/122631/records/67bdad8efd06341431d85374"
+      ]
+    },
+    {
+      "profile_key": "sweet-potato-sp30-vsu-trial",
+      "crop_name": "Sweet Potato / Kamote",
+      "crop_key": "sweet-potato",
+      "variety_name": "NSIC Sp30",
+      "variety_key": "nsic-sp30",
+      "label": "Sweet Potato Sp30 Vsu Trial",
+      "row_spacing_m": "0.75",
+      "plant_spacing_m": "0.25",
+      "layout": "rectangular",
+      "count_unit": "plant",
+      "version": 1,
+      "source_url": "https://agris.fao.org/search/en/providers/122631/records/67bdad8efd06341431d85374",
+      "evidence_scope": "Explicit VSU trial alternative on alluvial Inceptisol in Baybay, Leyte; not a universal optimum.",
+      "harvest_parts": [
+        "roots",
+        "leaves/shoots"
+      ],
+      "harvest_behavior": "root",
+      "guidance": "Select only when adopting this trial arrangement. Timing guidance never physically confirms readiness.",
+      "is_default": false,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://atr.vsu.edu.ph/article/view/9"
+      ]
+    },
+    {
+      "profile_key": "taro-iniito-vg2",
+      "crop_name": "Taro / Gabi",
+      "crop_key": "taro",
+      "variety_name": "Iniito/VG2",
+      "variety_key": "iniito-vg2",
+      "label": "Taro Iniito Vg2",
+      "row_spacing_m": "1",
+      "plant_spacing_m": "0.5",
+      "layout": "rectangular",
+      "count_unit": "plant",
+      "version": 1,
+      "source_url": "https://files.peacecorps.gov/documents/R0006_New-Crop-Production-Handbook.pdf",
+      "evidence_scope": "General taro baseline: the Peace Corps handbook gives 1 m rows and 0.50-0.60 m within rows. The supplied DA Bicol PDF is a tissue-culture propagation guide and does not verify this spacing. No separate optimum is established for Iniito/VG2 or Morondon.",
+      "harvest_parts": [
+        "corms",
+        "leaves"
+      ],
+      "harvest_behavior": "corm",
+      "guidance": "Selective leaf harvest retains plants; corm lifting changes remaining plants. Do not close a leaf-production planting using a corm rule.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://hvcdp.da.gov.ph/wp-content/uploads/2022/05/TARO-Production-Guide.pdf",
+        "https://ispweb.pcaarrd.dost.gov.ph/st-based-agricultural-farming-interventions-on-the-production-of-camote-and-gabi/"
+      ]
+    },
+    {
+      "profile_key": "taro-morondon",
+      "crop_name": "Taro / Gabi",
+      "crop_key": "taro",
+      "variety_name": "Morondon",
+      "variety_key": "morondon",
+      "label": "Taro Morondon",
+      "row_spacing_m": "1",
+      "plant_spacing_m": "0.5",
+      "layout": "rectangular",
+      "count_unit": "plant",
+      "version": 1,
+      "source_url": "https://files.peacecorps.gov/documents/R0006_New-Crop-Production-Handbook.pdf",
+      "evidence_scope": "General taro baseline: the Peace Corps handbook gives 1 m rows and 0.50-0.60 m within rows. The supplied DA Bicol PDF is a tissue-culture propagation guide and does not verify this spacing. No separate optimum is established for Iniito/VG2 or Morondon.",
+      "harvest_parts": [
+        "corms",
+        "leaves"
+      ],
+      "harvest_behavior": "corm",
+      "guidance": "Selective leaf harvest retains plants; corm lifting changes remaining plants. Do not close a leaf-production planting using a corm rule.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://hvcdp.da.gov.ph/wp-content/uploads/2022/05/TARO-Production-Guide.pdf",
+        "https://ispweb.pcaarrd.dost.gov.ph/st-based-agricultural-farming-interventions-on-the-production-of-camote-and-gabi/"
+      ]
+    },
+    {
+      "profile_key": "basil-genovese",
+      "crop_name": "Basil",
+      "crop_key": "basil",
+      "variety_name": "Genovese",
+      "variety_key": "genovese",
+      "label": "Basil Genovese",
+      "row_spacing_m": "0.91",
+      "plant_spacing_m": "0.61",
+      "layout": "rectangular",
+      "count_unit": "plant",
+      "version": 1,
+      "source_url": "https://hgic.clemson.edu/factsheet/basil/",
+      "evidence_scope": "Clemson general 3-foot row/2-foot plant spacing, rounded to metres; Genovese spacing is not a Philippine field trial optimum.",
+      "harvest_parts": [
+        "leaves/shoots"
+      ],
+      "harvest_behavior": "repeated",
+      "guidance": "Pick leaves or shoot tips while leaving foliage for regrowth. End an exhausted planting explicitly.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://extension.rutgers.edu/fs1279"
+      ]
+    },
+    {
+      "profile_key": "basil-siam-queen",
+      "crop_name": "Basil",
+      "crop_key": "basil",
+      "variety_name": "Siam Queen",
+      "variety_key": "siam-queen",
+      "label": "Basil Siam Queen",
+      "row_spacing_m": "0.61",
+      "plant_spacing_m": "0.61",
+      "layout": "square",
+      "count_unit": "plant",
+      "version": 1,
+      "source_url": "https://all-americaselections.org/product/basil-siam-queen/",
+      "evidence_scope": "AAS 2-foot garden spacing, rounded to metres; square layout is a proposed arrangement rather than a validated field-row optimum.",
+      "harvest_parts": [
+        "leaves/shoots"
+      ],
+      "harvest_behavior": "repeated",
+      "guidance": "Retain foliage for regrowth. Seed and transplant harvest intervals have different starting events.",
+      "is_default": true,
+      "checked_on": "2026-11-14",
+      "additional_source_urls": [
+        "https://extension.rutgers.edu/fs1279"
+      ]
+    }
+  ]
+}

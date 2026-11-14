@@ -974,6 +974,8 @@ def _submission_response(
         attempt_number=item.attempt_number,
         actual_quantity=float(item.actual_quantity) if item.actual_quantity is not None else None,
         actual_unit=item.actual_unit,
+        harvested_part=item.harvested_part,
+        plants_harvested_out=item.plants_harvested_out,
         harvest_type_intent=item.harvest_type_intent,
         harvest_type_confirmed=item.harvest_type_confirmed,
         evidence_url=item.evidence_url,
@@ -1373,6 +1375,7 @@ def _task_response_base(db: Session, task: FarmActivity, context: dict | None = 
         coverage = coverage_display(db, task)
 
     return TaskResponse(
+        harvest_context=(json.loads(db.get(Crop, task.source_record_id).spacing_snapshot_json or "{}") if task.source_module == "Crop" and task.source_type == "crop_harvest" and db.get(Crop, task.source_record_id) else None),
         monitoring_context=monitoring_context(db, task),
         id=task.id,
         activity_code=task.activity_code,
@@ -3432,6 +3435,7 @@ def update_task_assignment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    acquire_transaction_lock(db, "automation:tasks")
     _require_workforce_access(current_user, "update_task_assignment")
     task = _task_locked_or_404(db, task_id)
     from app.services.farm_event_service import assert_task_available
@@ -3535,6 +3539,8 @@ def update_task_assignment(
     # task date may also be unavailable.
     try:
         recalculate_task_reassignment(db, task)
+        from app.services.workforce_intervals import validate_task_interval
+        validate_task_interval(db, task)
         db.commit()
     except Exception:
         db.rollback()
@@ -3887,6 +3893,8 @@ def submit_task(
     previous = _latest_submission(db, task.id)
     attempt = (previous.attempt_number if previous else 0) + 1
     submission = TaskSubmission(
+        harvested_part=payload.harvested_part,
+        plants_harvested_out=payload.plants_harvested_out,
         monitoring_data_json=json.dumps(observation.model_dump(mode="json")) if observation else None,
         activity_id=task.id,
         employee_id=performer.id,
@@ -4174,6 +4182,8 @@ def review_task(
             crop=crop,
             harvest_date=task.activity_date,
             quantity_kg=float(submission.actual_quantity),
+            harvested_part=submission.harvested_part,
+            plants_harvested_out=submission.plants_harvested_out,
             harvest_type=payload.harvest_type,
             actor=current_user,
             performed_by_employee_id=submission.employee_id,

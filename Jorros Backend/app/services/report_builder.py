@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any
 
 from sqlalchemy import func, or_, select
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     Crop,
+    CropPositionEvent,
     CropPestDisease,
     CropYieldRecord,
     InventoryItem,
@@ -207,7 +208,7 @@ def _build_crop_snapshot(
     crops = list(
         db.scalars(
             select(Crop)
-            .where(Crop.planting_date <= end_date)
+            .where((Crop.planting_date <= end_date) | ((Crop.planting_date.is_(None)) & (Crop.created_at < datetime.combine(end_date + timedelta(days=1), time.min))))
             .order_by(Crop.name.asc())
         ).all()
     )
@@ -258,10 +259,11 @@ def _build_crop_snapshot(
 
     crop_by_id = {crop.id: crop for crop in crops}
 
-    total_area = sum(
-        float(crop.area_hectares or 0)
-        for crop in crops
-    )
+    physical_areas = {}
+    for crop in crops:
+        if crop.area_cleared_at is None:
+            physical_areas.setdefault(crop.footprint_id or f"legacy:{crop.id}", float(crop.area_hectares or 0))
+    total_area = sum(physical_areas.values())
     total_harvest_kg = sum(
         float(record.quantity_kg or 0)
         for record in yield_records
@@ -280,7 +282,17 @@ def _build_crop_snapshot(
         int(crop.current_surviving or 0)
         for crop in crops
     )
-    plant_loss_count = max(0, total_planted - total_surviving)
+    position_totals = defaultdict(lambda: Counter())
+    if crops:
+        for crop_id, kind, quantity in db.execute(select(CropPositionEvent.crop_id, CropPositionEvent.event_type, func.sum(CropPositionEvent.quantity))
+                .where(CropPositionEvent.crop_id.in_([crop.id for crop in crops]), CropPositionEvent.event_date <= end_date)
+                .group_by(CropPositionEvent.crop_id, CropPositionEvent.event_type)):
+            position_totals[crop_id][kind] = int(quantity)
+    plant_loss_count = sum(max(0, int(crop.quantity_planted or 0) - int(crop.current_surviving or 0))
+                           if crop.registration_kind == "legacy" else position_totals[crop.id]["mortality"] for crop in crops)
+    harvested_out_count = sum(row["harvested_out"] for row in position_totals.values())
+    removed_count = sum(row["removed"] for row in position_totals.values())
+    replacement_count = sum(row["replacement"] for row in position_totals.values())
     survival_rate_percent = (
         total_surviving / total_planted * 100
         if total_planted > 0
@@ -331,13 +343,10 @@ def _build_crop_snapshot(
                 "crop": crop.name,
                 "field": crop.field,
                 "area_ha": _rounded(area),
-                "quantity_planted": int(crop.quantity_planted or 0),
-                "current_surviving": int(crop.current_surviving or 0),
-                "survival_rate_percent": _rounded(
-                    (int(crop.current_surviving or 0) / int(crop.quantity_planted or 0) * 100)
-                    if int(crop.quantity_planted or 0) > 0
-                    else 0
-                ),
+                "quantity_planted": crop.quantity_planted,
+                "current_surviving": crop.current_surviving,
+                "survival_rate_percent": _rounded(crop.current_surviving / crop.quantity_planted * 100)
+                    if crop.quantity_planted and crop.current_surviving is not None else None,
                 "harvest_kg": _rounded(quantity_kg),
                 "yield_kg_per_ha": _rounded(
                     quantity_kg / area
@@ -387,10 +396,10 @@ def _build_crop_snapshot(
                 "crop_code": crop.crop_code,
                 "crop": crop.name,
                 "field": crop.field,
-                "growth_percent": _rounded(progress),
+                "growth_percent": _rounded(progress) if progress is not None else None,
                 "status": crop_status,
-                "planting_date": crop.planting_date.isoformat(),
-                "estimated_harvest": crop.estimated_harvest.isoformat(),
+                "planting_date": crop.planting_date.isoformat() if crop.planting_date else None,
+                "estimated_harvest": crop.estimated_harvest.isoformat() if crop.estimated_harvest else None,
             }
         )
 
@@ -514,6 +523,11 @@ def _build_crop_snapshot(
             "average_yield_kg_per_ha": _rounded(average_yield),
             "pest_disease_records": len(pest_records),
             "resource_usage_records": resource_usage["record_count"],
+            "original_count_unknown_records": sum(crop.quantity_planted is None for crop in crops),
+            "surviving_count_unknown_records": sum(crop.current_surviving is None for crop in crops),
+            "harvested_out_count": harvested_out_count,
+            "cleared_plant_count": removed_count,
+            "replacement_count": replacement_count,
             "quantity_planted": total_planted,
             "current_surviving": total_surviving,
             "plant_loss_count": plant_loss_count,

@@ -1,3 +1,4 @@
+import HarvestProductFields from "../../../components/CropPlanning/HarvestProductFields.jsx";
 import ResourceChoiceTools from "../../../components/ResourceChoiceTools/ResourceChoiceTools.jsx";
 import { WORK_TYPES, workTypeLabel, eventDomain, taskCategoryUpdate } from "../../../services/eventPlanning.js";
 import { PersonalNameFields, PersonalAddressFields } from "../../../components/PersonalDetails/PersonalDetails.jsx";
@@ -861,7 +862,8 @@ function TaskManagementModals({
                                             )}
                                         </select>
                                     </div>
-                                    {assistedIsCropHarvest && (
+                                    {assistedIsCropHarvest && <HarvestProductFields context={assistedTask?.harvest_context} value={assistedForm} onChange={setAssistedForm} />}
+                        {assistedIsCropHarvest && (
                                         <>
                                             <div className="workforce-field">
                                                 <label htmlFor="assisted-harvest-quantity">Actual Harvest Yield (kg) *</label>
